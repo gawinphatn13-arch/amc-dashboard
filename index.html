@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metal &amp; FX Dashboard — AMC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171e2e; --panel2:#1d2638; --line:#2a3447;
+    --txt:#e8edf5; --muted:#8b97ad; --accent:#3ea6ff; --green:#37d39b;
+    --red:#ff6b6b; --amber:#ffc24b; --chip:#243049; --thb:#7ee0c0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Tahoma,"Sarabun",sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5}
+  header{padding:22px 26px;background:linear-gradient(120deg,#13203a,#0f1420);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+  header h1{margin:0;font-size:22px;letter-spacing:.3px}
+  header .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .meta{text-align:right;font-size:13px;color:var(--muted)}
+  .meta b{color:var(--accent)}
+  main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+  h2{font-size:16px;margin:30px 0 14px;display:flex;align-items:center;gap:10px;color:#cdd7e8}
+  h2 .bar{width:4px;height:18px;background:var(--accent);border-radius:2px;display:inline-block}
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:820px){.g3{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.g3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card .lbl{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .card .lbl.clk{cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-radius:6px;transition:color .15s}
+  .card .lbl.clk:hover{color:var(--accent)}
+  .card .val{font-size:26px;font-weight:700;margin:8px 0 2px}
+  .card .val[contenteditable]{outline:none;border-bottom:1px dashed transparent;cursor:text}
+  .card .val[contenteditable]:hover,.card .val[contenteditable]:focus{border-bottom-color:var(--accent)}
+  .card .unit{font-size:13px;color:var(--muted)}
+  .card .src{margin-top:10px;font-size:11.5px}
+  .card .src a{color:var(--accent);text-decoration:none}
+  .card .src a:hover{text-decoration:underline}
+  .updt{font-size:11px;color:var(--muted);margin-top:6px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+  th{background:var(--panel2);color:#aeb9cd;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+  tr:last-child td{border-bottom:none}
+  .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .base{font-weight:700;font-size:15px;outline:none;border-bottom:1px dashed #3a465c;cursor:text;min-width:54px;display:inline-block;text-align:right}
+  .base:focus{border-bottom-color:var(--accent)}
+  .o-usd{color:#cdd7e8}
+  .o-cny{color:#ffce8a}
+  .o-thb{color:var(--thb);font-weight:700}
+  td a{color:var(--accent);text-decoration:none;font-size:12px}
+  td a:hover{text-decoration:underline}
+  .cur-pill{font-size:10.5px;color:#9fd0ff;background:var(--chip);border:1px solid #2f3e5c;padding:1px 7px;border-radius:12px}
+  .prod{cursor:pointer;transition:color .15s}
+  .prod:hover{color:var(--accent)}
+  .prod:hover .cicon{opacity:1}
+  .cicon{font-size:11px;opacity:.45;margin-left:4px}
+  .news-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.news-grid{grid-template-columns:1fr}}
+  .news{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px;border-left:3px solid var(--accent)}
+  .news h3{margin:0 0 7px;font-size:14.5px;line-height:1.35}
+  .news p{margin:0 0 10px;color:#c2cbdb;font-size:13px}
+  .news .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+  .tag{background:var(--chip);color:#9fd0ff;font-size:11px;padding:2px 9px;border-radius:20px;border:1px solid #2f3e5c}
+  .tag.iran{color:#ffb1b1;border-color:#5c3030}
+  .tag.ad{color:#ffd98a;border-color:#5c4d2a}
+  .tag.zinc{color:#9bf0d0;border-color:#2a5c47}
+  .tag.oil{color:#ffcaa3;border-color:#5c4030}
+  .tag.steel{color:#cdd7e8;border-color:#3a465c}
+  .tag.alu{color:#bcd0ff;border-color:#33466e}
+  .news .foot{font-size:11.5px;color:var(--muted)}
+  .news .foot a{color:var(--accent);text-decoration:none}
+  .note{background:#1a2233;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:10px;padding:13px 16px;font-size:13px;color:#cdd7e8;margin:16px 0}
+  .note b{color:var(--amber)}
+  .hint{background:#16241c;border:1px solid #244a36;border-left:3px solid var(--green);border-radius:10px;padding:11px 16px;font-size:12.5px;color:#cdebd9;margin:14px 0}
+  .hint b{color:var(--green)}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0}
+  button{background:var(--accent);color:#06121f;border:none;padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  button:hover{filter:brightness(1.08)}
+  .src-list{font-size:12px;color:var(--muted);margin-top:8px}
+  .src-list a{color:var(--accent);text-decoration:none}
+  footer{max-width:1200px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:12px;line-height:1.7}
+  .chgpos{color:var(--green)} .chgneg{color:var(--red)}
+  /* chart modal */
+  .cm-overlay{position:fixed;inset:0;background:rgba(6,12,22,.78);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:200;padding:18px}
+  .cm-overlay.show{display:flex}
+  .cm-box{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:680px;padding:20px 22px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .cm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
+  .cm-head .t{font-size:16px;font-weight:700;color:#eaf1fb}
+  .cm-head .u{font-size:12px;color:var(--muted);margin-top:2px}
+  .cm-x{background:var(--chip);color:var(--txt);border:1px solid var(--line);width:30px;height:30px;padding:0;border-radius:8px;font-size:14px;line-height:1}
+  .cm-canvas-wrap{position:relative;height:300px;margin-top:8px}
+  .cm-meta{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+  .cm-meta .mv{color:var(--txt);font-weight:700}
+  .cm-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 10px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Metal &amp; FX Dashboard</h1>
+    <div class="sub">อัตราแลกเปลี่ยน · ราคาสังกะสี · ราคาเหล็ก · ราคาอะลูมิเนียม · ราคาแร่เหล็ก · ราคาน้ำมันดิบ · สรุปข่าวตลาดโลหะ — สำหรับ Asia Metal (AMC)</div>
+  </div>
+  <div class="meta">
+    ข้อมูล ณ <b id="snapDate">22 ส.ค. 2026</b><br>
+    อัปเดตค่าได้เอง · บันทึกอัตโนมัติ
+    <div class="toolbar" style="justify-content:flex-end">
+      <button onclick="saveAll()">💾 บันทึกค่าที่แก้</button>
+      <button class="ghost" onclick="resetAll()">↺ คืนค่าเริ่มต้น</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="note">
+    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>22 ส.ค. 2026</b> (FX = 21 ส.ค. 2026 (ประกาศล่าสุดของ ธปท. — ชุดใหม่), LME Zinc = 21 ส.ค. 2026 (Official/Closing, day-delayed — ชุดใหม่), <b style="color:var(--green)">ราคา SMM รอบนี้เป็นชุดวันที่ 21 ส.ค. 2026 — ชุดใหม่ครบทุกตัว (Zinc / Slab / HRC / Galvanised)</b>, Aluminium/IronOre/Billet/Scrap = 25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
+    คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน —
+    แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”
+  </div>
+
+  <div class="hint">
+    💡 <b>คลิกที่ชื่อสินค้า</b> (มีไอคอน 📈) เพื่อดู <b>กราฟแยกส่วนราคา–ค่าเงิน</b> — กราฟจะซ้อน 3 เส้นโดยปรับให้วันแรก = 100 เท่ากันหมด: <b style="color:#3ea6ff">ราคาสินค้า (USD)</b> · <b style="color:var(--amber)">ค่าเงิน USD/THB</b> · <b style="color:var(--thb)">ราคาเป็นเงินบาท</b> ทำให้เห็นทันทีว่าราคาบาทที่ขยับนั้น <b>มาจากราคาสินค้าจริง หรือมาจากค่าเงิน</b> — ถ้าเส้นบาทวิ่งตามเส้นสีเหลืองแปลว่าเป็นเรื่องค่าเงิน ถ้าวิ่งตามเส้นสีฟ้าแปลว่าเป็นราคาสินค้าจริง ใต้กราฟมีตัวเลขแยกส่วนให้ (ราคาบาท % = ราคาสินค้า % + ค่าเงิน %) พร้อมข้อสรุปว่าด้านไหนเป็นตัวขับหลัก · คลิกหัวข้อ FX จะได้กราฟค่าเงินเดี่ยวแบบเดิม · กราฟสร้างจาก snapshot รายวันที่ระบบบันทึกไว้ ทุกครั้งที่งาน schedule รันและเปิดหน้านี้ จุดข้อมูลใหม่จะถูกเพิ่มอัตโนมัติ
+  </div>
+
+  <!-- FX -->
+  <h2><span class="bar"></span>อัตราแลกเปลี่ยน — เงินบาท (THB) · อัตราขายถัวเฉลี่ย (BOT)</h2>
+  <div class="grid g3">
+    <div class="card">
+      <div class="lbl clk" onclick="openChart('fx_usd','USD / THB','บาท ต่อ 1 ดอลลาร์สหรัฐ')">USD / THB <span class="cicon">📈</span></div>
+      <div class="val fxr" data-k="fx_usd" contenteditable="true">32.9781</div>
+      <div class="unit">บาท ต่อ 1 ดอลลาร์สหรัฐ · Average Selling Rate</div>
+      <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
+    </div>
+    <div class="card">
+      <div class="lbl clk" onclick="openChart('fx_eur','EUR / THB','บาท ต่อ 1 ยูโร')">EUR / THB <span class="cicon">📈</span></div>
+      <div class="val fxr" data-k="fx_eur" contenteditable="true">38.6677</div>
+      <div class="unit">บาท ต่อ 1 ยูโร · Average Selling Rate</div>
+      <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
+    </div>
+    <div class="card">
+      <div class="lbl clk" onclick="openChart('fx_cny','CNY / THB','บาท ต่อ 1 หยวน')">CNY / THB <span class="cicon">📈</span></div>
+      <div class="val fxr" data-k="fx_cny" contenteditable="true">4.9303</div>
+      <div class="unit">บาท ต่อ 1 หยวน · Average Selling Rate</div>
+      <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
+    </div>
+  </div>
+  <div class="updt">✓ ดึงสดจาก BOT ณ 22 ส.ค. 2026 — ประกาศล่าสุดเป็นชุดวันที่ 21 ส.ค. 2026 · ใช้ฐาน <b style="color:var(--amber)">Average Selling Rate (อัตราขายถัวเฉลี่ย)</b> ต่อเนื่อง · อัตราขาย 21 ส.ค.: USD 32.9781 (▼0.10%) · EUR 38.6677 (▼0.01%) · CNY 4.9303 (▼0.15%) · เทียบอัตราซื้อ (sight bill) ชุดเดียวกัน USD 32.5810 / EUR 37.9306 / CNY 4.8135 — ส่วนต่าง bid-ask ทำให้คอลัมน์ THB สูงขึ้นราว 1.2% · <b style="color:var(--amber)">รอบนี้บาทแข็งค่าต่อเนื่องเล็กน้อยทุกสกุล (USD/THB ▼0.10%) — แรงกดต่อคอลัมน์ THB มีไม่มาก ราคาบาทรอบนี้ขยับตามราคาสินค้าเป็นหลัก</b> · หมายเหตุ: จุดข้อมูล FX ในกราฟก่อน 11 ส.ค. 2026 ยังเป็นฐานอัตราซื้อ</div>
+
+  <!-- ZINC -->
+  <h2><span class="bar"></span>ราคาสังกะสี (Zinc)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30%">รายการ</th>
+        <th class="num">ราคาฐาน</th><th>สกุล</th>
+        <th class="num">USD</th><th class="num">CNY</th><th class="num">THB</th>
+        <th>แหล่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('lme_zn_cash','LME Zinc (Cash · official offer)','USD/tonne')"><b>LME Zinc</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgpos" style="font-size:11px">▲2.96%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_zn_cash" contenteditable="true">3,980.00</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('lme_zn','LME Zinc (3-month, closing)','USD/tonne')"><b>LME Zinc</b> (3-month, closing) <span class="chgpos" style="font-size:11px">▲1.68%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_zn" contenteditable="true">3,823.00</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgpos" style="font-size:11px">▲1.50%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">3,806.04</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/zinc/201102250173" target="_blank">metal.com ↗</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="updt">✓ <b style="color:var(--amber)">LME Zinc Cash</b> = ช่อง <b>Offer</b> ของแถว Cash ในตาราง LME Zinc Official Prices (bid 3,978.00 / offer 3,980.00 ณ 21 ส.ค. 2026) — LME ใช้ค่านี้เป็น Cash Settlement Price และเป็นตัวที่สัญญาซื้อขายสังกะสีกายภาพอ้างอิง จึงตั้งเป็นราคาอ้างอิงหลักของ AMC · แถว 3-month เป็นราคาปิด (Closing Prices) เก็บไว้เทียบ contango/backwardation — ปัจจุบัน Cash สูงกว่า 3-month <b style="color:var(--amber)">157.00 USD/tonne</b> (เป็น <b>backwardation</b> ที่<b>กว้างขึ้นอีก</b>จาก 105.50 USD/tonne เมื่อ 21 ส.ค. — ตลาด spot ตึงตัวหนักต่อเนื่อง) · <b style="color:var(--muted)">% ของ Cash คำนวณเทียบ snapshot รอบก่อน (3,865.50 → 3,980.00 = ▲2.96%)</b> · LME opening stock 94,400 mt (live warrants 88,575 / cancelled 4,550 — สต็อกลดจาก 95,050 mt รอบก่อน)<br>ℹ SMM 0# Zinc — Inventory กวางตุ้ง: <span class="base" data-k="smm_zn_inv" contenteditable="true" style="color:var(--amber)">36,900</span> mt <b style="color:var(--muted)">(ค่าล่าสุดที่บันทึกไว้ — ยังไม่ได้รีเฟรชในรอบนี้)</b> — <a href="https://news.metal.com/" target="_blank" style="color:var(--accent)">SMM News ↗</a></div>
+
+  <!-- STEEL -->
+  <h2><span class="bar"></span>ราคาเหล็ก (Steel — Slab / HRC / Galvanized / Flat Products)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:33%">ผลิตภัณฑ์ / Spec</th>
+        <th class="num">ราคาฐาน</th><th>สกุล</th>
+        <th class="num">USD</th><th class="num">CNY</th><th class="num">THB</th>
+        <th>แหล่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-cur="USD" data-unit="/mt">
+        <td class="prod" onclick="openChart('st_slab','Slab SMM-GS-SL-001 (FOB Shanghaigang)','USD/tonne')"><b>SMM-GS-SL-001</b> · Slab SAE1006/SS400 — FOB Shanghaigang <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_slab" contenteditable="true">470</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/steel-billet/202601160001" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/mt">
+        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span class="chgpos" style="font-size:11px">▲0.20%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_hr1" contenteditable="true">489</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/flat-products/202501030001" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/mt">
+        <td class="prod" onclick="openChart('st_hr2','HRC SMM-GS-HR-002 (FOB Bayuquan)','USD/tonne')"><b>SMM-GS-HR-002</b> · HRC Q235B 3.0×1250×C — FOB Bayuquan <span class="chgpos" style="font-size:11px">▲0.20%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_hr2" contenteditable="true">489</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/flat-products/202501030002" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/mt">
+        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgpos" style="font-size:11px">▲0.08%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">639.41</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/flat-products/202509160004" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/mt">
+        <td class="prod" onclick="openChart('st_ca','Cold Rolled Auto SMM-CG-CA-041 (Shanghai)','USD/tonne')"><b>SMM-CG-CA-041</b> · Cold Rolled Automotive Coil HC340/590DP 1.0×1250×C (Shanghai) <span class="chgpos" style="font-size:11px">▲0.19%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_ca" contenteditable="true">578.68</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/flat-products/202403190049" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/mt">
+        <td class="prod" onclick="openChart('st_cr','CRC SMM-CG-CR-016 SPCC/ST12 (Tianjin)','USD/tonne')"><b>SMM-CG-CR-016</b> · CRC SPCC/ST12 1.0×1250×C (Tianjin) <span class="chgpos" style="font-size:11px">▲0.19%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_cr" contenteditable="true">508.3</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/flat-products/202309190006" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('st_sq_bil','Square Billet 3sp 130×130 FOB Bayuquan','USD/tonne')"><b>SMM-GS-SB-003</b> · Square Billet 3sp 130×130 FOB Bayuquan Port China <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_sq_bil" contenteditable="true">474</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/steel-billet" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('st_scrap','Steel Scrap Jiangsu Heavy ≤400×400mm ≥6mm','USD/tonne')"><b>SMM-FS-HS-005</b> · Jiangsu Heavy Steel Scrap ≤400×400mm, Thickness ≥6mm <span class="chgneg" style="font-size:11px">▼0.29%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_scrap" contenteditable="true">373.65</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/steel-scrap" target="_blank">metal.com ↗</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="updt">✓ รอบ 22 ส.ค. 2026 อ่านราคา SMM ได้ครบทุกตัว — <b style="color:var(--green)">ชุดใหม่วันที่ 21 ส.ค. 2026 ทั้งกลุ่ม</b>: Slab 470 (0.00%) · HRC-001 (FOB Tianjin) 489 (▲0.20%) · HRC-002 (FOB Bayuquan) 489 (▲0.20%) · Galvanised SMM-CG-GZ-056 639.41 (▲0.08%) · <b style="color:var(--amber)">บาทแข็งค่าเล็กน้อย (▼0.10%) จึงหักล้างการขึ้นของ HRC ในรูปเงินบาทไปบางส่วน — THB ของ HRC ▲~0.11% ส่วน Galvanised ในรูปบาทแทบทรงตัว (▼0.02%)</b> · Cold Rolled Auto / CRC / Billet / Scrap ไม่ได้อยู่ในรอบอัปเดตนี้ (คงค่าเดิม 27 ก.ค. / 25 มิ.ย. 2026) · ราคา daily ทุกตัวเป็น USD/tonne · ในวงเล็บคือ % เปลี่ยนแปลงเทียบ snapshot รอบก่อนในไฟล์นี้</div>
+
+  <!-- ALUMINIUM -->
+  <h2><span class="bar"></span>ราคาอะลูมิเนียม (Aluminium)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:33%">รายการ</th>
+        <th class="num">ราคาฐาน</th><th>สกุล</th>
+        <th class="num">USD</th><th class="num">CNY</th><th class="num">THB</th>
+        <th>แหล่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('lme_al','LME Aluminium (3-month, closing)','USD/tonne')"><b>LME Aluminium</b> (3-month, closing) <span class="chgneg" style="font-size:11px">▼3.40%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al" contenteditable="true">3,122.50</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium#Overview" target="_blank">LME ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('lme_al_alloy','LME Aluminium Alloy (3-month, closing)','USD/tonne')"><b>LME Aluminium Alloy</b> (3-month, closing) <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al_alloy" contenteditable="true">3,510.00</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium-alloy#Summary" target="_blank">LME ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('smm_al','SMM A00 Aluminum Ingot (Shanghai)','USD/tonne')"><b>SMM A00 Aluminum Ingot</b> (Shanghai · USD pricing) <span class="chgneg" style="font-size:11px">▼2.92%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="smm_al" contenteditable="true">3,348.18</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/aluminum" target="_blank">metal.com ↗</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="updt">✓ ดึงสดจาก LME และ metal.com (SMM) — LME ราคาปิด 3-month (day-delayed, ข้อมูล 24 มิ.ย.) · SMM A00 = 25 มิ.ย. 2026 · ในวงเล็บคือ % เปลี่ยนแปลงรายวัน</div>
+
+  <!-- IRON ORE -->
+  <h2><span class="bar"></span>ราคาแร่เหล็ก (Iron Ore)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:33%">รายการ</th>
+        <th class="num">ราคาฐาน</th><th>สกุล</th>
+        <th class="num">USD</th><th class="num">CNY</th><th class="num">THB</th>
+        <th>แหล่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-cur="USD" data-unit="/wmt">
+        <td class="prod" onclick="openChart('ore_pb','Iron Ore Qingdao Port 60.8% PB Fines','USD/wmt')"><b>SMM-IR-IR-124</b> · Imported Spot / Qingdao Port 60.8% PB Fines <span class="chgneg" style="font-size:11px">▼1.28%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="ore_pb" contenteditable="true">101.84</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.metal.com/iron-ore-price" target="_blank">metal.com ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/MT">
+        <td class="prod" onclick="openChart('ore_fe','Iron Ore 62% Fe CFR Tianjin (CFD)','USD/MT')"><b>Iron Ore</b> 62% Fe CFR Tianjin · CFD <span class="chgneg" style="font-size:11px">▼0.01%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="ore_fe" contenteditable="true">100.52</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://tradingeconomics.com/commodity/iron-ore" target="_blank">Trading Economics ↗</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="updt">✓ ดึงสดจาก metal.com (SMM) และ Trading Economics — SMM PB Fines = 25 มิ.ย. 2026 · Iron Ore CFD (TE) = 24 มิ.ย. 2026 · หน่วย: USD/wmt (wet metric tonne) / USD/MT</div>
+
+  <!-- CRUDE OIL -->
+  <h2><span class="bar"></span>ราคาน้ำมันดิบ (Crude Oil — WTI)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:33%">รายการ</th>
+        <th class="num">ราคาฐาน</th><th>สกุล</th>
+        <th class="num">USD</th><th class="num">CNY</th><th class="num">THB</th>
+        <th>แหล่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-cur="USD" data-unit="/barrel">
+        <td class="prod" onclick="openChart('oil_wti','WTI Crude Oil (NYMEX front-month)','USD/barrel')"><b>WTI Crude Oil</b> · สัญญาฟิวเจอร์ส front-month (NYMEX/CME) <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="oil_wti" contenteditable="true">76.53</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://th.investing.com/commodities/crude-oil" target="_blank">investing.com ↗</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="updt">✓ ดึงสดจาก investing.com (WTI front-month) ณ 20 มิ.ย. 2026 — USD/barrel · ปิดตลาดครั้งก่อน 76.05 · ช่วง 52 สัปดาห์ 54.98–117.63 · คอลัมน์ THB = บาทต่อบาร์เรล</div>
+
+  <!-- NEWS -->
+  <h2><span class="bar"></span>สรุปข่าวตลาดโลหะ — กรองตาม Keyword (Zinc ingot · Slab · Steel · Aluminium · Core · Iron ore · Iran · Hot roll · AD/Anti-dumping · US · Galvanized)</h2>
+  <div class="news-grid">
+
+    <div class="news" style="border-left-color:#7aa2ff">
+      <div class="tags"><span class="tag alu">Aluminium</span><span class="tag">LME</span><span class="tag">India</span></div>
+      <h3>LME Aluminium ร่วงต่ำกว่า $3,500 — 17 มิ.ย. ลง 4.4% แตะ ~$3,379/ตัน</h3>
+      <p>ราคาอะลูมิเนียม LME วันที่ 17 มิ.ย. ลดลง 4.4% สู่ ~3,379.50 ดอลลาร์/ตัน ต่ำสุดตั้งแต่ มี.ค. (จากจุดสูง 1 มิ.ย. ที่ 3,795.50) ขณะที่ alumina ยังตึงตัวที่ ~307 ดอลลาร์/ตัน กดมาร์จิ้นโรงถลุง หุ้น Hindalco / NALCO / Vedanta ปรับตัวลงตาม</p>
+      <div class="foot">Discovery Alert · <a href="https://discoveryalert.com.au/lme-aluminium-price-below-3500-inventory-signals-2026/" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:#7aa2ff">
+      <div class="tags"><span class="tag steel">Steel</span><span class="tag">China</span><span class="tag">Hot roll</span></div>
+      <h3>เหล็กเส้นจีนแตะต่ำสุดรอบ ~2 เดือน — เข้าโลว์ซีซั่นเร็วกว่าปกติ</h3>
+      <p>ฟิวเจอร์สเหล็กเส้นจีนลงแตะ ~3,130 หยวน/ตัน ใกล้ต่ำสุดรอบสองเดือน จากฝนตกหนักและอากาศร้อนมาเร็วกดดีมานด์ก่อสร้าง · ส่งออกเหล็กจีน พ.ค. +8.8% แต่ 5 เดือนแรกยังติดลบ 8.1% YoY จากกำแพงการค้าที่สูงขึ้นในหลายตลาดส่งออก</p>
+      <div class="foot">Trading Economics / Argus · <a href="https://tradingeconomics.com/commodity/steel" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:var(--amber)">
+      <div class="tags"><span class="tag steel">Steel</span><span class="tag ad">Tariff</span><span class="tag">US/USA</span></div>
+      <h3>ภาษีเหล็กสหรัฐ 50% ดันอัตราใช้กำลังผลิตขึ้น แต่ทำเศษเหล็ก (scrap) ล้นตลาด</h3>
+      <p>ภาษีนำเข้าเหล็กสหรัฐ 25–50% รวมกับการลดโควตา/ภาษีนอกโควตา 50% ของ EU จำกัดการทะลักของเหล็กจากประเทศที่สาม หนุนอัตราใช้กำลังผลิตของโรงเหล็กสหรัฐ แต่ขณะเดียวกันทำให้อุปทานเศษเหล็ก (scrap) ภายในประเทศล้นตลาดและกดราคา</p>
+      <div class="foot">Argus / Fastmarkets · <a href="https://www.argusmedia.com/en/news-and-insights/latest-market-news/2769786-viewpoint-us-steel-tariffs-cause-scrap-supply-glut" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:var(--red)">
+      <div class="tags"><span class="tag iran">Iran</span><span class="tag">Slab</span><span class="tag">US/USA</span></div>
+      <h3>โรงเหล็กอิหร่านเสียหายจากการโจมตีทางอากาศ — กระทบกำลังผลิต billet/slab</h3>
+      <p>Khouzestan Steel และ Mobarakeh Steel ถูกโจมตี ทำให้คลังสินค้าและระบบไฟฟ้าเสียหาย คาดลดกำลังผลิตและส่งออก billet/slab เกิดภาวะ “slab panic” ในเอเชียตะวันออกเฉียงใต้และตะวันออกกลาง (อิหร่านส่งออก slab 1.54 ล้านตัน มี.ค.–ธ.ค. 2025)</p>
+      <div class="foot">SMM / Argus · <a href="https://news.metal.com/newscontent/103786604-SMM-Analysis-Persian-Gulf-Shutdown-The-Impact-of-the-US-Iran-Conflict-on-Global-Steel-Trade" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:var(--amber)">
+      <div class="tags"><span class="tag ad">Anti-dumping</span><span class="tag zinc">Galvanized</span><span class="tag">US/USA</span></div>
+      <h3>สหรัฐยื่นฟ้อง AD/CVD เหล็กเคลือบกันสนิม (galvanized) จาก 10 ประเทศ</h3>
+      <p>อุตสาหกรรมเหล็กสหรัฐยื่นคำร้องเก็บภาษี AD/CVD กับ corrosion-resistant steel จาก 10 ประเทศ และเปิดไต่สวน AD กับ tin mill products จากจีน/ไต้หวัน/ตุรกี โดย margin จีนสูงถึง 1,077%</p>
+      <div class="foot">Akin / Clark Hill · <a href="https://www.steelorbis.com/steel-news/latest-news/" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:var(--green)">
+      <div class="tags"><span class="tag zinc">Zinc ingot</span></div>
+      <h3>สต็อก Zinc ingot กวางตุ้งพุ่งสูงสุดในรอบปี กดดันราคา spot</h3>
+      <p>ข้อมูล SMM ระบุสต็อกสังกะสีในกวางตุ้งไต่ขึ้นแตะ 36,900 ตัน สูงสุดในรอบปี แรงกดดันจากสต็อกสูงกระทบ sentiment และทิศทางราคาในตลาด spot โดยตรง</p>
+      <div class="foot">SMM · <a href="https://news.metal.com/" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:var(--amber)">
+      <div class="tags"><span class="tag oil">Crude Oil</span><span class="tag iran">Iran</span></div>
+      <h3>ราคาน้ำมันดิบ WTI ทรงตัวแถว $76 หลังกรอบข้อตกลงสหรัฐฯ–อิหร่าน</h3>
+      <p>WTI ปิดแถว 76 ดอลลาร์/บาร์เรล โดย Goldman Sachs ปรับลดคาดการณ์ราคาน้ำมันปี 2026–2027 หลังสัญญาณคลายความตึงเครียดและการเปิดช่องแคบฮอร์มุซ — เป็นต้นทุนพลังงาน/ขนส่งที่กระทบราคาเหล็กทางอ้อม</p>
+      <div class="foot">Investing.com · <a href="https://th.investing.com/commodities/crude-oil-news" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news">
+      <div class="tags"><span class="tag">Hot roll</span><span class="tag">US/USA</span></div>
+      <h3>HRC สหรัฐยังแข็งแกร่ง — Nucor CSP ขึ้น $10/ton แตะ ~$1,105</h3>
+      <p>ราคา HRC สหรัฐขยับขึ้นต่อเนื่องจากภาษีนำเข้าที่สูงขึ้น อัตราใช้กำลังผลิตเพิ่ม และสต็อก service center ต่ำสุดในหลายปี ขณะที่ราคา HRC ส่งออกจากจีนอ่อนตัว</p>
+      <div class="foot">Ryerson / SEAISI · <a href="https://www.steelorbis.com/steel-news/latest-news/" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+    <div class="news" style="border-left-color:var(--amber)">
+      <div class="tags"><span class="tag ad">Anti-circumvention</span><span class="tag">Outlook</span></div>
+      <h3>OECD Steel Outlook 2026: มาตรการทางการค้าเพิ่มขึ้นขณะวิกฤตเหล็กรุนแรง</h3>
+      <p>OECD ชี้ผู้ผลิต/เทรดเดอร์พยายามเลี่ยงมาตรการ (circumvention) — เครื่องมือรับมือรวมถึงขยายมาตรการ AD/CVD ครอบคลุมสินค้าดัดแปลงเล็กน้อยและที่ผ่านกระบวนการในประเทศที่สาม</p>
+      <div class="foot">OECD · <a href="https://www.oecd.org/en/publications/oecd-steel-outlook-2026_99ab9b0c-en.html" target="_blank">อ่านต่อ ↗</a></div>
+    </div>
+
+  </div>
+
+  <div class="src-list">
+    <b>แหล่งข่าวที่ติดตาม:</b>
+    <a href="https://news.metal.com/" target="_blank">metal.com News</a> ·
+    <a href="https://www.lme.com/en/News" target="_blank">LME News</a> ·
+    <a href="https://th.investing.com/commodities/crude-oil" target="_blank">Investing.com (WTI)</a> ·
+    <a href="https://tradingeconomics.com/stream" target="_blank">Trading Economics</a> ·
+    <a href="https://www.spglobal.com/energy/en/news-research/latest-news" target="_blank">S&amp;P Global</a> ·
+    <a href="https://www.steelorbis.com/steel-news/latest-news/" target="_blank">SteelOrbis</a> ·
+    <a href="https://worldsteel.org/" target="_blank">worldsteel</a>
+  </div>
+</main>
+
+<!-- Chart modal -->
+<div id="chartModal" class="cm-overlay" onclick="closeChart(event)">
+  <div class="cm-box" onclick="event.stopPropagation()">
+    <div class="cm-head">
+      <div><div class="t" id="cmTitle">—</div><div class="u" id="cmUnit"></div></div>
+      <button class="cm-x" onclick="closeChart()">✕</button>
+    </div>
+    <div class="cm-canvas-wrap"><canvas id="cmCanvas"></canvas></div>
+    <div class="cm-meta" id="cmMeta"></div>
+  </div>
+</div>
+
+<footer>
+  Dashboard นี้ดึงข้อมูลสด ณ 22 ส.ค. 2026 (รอบล่าสุด) ผ่าน Claude in Chrome (เซสชันที่ล็อกอิน SMM ไว้) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
+  <br>จัดทำสำหรับ Asia Metal Public Company Limited (AMC)
+</footer>
+
+<script>
+  const KEY="amc_metal_fx_dashboard_v3";
+  const KEY_HIST="amc_metal_fx_history_v1";
+  const TH_ABBR=["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const TH_MO={"ม.ค.":1,"ก.พ.":2,"มี.ค.":3,"เม.ย.":4,"พ.ค.":5,"มิ.ย.":6,"ก.ค.":7,"ส.ค.":8,"ก.ย.":9,"ต.ค.":10,"พ.ย.":11,"ธ.ค.":12};
+
+  // --- Seed history (real snapshots we already have on file) ---
+  const SEED={
+    "2026-06-11":{fx_usd:32.6647,fx_eur:37.5258,fx_cny:4.7653,lme_zn:3491,smm_zn:3146.23,st_slab:480,st_hr1:501,st_hr2:504,st_gz:574.29,st_ca:578.68,st_cr:508.3},
+    "2026-06-19":{fx_usd:32.4102,fx_eur:37.1680,fx_cny:4.7335,lme_zn:3638,smm_zn:3222.6,st_slab:470,st_hr1:499,st_hr2:503,st_gz:572.53,st_ca:578.68,st_cr:508.3,oil_wti:76.05},
+    "2026-06-20":{fx_usd:32.5817,fx_eur:37.1425,fx_cny:4.7595,lme_zn:3557,smm_zn:3222.6,st_slab:470,st_hr1:499,st_hr2:503,st_gz:572.53,st_ca:578.68,st_cr:508.3,oil_wti:76.53},
+    "2026-06-21":{fx_usd:32.5817,fx_eur:37.1425,fx_cny:4.7595,lme_zn:3557,smm_zn:3222.6,st_slab:470,st_hr1:499,st_hr2:503,st_gz:572.53,st_ca:578.68,st_cr:508.3,oil_wti:76.53},
+    "2026-06-22":{fx_usd:32.5817,fx_eur:37.1425,fx_cny:4.7595,lme_zn:3557,smm_zn:3196.39,st_slab:470,st_hr1:499,st_hr2:503,st_gz:572.04,st_ca:578.68,st_cr:508.3,oil_wti:76.53},
+    "2026-06-24":{fx_usd:32.8008,fx_eur:37.2942,fx_cny:4.7928,lme_zn:3492,smm_zn:3154.33,st_slab:470,st_hr1:497,st_hr2:501,st_gz:570.91,st_ca:578.68,st_cr:508.3,oil_wti:76.53},
+    "2026-06-25":{fx_usd:33.0829,fx_eur:37.5340,fx_cny:4.8380,lme_zn:3421.50,smm_zn:3091.37,st_slab:470,st_hr1:497,st_hr2:501,st_gz:569.26,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-06-26":{fx_usd:33.1745,fx_eur:37.5589,fx_cny:4.8424,lme_zn:3434.50,smm_zn:3091.37,st_slab:470,st_hr1:496,st_hr2:500,st_gz:569.26,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-06-28":{fx_usd:33.1576,fx_eur:37.5321,fx_cny:4.8401,lme_zn:3472.00,smm_zn:3481.97,st_slab:470,st_hr1:496,st_hr2:500,st_gz:642.69,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-06-29":{fx_usd:33.1576,fx_eur:37.5321,fx_cny:4.8401,lme_zn:3472.00,smm_zn:3481.97,st_slab:470,st_hr1:496,st_hr2:500,st_gz:642.69,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-06-30":{fx_usd:33.1457,fx_eur:37.6880,fx_cny:4.8499,lme_zn:3474.50,smm_zn:3557.39,st_slab:470,st_hr1:495,st_hr2:500,st_gz:642.4,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-01":{fx_usd:33.0205,fx_eur:37.5000,fx_cny:4.8145,lme_zn:3551.50,smm_zn:3579.04,st_slab:470,st_hr1:493,st_hr2:497,st_gz:640.85,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-03":{fx_usd:33.0894,fx_eur:37.5453,fx_cny:4.8385,lme_zn:3487.00,smm_zn:3565.50,st_slab:470,st_hr1:493,st_hr2:497,st_gz:640.53,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-04":{fx_usd:32.9586,fx_eur:37.5857,fx_cny:4.8357,lme_zn:3541.00,smm_zn:3573.21,st_slab:470,st_hr1:493,st_hr2:496,st_gz:639.52,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-06":{fx_usd:32.9586,fx_eur:37.5857,fx_cny:4.8357,lme_zn:3541.00,smm_zn:3590.39,st_slab:470,st_hr1:493,st_hr2:496,st_gz:639.83,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-07":{fx_usd:32.9947,fx_eur:37.5399,fx_cny:4.8070,lme_zn:3591.00,smm_zn:3620.08,st_slab:470,st_hr1:494,st_hr2:497,st_gz:638.58,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-08":{fx_usd:33.0697,fx_eur:37.6638,fx_cny:4.8367,lme_zn:3572.00,smm_zn:3611.27,st_slab:470,st_hr1:494,st_hr2:497,st_gz:638.58,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-09":{fx_usd:33.1401,fx_eur:37.7219,fx_cny:4.8442,lme_zn:3519.00,smm_zn:3599.81,st_slab:470,st_hr1:494,st_hr2:497,st_gz:634.79,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-10":{fx_usd:33.2394,fx_eur:37.8223,fx_cny:4.8617,lme_zn:3626.50,smm_zn:3643.33,st_slab:470,st_hr1:494,st_hr2:497,st_gz:635.86,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-13":{fx_usd:33.0904,fx_eur:37.7114,fx_cny:4.8365,lme_zn:3616.00,smm_zn:3643.33,st_slab:470,st_hr1:493,st_hr2:495,st_gz:635.86,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-14":{fx_usd:33.1182,fx_eur:37.6528,fx_cny:4.8579,lme_zn:3566.00,smm_zn:3621.56,st_slab:470,st_hr1:490,st_hr2:492,st_gz:635.59,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-15":{fx_usd:33.2629,fx_eur:37.7480,fx_cny:4.8749,lme_zn:3598.50,smm_zn:3621.56,st_slab:470,st_hr1:491,st_hr2:492,st_gz:635.59,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-16":{fx_usd:33.2682,fx_eur:37.9267,fx_cny:4.8901,lme_zn:3546.00,smm_zn:3621.85,st_slab:470,st_hr1:493,st_hr2:494,st_gz:638.15,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-17":{fx_usd:33.3444,fx_eur:38.0508,fx_cny:4.8935,lme_zn:3593.50,smm_zn:3621.85,st_slab:470,st_hr1:493,st_hr2:494,st_gz:638.15,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-18":{fx_usd:33.3655,fx_eur:38.0736,fx_cny:4.8947,lme_zn:3525.50,smm_zn:3615.41,st_slab:470,st_hr1:493,st_hr2:494,st_gz:637.8,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-07-27":{fx_usd:33.5549,fx_eur:38.0287,fx_cny:4.9135,lme_zn:3592.00,smm_zn:3651.46,st_slab:470,st_hr1:490,st_hr2:491,st_gz:634.97,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-08":{fx_usd:32.8835,fx_eur:37.7889,fx_cny:4.8460,lme_zn:3707.00,smm_zn:3651.46,st_slab:470,st_hr1:490,st_hr2:491,st_gz:634.97,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-09":{fx_usd:32.8835,fx_eur:37.7889,fx_cny:4.8460,lme_zn:3707.00,smm_zn:3833.25,st_slab:465,st_hr1:485,st_hr2:484,st_gz:633.95,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-10":{fx_usd:32.8835,fx_eur:37.7889,fx_cny:4.8460,lme_zn:3707.00,smm_zn:3771.53,st_slab:465,st_hr1:485,st_hr2:484,st_gz:634.38,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-11":{fx_usd:33.1585,fx_eur:38.4305,fx_cny:4.9465,lme_zn:3737.50,smm_zn:3772.89,st_slab:465,st_hr1:485,st_hr2:484,st_gz:634.48,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-13":{fx_usd:33.2087,fx_eur:38.4793,fx_cny:4.9540,lme_zn:3757.00,lme_zn_cash:3852.00,smm_zn:3780.10,st_slab:465,st_hr1:484,st_hr2:485,st_gz:634.58,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-14":{fx_usd:33.2647,fx_eur:38.4975,fx_cny:4.9546,lme_zn:3751.50,lme_zn_cash:3806.00,smm_zn:3778.73,st_slab:465,st_hr1:487,st_hr2:487,st_gz:636.08,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-17":{fx_usd:33.3605,fx_eur:38.6018,fx_cny:4.9670,lme_zn:3756.50,lme_zn_cash:3875.00,smm_zn:3778.73,st_slab:465,st_hr1:487,st_hr2:487,st_gz:636.08,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-18":{fx_usd:33.2264,fx_eur:38.6072,fx_cny:4.9668,lme_zn:3769.00,lme_zn_cash:3855.00,smm_zn:3778.36,st_slab:465,st_hr1:487,st_hr2:487,st_gz:637.87,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-19":{fx_usd:33.2108,fx_eur:38.5883,fx_cny:4.9496,lme_zn:3693.00,lme_zn_cash:3795.00,smm_zn:3726.91,st_slab:470,st_hr1:489,st_hr2:488,st_gz:637.55,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-20":{fx_usd:33.2885,fx_eur:38.6932,fx_cny:4.9618,lme_zn:3708.50,lme_zn_cash:3750.00,smm_zn:3749.80,st_slab:470,st_hr1:488,st_hr2:488,st_gz:638.93,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-21":{fx_usd:33.0099,fx_eur:38.6708,fx_cny:4.9379,lme_zn:3760.00,lme_zn_cash:3865.50,smm_zn:3749.80,st_slab:470,st_hr1:488,st_hr2:488,st_gz:638.93,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-08-22":{fx_usd:32.9781,fx_eur:38.6677,fx_cny:4.9303,lme_zn:3823.00,lme_zn_cash:3980.00,smm_zn:3806.04,st_slab:470,st_hr1:489,st_hr2:489,st_gz:639.41,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
+  };
+
+  function num(s){ return parseFloat(String(s).replace(/[^0-9.\-]/g,"")); }
+  function fmt(n,dec){ if(!isFinite(n)) return "—";
+    return n.toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+
+  function recompute(){
+    const usdRate=num(document.querySelector('[data-k=fx_usd]').textContent);
+    const cnyRate=num(document.querySelector('[data-k=fx_cny]').textContent);
+    document.querySelectorAll('tr[data-cur]').forEach(tr=>{
+      const baseEl=tr.querySelector('.base'); if(!baseEl) return;
+      const v=num(baseEl.textContent);
+      const cur=tr.dataset.cur;
+      const uOut=tr.querySelector('.o-usd'), cOut=tr.querySelector('.o-cny'), tOut=tr.querySelector('.o-thb');
+      if(!isFinite(v)||!isFinite(usdRate)||!isFinite(cnyRate)){ uOut.textContent=cOut.textContent=tOut.textContent="—"; return; }
+      let usd,cny,thb;
+      if(cur==="USD"){ usd=v; thb=v*usdRate; cny=thb/cnyRate; }
+      else { cny=v; thb=v*cnyRate; usd=thb/usdRate; }
+      uOut.textContent=fmt(usd,0); cOut.textContent=fmt(cny,0); tOut.textContent=fmt(thb,0);
+    });
+  }
+
+  // --- date helpers ---
+  function parseThaiDate(s){
+    if(!s) return null;
+    const parts=s.trim().split(/\s+/);
+    const d=parseInt(parts[0],10); const mo=TH_MO[parts[1]]; let y=parseInt(parts[2],10);
+    if(!d||!mo||!y) return null;
+    if(y>2400) y-=543; // Buddhist era -> Gregorian
+    return y+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+  }
+  function fmtThai(iso){ const p=iso.split("-").map(Number); return p[2]+" "+TH_ABBR[p[1]]; }
+
+  // --- history accumulation ---
+  function loadHist(){ try{ return JSON.parse(localStorage.getItem(KEY_HIST)||"{}"); }catch(e){ return {}; } }
+  function recordHistory(){
+    const hist=loadHist();
+    // merge seed without clobbering anything already recorded
+    for(const dt in SEED){ if(!hist[dt]) hist[dt]=Object.assign({},SEED[dt]); }
+    // capture today's snapshot from the live DOM
+    const iso=parseThaiDate(document.getElementById("snapDate").textContent);
+    if(iso){
+      const snap=hist[iso]?Object.assign({},hist[iso]):{};
+      document.querySelectorAll(".base[data-k],.fxr[data-k]").forEach(el=>{
+        const v=num(el.textContent);
+        if(isFinite(v)) snap[el.dataset.k]=v;
+      });
+      hist[iso]=snap;
+    }
+    try{ localStorage.setItem(KEY_HIST,JSON.stringify(hist)); }catch(e){}
+    return hist;
+  }
+
+  // --- chart ---
+  let cmChart=null;
+  const FXK="fx_usd";                      // ทุกสินค้าในหน้านี้ตั้งราคาเป็น USD → ใช้ USD/THB เป็นตัวแปลง
+  function pctStr(p){
+    const c=p>=0?"chgpos":"chgneg", s=p>=0?"▲":"▼";
+    return '<span class="mv '+c+'">'+s+' '+Math.abs(p).toFixed(2)+'%</span>';
+  }
+  function openChart(key,title,unit){
+    const hist=loadHist();
+    const isFx=key.indexOf("fx_")===0;
+    document.getElementById("cmTitle").textContent=title;
+    const meta=document.getElementById("cmMeta");
+    const wrap=document.querySelector(".cm-canvas-wrap");
+    const modal=document.getElementById("chartModal");
+    modal.classList.add("show");
+
+    // กราฟสินค้าต้องมีทั้งราคาและอัตรา FX ของวันนั้น จึงจะสร้างเส้น THB ได้
+    const dates=Object.keys(hist).filter(d=>{
+      const r=hist[d];
+      if(!r||!isFinite(r[key])||r[key]===0) return false;
+      return isFx || (isFinite(r[FXK]) && r[FXK]!==0);
+    }).sort();
+    const labels=dates.map(fmtThai);
+    const usd=dates.map(d=>hist[d][key]);
+    const fx = isFx?null:dates.map(d=>hist[d][FXK]);
+    const thb= isFx?null:usd.map((v,i)=>v*fx[i]);
+
+    document.getElementById("cmUnit").textContent =
+      isFx?unit:(unit+" · ดัชนีวันแรก = 100 — ค่าจริงดูในทูลทิป");
+
+    if(typeof Chart==="undefined"){
+      wrap.innerHTML='<div class="cm-empty">โหลดไลบรารีกราฟไม่ได้ (ต้องต่ออินเทอร์เน็ตเพื่อโหลด Chart.js)</div>';
+      meta.innerHTML=""; return;
+    }
+    if(!wrap.querySelector("canvas")) wrap.innerHTML='<canvas id="cmCanvas"></canvas>';
+    if(dates.length===0){
+      if(cmChart){cmChart.destroy();cmChart=null;}
+      wrap.querySelector("canvas").style.display="none";
+      let e=wrap.querySelector(".cm-empty"); if(!e){e=document.createElement("div");e.className="cm-empty";wrap.appendChild(e);}
+      e.textContent="ยังไม่มีข้อมูลย้อนหลังสำหรับรายการนี้";
+      meta.innerHTML=""; return;
+    }
+    const ev=wrap.querySelector(".cm-empty"); if(ev) ev.remove();
+    const cv=wrap.querySelector("canvas"); cv.style.display="";
+    const ctx=cv.getContext("2d");
+    if(cmChart) cmChart.destroy();
+
+    if(isFx){
+      // ---- กราฟ FX เดี่ยว (พฤติกรรมเดิม) ----
+      const grad=ctx.createLinearGradient(0,0,0,300);
+      grad.addColorStop(0,"rgba(62,166,255,.35)");
+      grad.addColorStop(1,"rgba(62,166,255,0)");
+      const line=usd[usd.length-1]>=usd[0]?"#37d39b":"#ff6b6b";
+      cmChart=new Chart(ctx,{
+        type:"line",
+        data:{labels,datasets:[{label:unit,data:usd,borderColor:line,backgroundColor:grad,fill:true,tension:.3,
+          pointBackgroundColor:line,pointRadius:4,pointHoverRadius:6,borderWidth:2.5}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+c.parsed.y.toLocaleString("en-US")+"  ("+unit+")"}}},
+          scales:{
+            x:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#8b97ad"}},
+            y:{grid:{color:"rgba(255,255,255,.06)"},ticks:{color:"#8b97ad"}}
+          }}
+      });
+      const first=usd[0],last=usd[usd.length-1],mn=Math.min(...usd),mx=Math.max(...usd);
+      const pct=first?((last-first)/first*100):0;
+      meta.innerHTML=
+        'ล่าสุด <span class="mv">'+last.toLocaleString("en-US")+'</span>'+
+        ' · เปลี่ยนแปลงจากจุดแรก '+pctStr(pct)+
+        ' · ต่ำสุด <span class="mv">'+mn.toLocaleString("en-US")+'</span>'+
+        ' · สูงสุด <span class="mv">'+mx.toLocaleString("en-US")+'</span>'+
+        ' · '+usd.length+' จุดข้อมูล';
+      return;
+    }
+
+    // ---- กราฟสินค้า: 3 เส้น rebase 100 (ราคา USD / FX / ราคา THB) ----
+    const mk=(label,arr,color,dash,width,unitTxt)=>({
+      label,data:arr.map(v=>v/arr[0]*100),raw:arr,unitTxt,
+      borderColor:color,backgroundColor:"transparent",fill:false,tension:.3,
+      borderDash:dash,borderWidth:width,pointBackgroundColor:color,pointRadius:3,pointHoverRadius:6
+    });
+    cmChart=new Chart(ctx,{
+      type:"line",
+      data:{labels,datasets:[
+        mk("ราคาสินค้า (USD)",usd,"#3ea6ff",[],2.5,unit),
+        mk("ค่าเงิน USD/THB",fx,"#ffc24b",[6,4],2,"บาท/ดอลลาร์"),
+        mk("ราคาเป็นเงินบาท (THB)",thb,"#7ee0c0",[],3.2,"บาท")
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        interaction:{mode:"index",intersect:false},
+        plugins:{
+          legend:{display:true,position:"bottom",labels:{color:"#aeb9cd",boxWidth:14,boxHeight:2,padding:14,font:{size:11}}},
+          tooltip:{callbacks:{label:c=>" "+c.dataset.label+": "+c.parsed.y.toFixed(1)+
+            "  (จริง "+c.dataset.raw[c.dataIndex].toLocaleString("en-US",{maximumFractionDigits:2})+" "+c.dataset.unitTxt+")"}}
+        },
+        scales:{
+          x:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#8b97ad"}},
+          y:{grid:{color:"rgba(255,255,255,.06)"},ticks:{color:"#8b97ad",callback:v=>v.toFixed(0)},
+             title:{display:true,text:"ดัชนี (วันแรก = 100)",color:"#8b97ad",font:{size:10}}}
+        }}
+    });
+
+    // ---- แยกส่วนว่าราคาบาทขยับเพราะสินค้าหรือค่าเงิน ----
+    const n=dates.length;
+    const aP=(usd[n-1]/usd[0]-1)*100;          // ส่วนจากราคาสินค้า
+    const bP=(fx[n-1]/fx[0]-1)*100;            // ส่วนจากค่าเงิน
+    const tP=(thb[n-1]/thb[0]-1)*100;          // รวม (คูณกัน ไม่ใช่บวกตรง ๆ)
+    let verdict;
+    if(n<2)                              verdict='<b style="color:var(--muted)">มีข้อมูลวันเดียว ยังเทียบไม่ได้</b>';
+    else if(Math.abs(aP)<0.05&&Math.abs(bP)<0.05) verdict='<b style="color:var(--muted)">ทรงตัวทั้งสองด้าน</b>';
+    else if(Math.abs(aP)>=Math.abs(bP)*1.5)  verdict='<b style="color:#9fd0ff">ขยับเพราะราคาสินค้าเป็นหลัก</b>';
+    else if(Math.abs(bP)>=Math.abs(aP)*1.5)  verdict='<b style="color:var(--amber)">ขยับเพราะค่าเงินเป็นหลัก</b>';
+    else                                     verdict='<b style="color:var(--thb)">มาจากทั้งสองด้านพอ ๆ กัน</b>';
+    const oppose=(n>1&&aP*bP<0)?' · <span style="color:var(--muted)">สองแรงหักล้างกัน</span>':'';
+    meta.innerHTML=
+      'ช่วง <span class="mv">'+labels[0]+' – '+labels[n-1]+'</span> ('+n+' จุด)<br>'+
+      'ราคาเป็นเงินบาท '+pctStr(tP)+' = ราคาสินค้า '+pctStr(aP)+' + ค่าเงิน '+pctStr(bP)+
+      ' → '+verdict+oppose+'<br>'+
+      '<span style="color:var(--muted)">ล่าสุด '+usd[n-1].toLocaleString("en-US",{maximumFractionDigits:2})+' '+unit+
+      ' · '+thb[n-1].toLocaleString("en-US",{maximumFractionDigits:0})+' บาท · FX '+fx[n-1].toFixed(4)+
+      ' — % รวมเป็นผลคูณของสองส่วน จึงต่างจากผลบวกตรง ๆ เล็กน้อย</span>';
+  }
+  function closeChart(e){
+    if(e && e.target && e.target.closest && e.target.closest(".cm-box") && e.type==="click" && e.target.classList.contains("cm-box")) return;
+    document.getElementById("chartModal").classList.remove("show");
+  }
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") document.getElementById("chartModal").classList.remove("show"); });
+
+  function loadAll(){
+    try{
+      const d=JSON.parse(localStorage.getItem(KEY)||"{}");
+      document.querySelectorAll("[data-k]").forEach(el=>{
+        if(d[el.dataset.k]!==undefined) el.textContent=d[el.dataset.k];
+      });
+      if(d.__savedAt){document.getElementById("snapDate").innerHTML=d.__savedAt;}
+    }catch(e){}
+    recompute();
+    recordHistory();
+  }
+  function saveAll(){
+    const d={};
+    document.querySelectorAll("[data-k]").forEach(el=>{ d[el.dataset.k]=el.textContent.trim(); });
+    const now=new Date();
+    d.__savedAt=now.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})+" "+now.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"});
+    localStorage.setItem(KEY,JSON.stringify(d));
+    document.getElementById("snapDate").innerHTML=d.__savedAt;
+    recordHistory();
+    flash("บันทึกแล้ว ✓");
+  }
+  function resetAll(){ localStorage.removeItem(KEY); location.reload(); }
+  function flash(msg){
+    const b=document.createElement("div");
+    b.textContent=msg;
+    b.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37d39b;color:#06121f;padding:10px 22px;border-radius:24px;font-weight:600;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.4)";
+    document.body.appendChild(b); setTimeout(()=>b.remove(),1600);
+  }
+  // recompute live as user edits base prices or FX rates
+  document.addEventListener("input",e=>{
+    if(e.target.classList.contains("base")||e.target.classList.contains("fxr")) recompute();
+  });
+  loadAll();
+</script>
+</body>
+</html>
