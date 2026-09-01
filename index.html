@@ -113,7 +113,7 @@
 
 <main>
   <div class="note">
-    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>1 ก.ย. 2026</b> (<b>LME Zinc = 28 ส.ค. 2026 (Official/Closing, day-delayed — ยังเป็นชุดล่าสุดที่ LME เผยแพร่ ค่าเท่ารอบก่อน)</b>, <b style="color:var(--green)">FX = ชุด 31 ส.ค. 2026 (BOT ล่าสุดที่เผยแพร่ — รีเฟรชรอบนี้)</b>, <b style="color:var(--green)">ราคา SMM daily (Zinc/Slab/HRC/Galvanised) = ชุดวันที่ 1 ก.ย. 2026 — รีเฟรชรอบนี้</b>, <b style="color:var(--green)">LME Aluminium (Cash + 3M) = ชุด 28 ส.ค. 2026 — รีเฟรชและเพิ่มแถว Cash offer รอบนี้</b>, Al Alloy/SMM A00/IronOre/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
+    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>1 ก.ย. 2026</b> (<b>LME Zinc = 28 ส.ค. 2026 (Official/Closing, day-delayed — ยังเป็นชุดล่าสุดที่ LME เผยแพร่ ค่าเท่ารอบก่อน)</b>, <b style="color:var(--green)">FX = ชุด 31 ส.ค. 2026 (BOT ล่าสุดที่เผยแพร่ — รีเฟรชรอบนี้)</b>, <b style="color:var(--green)">ราคา SMM daily (Zinc/Slab/HRC/Galvanised) = ชุดวันที่ 1 ก.ย. 2026 — รีเฟรชรอบนี้</b>, <b style="color:var(--green)">LME Aluminium และ Aluminium Alloy (Cash + 3M) = ชุด 28 ส.ค. 2026 — รีเฟรชและเพิ่มแถว Cash offer รอบนี้</b>, SMM A00/IronOre/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
     คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน —
     แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”
   </div>
@@ -288,8 +288,15 @@
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium#Overview" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
+        <td class="prod" onclick="openChart('lme_al_alloy_cash','LME Aluminium Alloy (Cash · official offer)','USD/tonne')"><b>LME Aluminium Alloy</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al_alloy_cash" contenteditable="true">3,200.00</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium-alloy#Summary" target="_blank">LME ↗</a></td>
+      </tr>
+      <tr data-cur="USD" data-unit="/tonne">
         <td class="prod" onclick="openChart('lme_al_alloy','LME Aluminium Alloy (3-month, closing)','USD/tonne')"><b>LME Aluminium Alloy</b> (3-month, closing) <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_al_alloy" contenteditable="true">3,510.00</span></td>
+        <td class="num"><span class="base" data-k="lme_al_alloy" contenteditable="true">3,200.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium-alloy#Summary" target="_blank">LME ↗</a></td>
@@ -303,7 +310,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">รีเฟรช LME Aluminium รอบ 1 ก.ย. 2026 (data valid 28 ส.ค. 2026)</b> — <b style="color:var(--amber)">Cash</b> = ช่อง Offer ของแถว Cash ในตาราง Official Prices (bid 3,221.50 / offer 3,222.00 — เพิ่มเป็นราคาอ้างอิงหลักตั้งแต่รอบนี้) · 3-month closing 3,242.00 (▲0.23% ตามหน้า LME; เทียบค่าเดิมในไฟล์ 3,122.50 ชุด 24 มิ.ย. = ▲3.83%) · ส่วนต่าง Cash − 3M = <b style="color:var(--amber)">−20.00 USD/tonne (contango)</b> · LME Aluminium Alloy 3,510.00 และ SMM A00 3,348.18 <b>คงค่าเดิม</b> (Alloy = ชุด 24 มิ.ย., SMM A00 = 25 มิ.ย. — ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
+  <div class="updt">✓ <b style="color:var(--green)">รีเฟรช LME Aluminium รอบ 1 ก.ย. 2026 (data valid 28 ส.ค. 2026)</b> — <b style="color:var(--amber)">Cash</b> = ช่อง Offer ของแถว Cash ในตาราง Official Prices (bid 3,221.50 / offer 3,222.00 — เพิ่มเป็นราคาอ้างอิงหลักตั้งแต่รอบนี้) · 3-month closing 3,242.00 (▲0.23% ตามหน้า LME; เทียบค่าเดิมในไฟล์ 3,122.50 ชุด 24 มิ.ย. = ▲3.83%) · ส่วนต่าง Cash − 3M = <b style="color:var(--amber)">−20.00 USD/tonne (contango)</b> · <b style="color:var(--green)">LME Aluminium Alloy รีเฟรชด้วย (data valid 28 ส.ค.)</b>: Cash = ช่อง Offer ของแถว Cash ใน Official Prices (bid 3,190.00 / offer 3,200.00 — เพิ่มเป็นราคาอ้างอิงหลักตั้งแต่รอบนี้) · 3M closing 3,200.00 (ทุก prompt เท่ากันหมด สภาพคล่องต่ำ Cash − 3M = 0.00) เทียบค่าเดิมในไฟล์ 3,510.00 ชุด 24 มิ.ย. = ▼8.83% · opening stock 1,500 mt (live 1,500 / cancelled 0) · SMM A00 3,348.18 <b>คงค่าเดิม</b> (ชุด 25 มิ.ย. — ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
 
   <!-- IRON ORE -->
   <h2><span class="bar"></span>ราคาแร่เหล็ก (Iron Ore)</h2>
@@ -507,7 +514,7 @@
     "2026-08-26":{fx_usd:32.8942,fx_eur:38.5133,fx_cny:4.9242,lme_zn:3890.00,lme_zn_cash:3987.00,smm_zn:3845.07,st_slab:470,st_hr1:492,st_hr2:493,st_gz:644.06,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-08-28":{fx_usd:32.9794,fx_eur:38.5779,fx_cny:4.9250,lme_zn:3884.00,lme_zn_cash:4107.00,smm_zn:3897.88,st_slab:470,st_hr1:495,st_hr2:496,st_gz:644.2,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-08-31":{fx_usd:33.0797,fx_eur:38.6659,fx_cny:4.9435,lme_zn:3883.00,lme_zn_cash:4070.00,smm_zn:3890.17,st_slab:470,st_hr1:498,st_hr2:499,st_gz:644.78,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
-    "2026-09-01":{fx_usd:33.3115,fx_eur:38.7292,fx_cny:4.9856,fx_usdcny:6.6815,lme_zn:3883.00,lme_zn_cash:4070.00,smm_zn:4000.83,st_slab:470,st_hr1:496,st_hr2:497,st_gz:645.77,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3242.00,lme_al_cash:3222.00,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
+    "2026-09-01":{fx_usd:33.3115,fx_eur:38.7292,fx_cny:4.9856,fx_usdcny:6.6815,lme_zn:3883.00,lme_zn_cash:4070.00,smm_zn:4000.83,st_slab:470,st_hr1:496,st_hr2:497,st_gz:645.77,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3242.00,lme_al_cash:3222.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
   };
 
   function num(s){ return parseFloat(String(s).replace(/[^0-9.\-]/g,"")); }
