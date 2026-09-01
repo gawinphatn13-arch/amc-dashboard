@@ -102,7 +102,7 @@
     <div class="sub">อัตราแลกเปลี่ยน · ราคาสังกะสี · ราคาเหล็ก · ราคาอะลูมิเนียม · ราคาแร่เหล็ก · ราคาน้ำมันดิบ · สรุปข่าวตลาดโลหะ — สำหรับ Asia Metal (AMC)</div>
   </div>
   <div class="meta">
-    ข้อมูล ณ <b id="snapDate">31 ส.ค. 2026</b><br>
+    ข้อมูล ณ <b id="snapDate">1 ก.ย. 2026</b><br>
     อัปเดตค่าได้เอง · บันทึกอัตโนมัติ
     <div class="toolbar" style="justify-content:flex-end">
       <button onclick="saveAll()">💾 บันทึกค่าที่แก้</button>
@@ -113,7 +113,7 @@
 
 <main>
   <div class="note">
-    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>31 ส.ค. 2026</b> (<b style="color:var(--green)">LME Zinc = 28 ส.ค. 2026 (Official/Closing, day-delayed)</b>, <b style="color:var(--green)">FX = ชุด 28 ส.ค. 2026 (BOT ล่าสุดที่เผยแพร่ — รีเฟรชรอบนี้)</b>, <b style="color:var(--green)">ราคา SMM daily (Zinc/Slab/HRC/Galvanised) = ชุดวันที่ 31 ส.ค. 2026 — รีเฟรชรอบนี้</b>, Aluminium/IronOre/Billet/Scrap = 25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
+    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>1 ก.ย. 2026</b> (<b>LME Zinc = 28 ส.ค. 2026 (Official/Closing, day-delayed — ยังเป็นชุดล่าสุดที่ LME เผยแพร่ ค่าเท่ารอบก่อน)</b>, <b style="color:var(--green)">FX = ชุด 31 ส.ค. 2026 (BOT ล่าสุดที่เผยแพร่ — รีเฟรชรอบนี้)</b>, <b style="color:var(--green)">ราคา SMM daily (Zinc/Slab/HRC/Galvanised) = ชุดวันที่ 1 ก.ย. 2026 — รีเฟรชรอบนี้</b>, Aluminium/IronOre/Billet/Scrap = 25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
     คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน —
     แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”
   </div>
@@ -127,24 +127,24 @@
   <div class="grid g3">
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_usd','USD / THB','บาท ต่อ 1 ดอลลาร์สหรัฐ')">USD / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_usd" contenteditable="true">33.0797</div>
+      <div class="val fxr" data-k="fx_usd" contenteditable="true">33.3115</div>
       <div class="unit">บาท ต่อ 1 ดอลลาร์สหรัฐ · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_eur','EUR / THB','บาท ต่อ 1 ยูโร')">EUR / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_eur" contenteditable="true">38.6659</div>
+      <div class="val fxr" data-k="fx_eur" contenteditable="true">38.7292</div>
       <div class="unit">บาท ต่อ 1 ยูโร · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_cny','CNY / THB','บาท ต่อ 1 หยวน')">CNY / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_cny" contenteditable="true">4.9435</div>
+      <div class="val fxr" data-k="fx_cny" contenteditable="true">4.9856</div>
       <div class="unit">บาท ต่อ 1 หยวน · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
   </div>
-  <div class="updt">✓ <b style="color:var(--green)">รีเฟรช FX สำเร็จ (รอบ 31 ส.ค. 2026)</b> — อ่านจากหน้า ธปท. โดยตรง ชุดล่าสุดที่เผยแพร่คือ <b>28 ส.ค. 2026</b> (อัตราวันจันทร์ 31 ส.ค. ยังไม่ออกตอนรัน) · ใช้ฐาน <b style="color:var(--amber)">Average Selling Rate (อัตราขายถัวเฉลี่ย)</b>: USD 33.0797 (▲0.30%) · EUR 38.6659 (▲0.23%) · CNY 4.9435 (▲0.38%) · เทียบอัตราซื้อ (sight bill) ชุดเดียวกัน USD 32.6809 / EUR 37.9293 / CNY 4.8330 · <b style="color:var(--amber)">บาทอ่อนลงทุกสกุลราว 0.2–0.4% — ราคาบาทที่ขยับรอบนี้จึงมีส่วนจากค่าเงินด้วย</b> · หมายเหตุ: จุดข้อมูล FX ในกราฟก่อน 11 ส.ค. 2026 ยังเป็นฐานอัตราซื้อ</div>
+  <div class="updt">✓ <b style="color:var(--green)">รีเฟรช FX สำเร็จ (รอบ 1 ก.ย. 2026)</b> — อ่านจากหน้า ธปท. โดยตรง ชุดล่าสุดที่เผยแพร่คือ <b>31 ส.ค. 2026</b> (อัตราวันอังคาร 1 ก.ย. ยังไม่ออกตอนรัน) · ใช้ฐาน <b style="color:var(--amber)">Average Selling Rate (อัตราขายถัวเฉลี่ย)</b>: USD 33.3115 (▲0.70%) · EUR 38.7292 (▲0.16%) · CNY 4.9856 (▲0.85%) · เทียบอัตราซื้อ (sight bill) ชุดเดียวกัน USD 32.8846 / EUR 37.9493 / CNY 4.8401 · <b style="color:var(--amber)">บาทอ่อนลงทุกสกุล (USD ▲0.70% · CNY ▲0.85%) — ราคาบาทที่ขยับรอบนี้มีส่วนจากค่าเงินอย่างมีนัยสำคัญ</b> · หมายเหตุ: จุดข้อมูล FX ในกราฟก่อน 11 ส.ค. 2026 ยังเป็นฐานอัตราซื้อ</div>
 
   <!-- ZINC -->
   <h2><span class="bar"></span>ราคาสังกะสี (Zinc)</h2>
@@ -173,15 +173,15 @@
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgneg" style="font-size:11px">▼0.20%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">3,890.17</span></td>
+        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgpos" style="font-size:11px">▲2.84%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">4,000.83</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/zinc/201102250173" target="_blank">metal.com ↗</a></td>
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--amber)">LME Zinc Cash</b> = ช่อง <b>Offer</b> ของแถว Cash ในตาราง LME Zinc Official Prices (bid 4,069.50 / offer 4,070.00 — data valid for 28 ส.ค. 2026, ชุดใหม่รอบนี้) — LME ใช้ค่านี้เป็น Cash Settlement Price และเป็นตัวที่สัญญาซื้อขายสังกะสีกายภาพอ้างอิง จึงตั้งเป็นราคาอ้างอิงหลักของ AMC · แถว 3-month เป็นราคาปิด (Closing Prices) เก็บไว้เทียบ contango/backwardation — ปัจจุบัน Cash สูงกว่า 3-month <b style="color:var(--amber)">187.00 USD/tonne</b> (ยังเป็น <b>backwardation</b> แต่ <b>แคบลงจากรอบก่อนที่ 223.00</b> — Cash ย่อ −0.90% ขณะ 3M แทบไม่ขยับ −0.03% ความตึงตัวฝั่ง spot ผ่อนคลายลงบ้าง) · LME opening stock 97,875 mt (live warrants 75,600 / cancelled 22,350 — สต็อกรวมเพิ่มเล็กน้อยจาก 97,325 แต่ <b style="color:var(--amber)">cancelled warrants พุ่งจาก 3,525 เป็น 22,350</b> สัญญาณว่ามีการจองถอนโลหะออกจากคลังจำนวนมาก)<br>ℹ SMM 0# Zinc — <b style="color:var(--green)">รีเฟรชรอบนี้ (ชุดวันที่ 31 ส.ค. 2026)</b>: 3,890.17 USD/tonne (ช่วง 3,882.75–3,897.58) ▼0.20% จากชุด 28 ส.ค. — Inventory กวางตุ้ง: <span class="base" data-k="smm_zn_inv" contenteditable="true" style="color:var(--amber)">36,900</span> mt <b style="color:var(--muted)">(ค่าล่าสุดที่บันทึกไว้ — ยังไม่ได้รีเฟรชในรอบนี้)</b> — <a href="https://news.metal.com/" target="_blank" style="color:var(--accent)">SMM News ↗</a></div>
+  <div class="updt">✓ <b style="color:var(--amber)">LME Zinc Cash</b> = ช่อง <b>Offer</b> ของแถว Cash ในตาราง LME Zinc Official Prices (bid 4,069.50 / offer 4,070.00 — data valid for 28 ส.ค. 2026, <b>รอบ 1 ก.ย. LME ยังแสดงชุดเดิม ค่าไม่เปลี่ยน</b>) — LME ใช้ค่านี้เป็น Cash Settlement Price และเป็นตัวที่สัญญาซื้อขายสังกะสีกายภาพอ้างอิง จึงตั้งเป็นราคาอ้างอิงหลักของ AMC · แถว 3-month เป็นราคาปิด (Closing Prices) เก็บไว้เทียบ contango/backwardation — ปัจจุบัน Cash สูงกว่า 3-month <b style="color:var(--amber)">187.00 USD/tonne</b> (ยังเป็น <b>backwardation</b> แต่ <b>แคบลงจากรอบก่อนที่ 223.00</b> — Cash ย่อ −0.90% ขณะ 3M แทบไม่ขยับ −0.03% ความตึงตัวฝั่ง spot ผ่อนคลายลงบ้าง) · LME opening stock 97,875 mt (live warrants 75,600 / cancelled 22,350 — สต็อกรวมเพิ่มเล็กน้อยจาก 97,325 แต่ <b style="color:var(--amber)">cancelled warrants พุ่งจาก 3,525 เป็น 22,350</b> สัญญาณว่ามีการจองถอนโลหะออกจากคลังจำนวนมาก)<br>ℹ SMM 0# Zinc — <b style="color:var(--green)">รีเฟรชรอบนี้ (ชุดวันที่ 1 ก.ย. 2026)</b>: 4,000.83 USD/tonne (ช่วง 3,993.41–4,008.25) ▲2.84% จากชุด 31 ส.ค. (ฟิวเจอร์ส SHFE เช้าขึ้นแรงแตะ ~27,000 หยวน/ตัน) — Inventory กวางตุ้ง: <span class="base" data-k="smm_zn_inv" contenteditable="true" style="color:var(--amber)">36,900</span> mt <b style="color:var(--muted)">(ค่าล่าสุดที่บันทึกไว้ — ยังไม่ได้รีเฟรชในรอบนี้)</b> — <a href="https://news.metal.com/" target="_blank" style="color:var(--accent)">SMM News ↗</a></div>
 
   <!-- STEEL -->
   <h2><span class="bar"></span>ราคาเหล็ก (Steel — Slab / HRC / Galvanized / Flat Products)</h2>
@@ -203,22 +203,22 @@
         <td><a href="https://www.metal.com/steel-billet/202601160001" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span class="chgpos" style="font-size:11px">▲0.61%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="st_hr1" contenteditable="true">498</span></td>
+        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span class="chgneg" style="font-size:11px">▼0.40%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_hr1" contenteditable="true">496</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202501030001" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_hr2','HRC SMM-GS-HR-002 (FOB Bayuquan)','USD/tonne')"><b>SMM-GS-HR-002</b> · HRC Q235B 3.0×1250×C — FOB Bayuquan <span class="chgpos" style="font-size:11px">▲0.60%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="st_hr2" contenteditable="true">499</span></td>
+        <td class="prod" onclick="openChart('st_hr2','HRC SMM-GS-HR-002 (FOB Bayuquan)','USD/tonne')"><b>SMM-GS-HR-002</b> · HRC Q235B 3.0×1250×C — FOB Bayuquan <span class="chgneg" style="font-size:11px">▼0.40%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_hr2" contenteditable="true">497</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202501030002" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgpos" style="font-size:11px">▲0.09%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">644.78</span></td>
+        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgpos" style="font-size:11px">▲0.15%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">645.77</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202509160004" target="_blank">metal.com ↗</a></td>
@@ -253,7 +253,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">รีเฟรชราคา SMM daily สำเร็จ (ชุดวันที่ 31 ส.ค. 2026)</b> — Slab SMM-GS-SL-001 470 (0.00%) · HRC-001 (FOB Tianjin) 498 (▲0.61%) · HRC-002 (FOB Bayuquan) 499 (▲0.60%) · Galvanised SMM-CG-GZ-056 644.78 (▲0.09%) · ส่วน Cold Rolled Auto 578.68 / CRC 508.3 / Billet 474 / Scrap 373.65 <b>คงค่าเดิม</b> (ไม่ได้อยู่ในรอบอัปเดต daily) · ราคา daily ทุกตัวเป็น USD/tonne · หมายเหตุรอบนี้: อ่านผ่านเบราว์เซอร์สำรอง (Claude in Chrome ไม่ได้เชื่อมต่อ) ค่าอ่านจากหน้า metal.com ของแต่ละ product id ตรงตาม URL — HR-001/HR-002 ไม่สลับกัน</div>
+  <div class="updt">✓ <b style="color:var(--green)">รีเฟรชราคา SMM daily สำเร็จ (ชุดวันที่ 1 ก.ย. 2026)</b> — Slab SMM-GS-SL-001 470 (0.00%) · HRC-001 (FOB Tianjin) 496 (▼0.40%) · HRC-002 (FOB Bayuquan) 497 (▼0.40%) · Galvanised SMM-CG-GZ-056 645.77 (▲0.15%) · ส่วน Cold Rolled Auto 578.68 / CRC 508.3 / Billet 474 / Scrap 373.65 <b>คงค่าเดิม</b> (ไม่ได้อยู่ในรอบอัปเดต daily) · ราคา daily ทุกตัวเป็น USD/tonne · หมายเหตุรอบนี้: อ่านผ่าน Claude in Chrome จากหน้า metal.com ของแต่ละ product id ตรงตาม URL — HR-001/HR-002 ไม่สลับกัน</div>
 
   <!-- ALUMINIUM -->
   <h2><span class="bar"></span>ราคาอะลูมิเนียม (Aluminium)</h2>
@@ -439,7 +439,7 @@
 </div>
 
 <footer>
-  Dashboard นี้ดึงข้อมูลสด ณ 31 ส.ค. 2026 (รอบล่าสุด — อัปเดต LME Zinc ชุด 28 ส.ค., FX BOT ชุด 28 ส.ค. และ SMM daily ชุด 31 ส.ค. ผ่านเบราว์เซอร์สำรองของ Claude) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
+  Dashboard นี้ดึงข้อมูลสด ณ 1 ก.ย. 2026 (รอบล่าสุด — LME Zinc ยังชุด 28 ส.ค. (ไม่เปลี่ยน), FX BOT ชุด 31 ส.ค. และ SMM daily ชุด 1 ก.ย. ผ่าน Claude in Chrome) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
   <br>จัดทำสำหรับ Asia Metal Public Company Limited (AMC)
 </footer>
 
@@ -493,7 +493,8 @@
     "2026-08-25":{fx_usd:32.8081,fx_eur:38.4473,fx_cny:4.9160,lme_zn:3835.00,lme_zn_cash:3985.00,smm_zn:3845.07,st_slab:470,st_hr1:492,st_hr2:493,st_gz:644.06,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-08-26":{fx_usd:32.8942,fx_eur:38.5133,fx_cny:4.9242,lme_zn:3890.00,lme_zn_cash:3987.00,smm_zn:3845.07,st_slab:470,st_hr1:492,st_hr2:493,st_gz:644.06,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-08-28":{fx_usd:32.9794,fx_eur:38.5779,fx_cny:4.9250,lme_zn:3884.00,lme_zn_cash:4107.00,smm_zn:3897.88,st_slab:470,st_hr1:495,st_hr2:496,st_gz:644.2,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
-    "2026-08-31":{fx_usd:33.0797,fx_eur:38.6659,fx_cny:4.9435,lme_zn:3883.00,lme_zn_cash:4070.00,smm_zn:3890.17,st_slab:470,st_hr1:498,st_hr2:499,st_gz:644.78,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
+    "2026-08-31":{fx_usd:33.0797,fx_eur:38.6659,fx_cny:4.9435,lme_zn:3883.00,lme_zn_cash:4070.00,smm_zn:3890.17,st_slab:470,st_hr1:498,st_hr2:499,st_gz:644.78,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-09-01":{fx_usd:33.3115,fx_eur:38.7292,fx_cny:4.9856,lme_zn:3883.00,lme_zn_cash:4070.00,smm_zn:4000.83,st_slab:470,st_hr1:496,st_hr2:497,st_gz:645.77,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3122.50,lme_al_alloy:3510.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
   };
 
   function num(s){ return parseFloat(String(s).replace(/[^0-9.\-]/g,"")); }
