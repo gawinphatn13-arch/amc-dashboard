@@ -119,7 +119,7 @@
   </div>
 
   <div class="hint">
-    💡 <b>คลิกที่ชื่อสินค้า</b> (มีไอคอน 📈) เพื่อดู <b>กราฟแยกส่วนราคา–ค่าเงิน</b> — กราฟจะซ้อน 3 เส้นโดยปรับให้วันแรก = 100 เท่ากันหมด: <b style="color:#3ea6ff">ราคาสินค้า (USD)</b> · <b style="color:var(--amber)">ค่าเงิน USD/THB</b> · <b style="color:var(--thb)">ราคาเป็นเงินบาท</b> ทำให้เห็นทันทีว่าราคาบาทที่ขยับนั้น <b>มาจากราคาสินค้าจริง หรือมาจากค่าเงิน</b> — ถ้าเส้นบาทวิ่งตามเส้นสีเหลืองแปลว่าเป็นเรื่องค่าเงิน ถ้าวิ่งตามเส้นสีฟ้าแปลว่าเป็นราคาสินค้าจริง ใต้กราฟมีตัวเลขแยกส่วนให้ (ราคาบาท % = ราคาสินค้า % + ค่าเงิน %) พร้อมข้อสรุปว่าด้านไหนเป็นตัวขับหลัก · คลิกหัวข้อ FX จะได้กราฟค่าเงินเดี่ยวแบบเดิม · กราฟสร้างจาก snapshot รายวันที่ระบบบันทึกไว้ ทุกครั้งที่งาน schedule รันและเปิดหน้านี้ จุดข้อมูลใหม่จะถูกเพิ่มอัตโนมัติ
+    💡 <b>คลิกที่ชื่อสินค้า</b> (มีไอคอน 📈) เพื่อดู <b>กราฟแยกส่วนราคา–ค่าเงิน</b> — กราฟจะซ้อน 3 เส้นตามมูลค่าจริง คนละแกน: <b style="color:#3ea6ff">ราคาสินค้า (USD — แกนซ้าย)</b> · <b style="color:var(--amber)">ค่าเงิน USD/THB (แกนขวานอก)</b> · <b style="color:var(--thb)">ราคาเป็นเงินบาท (แกนขวา)</b> ทำให้เห็นทันทีว่าราคาบาทที่ขยับนั้น <b>มาจากราคาสินค้าจริง หรือมาจากค่าเงิน</b> — ถ้าเส้นบาทวิ่งตามเส้นสีเหลืองแปลว่าเป็นเรื่องค่าเงิน ถ้าวิ่งตามเส้นสีฟ้าแปลว่าเป็นราคาสินค้าจริง ใต้กราฟมีตัวเลขแยกส่วนให้ (ราคาบาท % = ราคาสินค้า % + ค่าเงิน %) พร้อมข้อสรุปว่าด้านไหนเป็นตัวขับหลัก · คลิกหัวข้อ FX จะได้กราฟค่าเงินเดี่ยวแบบเดิม · กราฟสร้างจาก snapshot รายวันที่ระบบบันทึกไว้ ทุกครั้งที่งาน schedule รันและเปิดหน้านี้ จุดข้อมูลใหม่จะถูกเพิ่มอัตโนมัติ
   </div>
 
   <!-- FX -->
@@ -602,7 +602,7 @@
     const thb= isFx?null:usd.map((v,i)=>v*fx[i]);
 
     document.getElementById("cmUnit").textContent =
-      isFx?unit:(unit+" · ดัชนีวันแรก = 100 — ค่าจริงดูในทูลทิป");
+      isFx?unit:(unit+" · ตามมูลค่าจริง — แกนซ้าย: ราคา USD · แกนขวา: ราคาบาท / ค่าเงิน USD-THB");
 
     if(typeof Chart==="undefined"){
       wrap.innerHTML='<div class="cm-empty">โหลดไลบรารีกราฟไม่ได้ (ต้องต่ออินเทอร์เน็ตเพื่อโหลด Chart.js)</div>';
@@ -649,30 +649,38 @@
       return;
     }
 
-    // ---- กราฟสินค้า: 3 เส้น rebase 100 (ราคา USD / FX / ราคา THB) ----
-    const mk=(label,arr,color,dash,width,unitTxt)=>({
-      label,data:arr.map(v=>v/arr[0]*100),raw:arr,unitTxt,
+    // ---- กราฟสินค้า: 3 เส้นตามมูลค่าจริง คนละแกน (ซ้าย = USD · ขวา = THB · ขวานอก = FX) ----
+    const mk=(label,arr,color,dash,width,unitTxt,axis)=>({
+      label,data:arr,unitTxt,yAxisID:axis,
       borderColor:color,backgroundColor:"transparent",fill:false,tension:.3,
       borderDash:dash,borderWidth:width,pointBackgroundColor:color,pointRadius:3,pointHoverRadius:6
     });
+    const fmtTick=v=>v.toLocaleString("en-US",{maximumFractionDigits:Math.abs(v)<100?2:0});
     cmChart=new Chart(ctx,{
       type:"line",
       data:{labels,datasets:[
-        mk("ราคาสินค้า (USD)",usd,"#3ea6ff",[],2.5,unit),
-        mk("ค่าเงิน USD/THB",fx,"#ffc24b",[6,4],2,"บาท/ดอลลาร์"),
-        mk("ราคาเป็นเงินบาท (THB)",thb,"#7ee0c0",[],3.2,"บาท")
+        mk("ราคาสินค้า (USD)",usd,"#3ea6ff",[],2.5,unit,"yUsd"),
+        mk("ค่าเงิน USD/THB",fx,"#ffc24b",[6,4],2,"บาท/ดอลลาร์","yFx"),
+        mk("ราคาเป็นเงินบาท (THB)",thb,"#7ee0c0",[],3.2,"บาท","yThb")
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         interaction:{mode:"index",intersect:false},
         plugins:{
           legend:{display:true,position:"bottom",labels:{color:"#aeb9cd",boxWidth:14,boxHeight:2,padding:14,font:{size:11}}},
-          tooltip:{callbacks:{label:c=>" "+c.dataset.label+": "+c.parsed.y.toFixed(1)+
-            "  (จริง "+c.dataset.raw[c.dataIndex].toLocaleString("en-US",{maximumFractionDigits:2})+" "+c.dataset.unitTxt+")"}}
+          tooltip:{callbacks:{label:c=>" "+c.dataset.label+": "+
+            c.parsed.y.toLocaleString("en-US",{maximumFractionDigits:c.dataset.yAxisID==="yFx"?4:2})+" "+c.dataset.unitTxt}}
         },
         scales:{
           x:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#8b97ad"}},
-          y:{grid:{color:"rgba(255,255,255,.06)"},ticks:{color:"#8b97ad",callback:v=>v.toFixed(0)},
-             title:{display:true,text:"ดัชนี (วันแรก = 100)",color:"#8b97ad",font:{size:10}}}
+          yUsd:{type:"linear",position:"left",grid:{color:"rgba(255,255,255,.06)"},
+             ticks:{color:"#3ea6ff",callback:fmtTick},
+             title:{display:true,text:unit+" (ราคาสินค้า)",color:"#3ea6ff",font:{size:10}}},
+          yThb:{type:"linear",position:"right",grid:{drawOnChartArea:false},
+             ticks:{color:"#7ee0c0",callback:fmtTick},
+             title:{display:true,text:"บาท (ราคาเป็นเงินบาท)",color:"#7ee0c0",font:{size:10}}},
+          yFx:{type:"linear",position:"right",offset:true,grid:{drawOnChartArea:false},
+             ticks:{color:"#ffc24b",callback:v=>v.toFixed(2)},
+             title:{display:true,text:"บาท/USD (ค่าเงิน)",color:"#ffc24b",font:{size:10}}}
         }}
     });
 
