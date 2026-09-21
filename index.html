@@ -102,7 +102,7 @@
     <div class="sub">อัตราแลกเปลี่ยน · ราคาสังกะสี · ราคาเหล็ก · ราคาอะลูมิเนียม · ราคาแร่เหล็ก · ราคาน้ำมันดิบ · สรุปข่าวตลาดโลหะ — สำหรับ Asia Metal (AMC)</div>
   </div>
   <div class="meta">
-    ข้อมูล ณ <b id="snapDate">18 ก.ย. 2026</b><br>
+    ข้อมูล ณ <b id="snapDate">21 ก.ย. 2026</b><br>
     อัปเดตค่าได้เอง · บันทึกอัตโนมัติ
     <div class="toolbar" style="justify-content:flex-end">
       <button onclick="saveAll()">💾 บันทึกค่าที่แก้</button>
@@ -113,7 +113,7 @@
 
 <main>
   <div class="note">
-    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>18 ก.ย. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = ชุดใหม่ data valid 17 ก.ย. 2026 (Official + Closing) — อัปเดตแล้วรอบนี้</b>, <b style="color:var(--green)">FX = ชุดใหม่ ธปท. as of 17 ก.ย. 2026 — อัปเดตแล้ว</b>, <b style="color:var(--green)">SMM (0# Zinc / Slab / HR-001 / HR-002 / GZ-056) = ชุดใหม่ อ่านสดจาก metal.com ได้แล้วรอบนี้หลังเชื่อม Chrome สำเร็จ — 0# Zinc &amp; GZ-056 ระบุวันที่ 18 ก.ย. 2026 · Slab / HR-001 / HR-002 ระบุ 17 ก.ย. 2026 (ปิดช่องว่างที่ค้างมาตั้งแต่ชุด 15 ก.ย.)</b>, SMM A00/IronOre/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
+    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>21 ก.ย. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = ชุดใหม่ data valid 18 ก.ย. 2026 (Official + Closing) — อัปเดตแล้วรอบนี้</b>, <b style="color:var(--green)">FX = ชุดใหม่ ธปท. as of 18 ก.ย. 2026 — อัปเดตแล้ว</b>, <b style="color:var(--green)">SMM (0# Zinc / Slab / HR-001 / HR-002 / GZ-056) = ชุดใหม่ อ่านสดจาก metal.com ได้ครบ ทุกหน้าระบุวันที่ 21 ก.ย. 2026</b>, SMM A00/IronOre/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
     คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน —
     แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”
   </div>
@@ -127,30 +127,30 @@
   <div class="grid g3">
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_usd','USD / THB','บาท ต่อ 1 ดอลลาร์สหรัฐ')">USD / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_usd" contenteditable="true">33.5422</div>
+      <div class="val fxr" data-k="fx_usd" contenteditable="true">33.4416</div>
       <div class="unit">บาท ต่อ 1 ดอลลาร์สหรัฐ · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_eur','EUR / THB','บาท ต่อ 1 ยูโร')">EUR / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_eur" contenteditable="true">38.6441</div>
+      <div class="val fxr" data-k="fx_eur" contenteditable="true">38.5465</div>
       <div class="unit">บาท ต่อ 1 ยูโร · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_cny','CNY / THB','บาท ต่อ 1 หยวน')">CNY / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_cny" contenteditable="true">5.0320</div>
+      <div class="val fxr" data-k="fx_cny" contenteditable="true">5.0208</div>
       <div class="unit">บาท ต่อ 1 หยวน · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_usdcny','USD / CNY','หยวน ต่อ 1 ดอลลาร์สหรัฐ (cross rate)')">USD / CNY <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_usdcny" contenteditable="true">6.6658</div>
+      <div class="val fxr" data-k="fx_usdcny" contenteditable="true">6.6606</div>
       <div class="unit">หยวน ต่อ 1 ดอลลาร์ · cross rate คำนวณจากอัตราขาย BOT (USD/THB ÷ CNY/THB)</div>
       <div class="src">ที่มา: คำนวณจาก <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
   </div>
-  <div class="updt">✓ <b style="color:var(--green)">FX ชุดใหม่ (รอบ 18 ก.ย. 2026)</b> — อ่านจากหน้า ธปท. โดยตรง หน้าเว็บระบุ “as of 17 September 2026” · ใช้ฐาน <b style="color:var(--amber)">Average Selling Rate (อัตราขายถัวเฉลี่ย)</b>: USD 33.5422 (<span class="chgpos">▲0.30%</span>) · EUR 38.6441 (<span class="chgneg">▼0.29%</span>) · CNY 5.0320 (<span class="chgpos">▲0.33%</span>) · เทียบอัตราซื้อ (sight bill) ชุดเดียวกัน USD 33.1124 / EUR 37.8265 / CNY 4.8861 · <b>USD/CNY cross rate = 6.6658</b> (คำนวณจากอัตราขาย BOT: 33.5422 ÷ 5.0320 — ธปท. ไม่เผยแพร่คู่ USD/CNY โดยตรง) · <b style="color:var(--amber)">บาทอ่อนต่อเป็นวันที่สี่ติด และรอบนี้เร่งขึ้นอีก — USD/THB 33.5422 ขึ้น +0.1010 บาท (▲0.30%) จาก ▲0.06% รอบก่อน และเป็นระดับอ่อนค่าอันดับสองของชุด snapshot ทั้งหมดในไฟล์นี้ รองจาก 33.5549 ของ 27 ก.ค. 2026 เท่านั้น</b> · <b style="color:var(--amber)">รอบนี้ทิศทางไม่เหมือนกันทั้งกระดาน</b>: USD +0.30% และ CNY +0.33% ขึ้นด้วยกัน แต่ <b>EUR กลับลง −0.29%</b> แปลว่าเป็น <b>ดอลลาร์/หยวนแข็ง</b> มากกว่าบาทอ่อนทั่วกระดานแบบรอบก่อน · CNY แข็งกว่า USD เล็กน้อยอีกครั้ง ทำให้ USD/CNY cross ลดลง −0.02% เหลือ 6.6658 · Weighted-average Interbank Rate ของ ธปท. วันเดียวกัน = 33.382 บาท/ดอลลาร์ · <b>ผลต่อต้นทุนนำเข้า: ราคาสินค้า USD ทุกตัวแพงขึ้นในรูปเงินบาท +0.30% ทันทีแม้ราคา USD ไม่ขยับ</b> · หมายเหตุ: จุดข้อมูล FX ในกราฟก่อน 11 ส.ค. 2026 ยังเป็นฐานอัตราซื้อ</div>
+  <div class="updt">✓ <b style="color:var(--green)">FX ชุดใหม่ (รอบ 21 ก.ย. 2026)</b> — อ่านจากหน้า ธปท. โดยตรง หน้าเว็บระบุ “as of 18 September 2026” · ใช้ฐาน <b style="color:var(--amber)">Average Selling Rate (อัตราขายถัวเฉลี่ย)</b>: USD 33.4416 (<span class="chgneg">▼0.30%</span>) · EUR 38.5465 (<span class="chgneg">▼0.25%</span>) · CNY 5.0208 (<span class="chgneg">▼0.22%</span>) · เทียบอัตราซื้อ (sight bill) ชุดเดียวกัน USD 33.0167 / EUR 37.7306 / CNY 4.8832 · <b>USD/CNY cross rate = 6.6606</b> (คำนวณจากอัตราขาย BOT: 33.4416 ÷ 5.0208 — ธปท. ไม่เผยแพร่คู่ USD/CNY โดยตรง) · <b style="color:var(--green)">บาทกลับมาแข็งค่า ตัดสถิติอ่อนค่าสี่วันติด — USD/THB 33.4416 ลง −0.1006 บาท (▼0.30%) ลบการอ่อนค่าของรอบก่อนคืนเกือบพอดี (รอบก่อน +0.1010)</b> · <b style="color:var(--amber)">รอบนี้ลงพร้อมกันทั้งกระดาน</b>: USD ▼0.30% · EUR ▼0.25% · CNY ▼0.22% — เป็น <b>บาทแข็งค่าทั่วกระดาน</b> ไม่ใช่เรื่องของสกุลใดสกุลหนึ่ง · CNY อ่อนน้อยกว่า USD เล็กน้อย ทำให้ USD/CNY cross ลดลงต่อ −0.08% เหลือ 6.6606 (แข็งสุดของหยวนในชุด snapshot ตั้งแต่ 10 ก.ย.) · <b>ผลต่อต้นทุนนำเข้า: ราคาสินค้า USD ทุกตัวถูกลงในรูปเงินบาท −0.30% ทันทีแม้ราคา USD ไม่ขยับ</b> — เป็นครั้งแรกในรอบหลายวันที่ค่าเงินช่วยลดต้นทุนแทนที่จะซ้ำเติม · หมายเหตุ: จุดข้อมูล FX ในกราฟก่อน 11 ส.ค. 2026 ยังเป็นฐานอัตราซื้อ</div>
 
   <!-- ZINC -->
   <h2><span class="bar"></span>ราคาสังกะสี (Zinc)</h2>
@@ -165,29 +165,29 @@
     </thead>
     <tbody>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_zn_cash','LME Zinc (Cash · official offer)','USD/tonne')"><b>LME Zinc</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgpos" style="font-size:11px">▲0.10%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_zn_cash" contenteditable="true">3,941.00</span></td>
+        <td class="prod" onclick="openChart('lme_zn_cash','LME Zinc (Cash · official offer)','USD/tonne')"><b>LME Zinc</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgpos" style="font-size:11px">▲1.75%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_zn_cash" contenteditable="true">4,010.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_zn','LME Zinc (3-month, closing)','USD/tonne')"><b>LME Zinc</b> (3-month, closing) <span class="chgpos" style="font-size:11px">▲1.81%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_zn" contenteditable="true">3,881.50</span></td>
+        <td class="prod" onclick="openChart('lme_zn','LME Zinc (3-month, closing)','USD/tonne')"><b>LME Zinc</b> (3-month, closing) <span class="chgpos" style="font-size:11px">▲0.99%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_zn" contenteditable="true">3,920.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgpos" style="font-size:11px">▲1.68%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">3,939.34</span></td>
+        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgpos" style="font-size:11px">▲1.16%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">3,984.84</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/zinc/201102250173" target="_blank">metal.com ↗</a></td>
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--amber)">LME Zinc Cash</b> = ช่อง <b>Offer</b> ของแถว Cash ในตาราง LME Zinc Official Prices (bid 3,940.50 / offer 3,941.00 — <b style="color:var(--green)">ชุดใหม่รอบ 18 ก.ย. หน้าเว็บระบุ data valid for 17 ก.ย. 2026</b>) — LME ใช้ค่านี้เป็น Cash Settlement Price และเป็นตัวที่สัญญาซื้อขายสังกะสีกายภาพอ้างอิง จึงตั้งเป็นราคาอ้างอิงหลักของ AMC · <b style="color:var(--green)">Cash ขึ้นต่อเป็นวันที่สอง +4.00 (▲0.10%) จาก 3,937.00</b> แต่ขึ้นน้อยลงมากเทียบกับ +15.00 ของรอบก่อน · แถว 3-month เป็นราคาปิด (Closing Prices) <b style="color:var(--green)">3,881.50 ขึ้น +69.00 (▲1.81%) จาก 3,812.50</b> — <b style="color:var(--amber)">รอบนี้สองขากลับมาขึ้นด้วยกัน แต่ขาไกลวิ่งแรงกว่าขาใกล้มาก</b> ทำให้ Cash สูงกว่า 3-month เหลือ <b style="color:var(--amber)">59.50 USD/tonne</b> (<b>backwardation แคบลงครึ่งหนึ่งจาก 124.50 ของรอบก่อน</b> — ความตึงตัวฝั่ง spot คลายลงชัดเจน ตลาดเริ่มให้ราคาของส่งมอบไกลใกล้เคียงของพร้อมส่ง) · LME opening stock <b>112,675 mt</b> (live warrants 98,275 / cancelled 15,975) — <b style="color:var(--amber)">สต็อกรวมเพิ่มต่อ +1,450 mt และ live warrants เพิ่ม +2,175</b> ขณะที่ cancelled ลดลง −600 เหลือ 15,975 · <b>ข้อสังเกต: รอบนี้สัญญาณสอดคล้องกันแล้ว</b> — สต็อกที่พร้อมขาย (live warrants) เพิ่มขึ้นและ backwardation แคบลงไปด้วยกัน ต่างจากรอบก่อนที่สวนทาง<br>ℹ SMM 0# Zinc — <b style="color:var(--green)">รอบนี้อ่านสดได้แล้ว (เชื่อม Chrome ที่ล็อกอิน metal.com สำเร็จ) หน้าเว็บระบุวันที่ 18 ก.ย. 2026</b> — <b>3,939.34 USD/tonne ▲+65.10 (▲1.68%)</b> ช่วงวัน สูง 3,946.78 / ต่ำ 3,931.91 · เทียบกับค่าที่ค้างอยู่ในไฟล์ (3,870.17 ชุด 15 ก.ย.) คือ <b>+69.17 (+1.79%) สะสมตลอด 3 วันที่อ่านไม่ได้</b> · <b style="color:var(--amber)">LME Cash 3,941.00 สูงกว่า SMM เพียง 1.66 USD/tonne</b> — <b style="color:var(--green)">ช่องว่างสองตลาดแทบปิดสนิท</b> (ตัวเลข 70.83 ที่เคยรายงานเป็นผลจากค่า SMM ที่ค้าง ไม่ใช่ส่วนต่างจริง) แปลว่าราคาฝั่งจีนไล่ขึ้นมาเท่า LME แล้ว · ราคาบาท SMM <b style="color:var(--green)">▲2.09%</b> (ราคาสินค้า +1.79% + FX +0.30% — <b>เป็นเรื่องราคาสินค้าจริงเป็นหลัก</b>) · <b>ข้อความตลาดฝั่ง SMM ที่อ่านได้จริงในรอบนี้</b> (ส่วนคำบรรยายของหน้าเว็บที่ไม่ถูกล็อก ระบุวันที่ <b>17 ก.ย. 2026</b> — อ่านได้เฉพาะข้อความ ส่วนตัวเลขราคา USD ยังถูกล็อก): ของสปอตในตลาดเซี่ยงไฮ้ยังหมุนเวียนจำกัด เทรดเดอร์ยืนราคาแข็ง <b>premium สปอตขยับขึ้นต่อ</b> ธุรกรรมส่วนใหญ่เกิดระหว่างเทรดเดอร์ด้วยกัน ปลายน้ำซื้อเท่าที่จำเป็น ฟิวเจอร์สสังกะสีแกว่งในกรอบ · SMM #0 zinc ingot ลง 70 หยวน/ตัน เหลือ <b>26,045 หยวน/ตัน</b> (<b style="color:var(--muted)">ใช้เป็นบริบทเชิงทิศทางเท่านั้น — ไม่ได้นำมาแปลงเป็นค่า USD ในตาราง</b>) · สต็อก zinc ingot 7 ภูมิภาค 218,200 mt ณ 10 ก.ย. (ค่าล่าสุดที่บันทึก) — Inventory กวางตุ้ง: <span class="base" data-k="smm_zn_inv" contenteditable="true" style="color:var(--amber)">36,900</span> mt <b style="color:var(--muted)">(ค่าล่าสุดที่บันทึกไว้ — ยังไม่ได้รีเฟรชในรอบนี้)</b> — <a href="https://news.metal.com/" target="_blank" style="color:var(--accent)">SMM News ↗</a></div>
+  <div class="updt">✓ <b style="color:var(--amber)">LME Zinc Cash</b> = ช่อง <b>Offer</b> ของแถว Cash ในตาราง LME Zinc Official Prices (bid 4,008.00 / offer 4,010.00 — <b style="color:var(--green)">ชุดใหม่รอบ 21 ก.ย. หน้าเว็บระบุ data valid for 18 ก.ย. 2026</b>) — LME ใช้ค่านี้เป็น Cash Settlement Price และเป็นตัวที่สัญญาซื้อขายสังกะสีกายภาพอ้างอิง จึงตั้งเป็นราคาอ้างอิงหลักของ AMC · <b style="color:var(--green)">Cash ขึ้นต่อเป็นวันที่สาม และรอบนี้แรงที่สุด +69.00 (▲1.75%) จาก 3,941.00</b> (รอบก่อน +4.00) · แถว 3-month เป็นราคาปิด (Closing Prices) <b style="color:var(--green)">3,920.00 ขึ้น +38.50 (▲0.99%) จาก 3,881.50</b> — <b style="color:var(--amber)">รอบนี้สลับข้างจากรอบก่อน: ขาใกล้ (Cash) วิ่งแรงกว่าขาไกลเกือบสองเท่า</b> ทำให้ Cash สูงกว่า 3-month กว้างขึ้นเป็น <b style="color:var(--amber)">90.00 USD/tonne</b> (<b>backwardation กลับมากว้างขึ้นจาก 59.50 ของรอบก่อน</b> — ความตึงตัวฝั่งของพร้อมส่งกลับมาอีกครั้งหลังคลายไปหนึ่งวัน) · LME opening stock <b>114,250 mt</b> (live warrants 98,250 / cancelled 17,050) — <b style="color:var(--amber)">สต็อกรวมเพิ่มต่อ +1,575 mt แต่ live warrants แทบไม่ขยับ (−25) ส่วนที่เพิ่มไปลงที่ cancelled warrants ทั้งหมด +1,075 เป็น 17,050</b> · <b>ข้อสังเกต: รอบนี้สัญญาณกลับมาสอดคล้องกันในทางตึงตัว</b> — cancelled warrants (ของที่ถูกจองถอนออกจากคลัง) เพิ่มขึ้นพร้อมกับ backwardation ที่กว้างขึ้น ชี้ว่ามีความต้องการของจริงเข้ามาดึงสต็อกออก ไม่ใช่แค่การเคลื่อนไหวของราคากระดาษ · <b style="color:var(--muted)">หมายเหตุเชิงเทคนิค: รอบนี้หน้า LME ขึ้น “No data exists for the specified date” ในครั้งแรก (แคชของวันอาทิตย์ 20 ก.ย.) ต้อง hard-reload จึงได้ตารางชุด 18 ก.ย. — ตัวเลขทั้งหมดอ่านจากตารางจริง ไม่ได้เดา</b><br>ℹ SMM 0# Zinc — <b style="color:var(--green)">อ่านสดได้ตามปกติ หน้าเว็บระบุวันที่ 21 ก.ย. 2026</b> — <b>3,984.84 USD/tonne ▲+45.50 (▲1.15%)</b> ช่วงวัน สูง 3,992.29 / ต่ำ 3,977.40 · <b style="color:var(--amber)">LME Cash 4,010.00 กลับมาสูงกว่า SMM เป็น 25.16 USD/tonne</b> จากที่แทบปิดสนิทเมื่อรอบก่อน (1.66) — <b>ฝั่ง LME วิ่งนำฝั่งจีนอีกครั้ง</b> (LME Cash +1.75% vs SMM +1.15%) ส่วนต่างระดับนี้ยังไม่พอเปิดช่องอาร์บิทราจ แต่เป็นสัญญาณว่าแรงซื้อรอบนี้มาจากฝั่งตะวันตกมากกว่าจีน · ราคาบาท SMM <b style="color:var(--green)">▲0.85%</b> (ราคาสินค้า +1.16% + FX −0.30% — <b>ราคาสินค้าขึ้น แต่บาทแข็งช่วยหักออกไปบางส่วน</b>) · <b>ข้อความตลาดฝั่ง SMM ที่อ่านได้ในรอบนี้</b> (ส่วนคำบรรยายที่ไม่ถูกล็อก): ราคาสังกะสีขยับขึ้นในช่วงเช้า จุดความกังวลเรื่องราคาสูงของผู้ใช้ปลายน้ำอีกครั้ง <b>ความกระตือรือร้นในการซื้อลดลง</b> และปริมาณซื้อขายโดยรวมวันนี้เบาบาง ของสปอตในตลาดเซี่ยงไฮ้ยังหมุนเวียนจำกัด · SHFE ปิดตลาดช่วงกลางคืนที่ <b>408,770 สัญญา</b> (+0.84%) แนวต้าน 410,000 หยวน/ตัน (<b style="color:var(--muted)">ใช้เป็นบริบทเชิงทิศทางเท่านั้น — ไม่ได้นำมาแปลงเป็นค่า USD ในตาราง</b>) · สต็อก zinc ingot 7 ภูมิภาค 218,200 mt ณ 10 ก.ย. (ค่าล่าสุดที่บันทึก) — Inventory กวางตุ้ง: <span class="base" data-k="smm_zn_inv" contenteditable="true" style="color:var(--amber)">36,900</span> mt <b style="color:var(--muted)">(ค่าล่าสุดที่บันทึกไว้ — ยังไม่ได้รีเฟรชในรอบนี้)</b> — <a href="https://news.metal.com/" target="_blank" style="color:var(--accent)">SMM News ↗</a></div>
 
   <!-- STEEL -->
   <h2><span class="bar"></span>ราคาเหล็ก (Steel — Slab / HRC / Galvanized / Flat Products)</h2>
@@ -209,7 +209,7 @@
         <td><a href="https://www.metal.com/steel-billet/202601160001" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span class="chgpos" style="font-size:11px">▲0.20%</span> <span class="cicon">📈</span></td>
+        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span style="font-size:11px;color:var(--muted)">0.00% (เทียบรอบก่อน)</span> <span class="cicon">📈</span></td>
         <td class="num"><span class="base" data-k="st_hr1" contenteditable="true">495</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
@@ -217,14 +217,14 @@
       </tr>
       <tr data-cur="USD" data-unit="/mt">
         <td class="prod" onclick="openChart('st_hr2','HRC SMM-GS-HR-002 (FOB Bayuquan)','USD/tonne')"><b>SMM-GS-HR-002</b> · HRC Q235B 3.0×1250×C — FOB Bayuquan <span class="chgpos" style="font-size:11px">▲0.20%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="st_hr2" contenteditable="true">495</span></td>
+        <td class="num"><span class="base" data-k="st_hr2" contenteditable="true">496</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202501030002" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgneg" style="font-size:11px">▼0.24%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">642.55</span></td>
+        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgpos" style="font-size:11px">▲0.10%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">643.17</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202509160004" target="_blank">metal.com ↗</a></td>
@@ -259,7 +259,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">รอบ 18 ก.ย. 2026: อ่านราคา SMM ได้ครบแล้ว</b> — เชื่อม Chrome ที่ล็อกอิน metal.com สำเร็จหลังลองใหม่ จึงปิดช่องว่างที่ค้างมาตั้งแต่ชุด 15 ก.ย. ได้ทั้งหมด · <b>Slab SMM-GS-SL-001 = 475</b> (วันที่หน้าเว็บ 17 ก.ย. · วันนี้ 0.00% แต่ <b style="color:var(--green)">+5.00 (+1.06%) เทียบค่าที่ค้างในไฟล์ 470</b>) · <b>HRC-001 FOB Tianjin = 495</b> (17 ก.ย. · <span class="chgpos">▲+1.00 (+0.20%)</span> วันนี้ · <b style="color:var(--green)">+3.00 (+0.61%) เทียบค่าค้าง 492</b>) · <b>HRC-002 FOB Bayuquan = 495</b> (17 ก.ย. · <span class="chgpos">▲+1.00 (+0.20%)</span> วันนี้ · +3.00 (+0.61%) เทียบค่าค้าง 492) · <b>Galvanised SMM-CG-GZ-056 = 642.55</b> (18 ก.ย. · <span class="chgneg">▼−1.54 (−0.24%)</span> วันนี้ · −1.24 (−0.19%) เทียบค่าค้าง 643.79) · <b style="color:var(--amber)">ข้อสังเกต: HRC ทั้งสองท่าเรือยืนเท่ากันที่ 495 และขยับขึ้นพร้อมกัน +1 ดอลลาร์ ขณะที่ galvanized เป็นตัวเดียวในหมวดที่ย่อลง — ส่วนต่าง GZ เหนือ HRC แคบลงเหลือ 147.55 USD/tonne</b> ซึ่งเป็นตัวเลขที่ AMC ใช้ประเมินมาร์จิ้นงานชุบโดยตรง · <b>ผลรวมต่อต้นทุนนำเข้าเป็นเงินบาท</b> (ราคาสินค้า + ค่าเงิน +0.30%): Slab <span class="chgpos">▲1.37%</span> · HRC-001/002 <span class="chgpos">▲0.91%</span> · GZ-056 <span class="chgpos">▲0.11%</span> — <b style="color:var(--amber)">แม้ galvanized ราคา USD ลดลง แต่บาทอ่อนกลบจนต้นทุนจริงยังขยับขึ้นเล็กน้อย</b> · Cold Rolled Auto 578.68 / CRC 508.3 / Billet 474 / Scrap 373.65 <b>คงค่าเดิม</b> (ไม่ได้อยู่ในรอบอัปเดตรายวัน — ชุด 24–25 มิ.ย.) · ราคา daily ทุกตัวเป็น USD/tonne</div>
+  <div class="updt">✓ <b style="color:var(--green)">รอบ 21 ก.ย. 2026: อ่านราคา SMM ได้ครบทุกตัว</b> — ทุกหน้าระบุวันที่ 21 ก.ย. 2026 · <b>Slab SMM-GS-SL-001 = 475</b> (<span style="color:var(--muted)">0 (0.00%) — ยืนราคาเดิมเป็นวันที่สอง</span>) · <b>HRC-001 FOB Tianjin = 495</b> (หน้าเว็บแสดง +1 (+0.20%) แต่ <b>เท่ากับค่าที่บันทึกไว้รอบก่อน จึงนับเป็น 0.00% ในไฟล์นี้</b>) · <b>HRC-002 FOB Bayuquan = 496</b> (<span class="chgpos">▲+1.00 (+0.20%)</span> — <b style="color:var(--amber)">ขยับขึ้นจริง และเป็นครั้งแรกในรอบหลายวันที่ HRC สองท่าเรือแยกราคาออกจากกัน</b> Bayuquan แพงกว่า Tianjin 1 ดอลลาร์) · <b>Galvanised SMM-CG-GZ-056 = 643.17</b> (<span class="chgpos">▲+0.62 (+0.10%)</span> — กลับมาเป็นบวกหลังย่อลงรอบก่อน) · <b style="color:var(--amber)">ข้อสังเกต: หมวดเหล็กแทบไม่ขยับทั้งกระดาน (0.00% ถึง +0.20%) ต่างจากสังกะสีที่วิ่งแรง — ส่วนต่าง GZ เหนือ HRC-001 กว้างขึ้นเล็กน้อยเป็น 148.17 USD/tonne</b> (จาก 147.55) ซึ่งเป็นตัวเลขที่ AMC ใช้ประเมินมาร์จิ้นงานชุบโดยตรง · <b>ผลรวมต่อต้นทุนนำเข้าเป็นเงินบาท</b> (ราคาสินค้า + ค่าเงิน −0.30%): Slab <span class="chgneg">▼0.30%</span> · HRC-001 <span class="chgneg">▼0.30%</span> · HRC-002 <span class="chgneg">▼0.10%</span> · GZ-056 <span class="chgneg">▼0.20%</span> — <b style="color:var(--green)">ราคา USD ทรงถึงขึ้นเล็กน้อย แต่บาทแข็งกลบทั้งหมด ทำให้ต้นทุนนำเข้าจริงของหมวดเหล็กถูกลงทุกตัวในรอบนี้</b> · Cold Rolled Auto 578.68 / CRC 508.3 / Billet 474 / Scrap 373.65 <b>คงค่าเดิม</b> (ไม่ได้อยู่ในรอบอัปเดตรายวัน — ชุด 24–25 มิ.ย.) · ราคา daily ทุกตัวเป็น USD/tonne</div>
 
   <!-- ALUMINIUM -->
   <h2><span class="bar"></span>ราคาอะลูมิเนียม (Aluminium)</h2>
@@ -274,15 +274,15 @@
     </thead>
     <tbody>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_al_cash','LME Aluminium (Cash · official offer)','USD/tonne')"><b>LME Aluminium</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgneg" style="font-size:11px">▼0.20%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_al_cash" contenteditable="true">3,303.50</span></td>
+        <td class="prod" onclick="openChart('lme_al_cash','LME Aluminium (Cash · official offer)','USD/tonne')"><b>LME Aluminium</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgneg" style="font-size:11px">▼0.56%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al_cash" contenteditable="true">3,285.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium#Trading+summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_al','LME Aluminium (3-month, closing)','USD/tonne')"><b>LME Aluminium</b> (3-month, closing) <span class="chgpos" style="font-size:11px">▲0.99%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_al" contenteditable="true">3,301.50</span></td>
+        <td class="prod" onclick="openChart('lme_al','LME Aluminium (3-month, closing)','USD/tonne')"><b>LME Aluminium</b> (3-month, closing) <span class="chgneg" style="font-size:11px">▼0.39%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al" contenteditable="true">3,288.50</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium#Overview" target="_blank">LME ↗</a></td>
@@ -310,7 +310,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">LME Aluminium ชุดใหม่รอบ 18 ก.ย. 2026 — หน้าเว็บระบุ data valid 17 ก.ย. 2026</b> — <b style="color:var(--amber)">Cash</b> = ช่อง Offer ของแถว Cash ในตาราง Official Prices (bid 3,302.50 / offer 3,303.50 — <b style="color:var(--red)">−6.50 ▼0.20%</b> จาก 3,310.00) · 3-month closing 3,301.50 (<b style="color:var(--green)">+32.50 ▲0.99%</b> จาก 3,269.00) · ส่วนต่าง Cash − 3M = <b style="color:var(--amber)">+2.00 USD/tonne — backwardation แทบหายไปหมด</b> จาก +41.00 รอบก่อน (เส้นโค้งกลับมาเกือบแบนสนิท) · <b style="color:var(--amber)">รูปแบบเดียวกับสังกะสีอีกครั้ง แต่สลับทิศจากเมื่อวาน — ทั้งสองโลหะ 3-month วิ่งขึ้นแรงกว่า Cash ทำให้ backwardation แคบลงพร้อมกัน เป็นการคลายความตึงตัวฝั่ง spot ทั้งกระดาน ไม่ใช่เรื่องเฉพาะโลหะใดโลหะหนึ่ง</b> · ราคาบาท Al Cash <b style="color:var(--green)">▲0.11%</b> (ราคาสินค้า −0.20% + FX +0.30% — <b>ราคา USD ลงแต่ราคาบาทกลับขึ้น เพราะค่าเงินกลบทิศราคาสินค้าทั้งหมด</b>) · ราคาบาท Al 3M <b style="color:var(--green)">▲1.30%</b> (ราคาสินค้า +0.99% + FX +0.30%) · opening stock 243,600 mt (live 238,675 / cancelled 3,925 — <b style="color:var(--amber)">cancelled warrants ลดลง 1,000 mt</b> ขณะที่ live warrants เท่าเดิม สอดคล้องกับ backwardation ที่แคบลง) · <b style="color:var(--green)">LME Aluminium Alloy ชุดใหม่ด้วย (data valid 17 ก.ย.)</b>: Cash = Offer ของแถว Cash ใน Official Prices (bid 3,190.00 / offer 3,200.00 — เท่ารอบก่อน) · 3M closing 3,200.00 (ทุก prompt เท่ากันหมด สภาพคล่องต่ำ Cash − 3M = 0.00) · opening stock <b>1,500 mt</b> (live 1,500 / cancelled 0 — เท่ารอบก่อน) · SMM A00 3,348.18 <b>คงค่าเดิม</b> (ชุด 25 มิ.ย. — ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
+  <div class="updt">✓ <b style="color:var(--green)">LME Aluminium ชุดใหม่รอบ 21 ก.ย. 2026 — หน้าเว็บระบุ data valid 18 ก.ย. 2026</b> — <b style="color:var(--amber)">Cash</b> = ช่อง Offer ของแถว Cash ในตาราง Official Prices (bid 3,283.00 / offer 3,285.00 — <b style="color:var(--red)">−18.50 ▼0.56%</b> จาก 3,303.50) · 3-month closing 3,288.50 (<b style="color:var(--red)">−13.00 ▼0.39%</b> จาก 3,301.50) · ส่วนต่าง Cash − 3M = <b style="color:var(--amber)">−3.50 USD/tonne — พลิกเป็น contango ครั้งแรกในรอบนี้</b> จาก +2.00 รอบก่อน (ของพร้อมส่งถูกกว่าของส่งมอบไกลแล้ว) · <b style="color:var(--amber)">รอบนี้อะลูมิเนียมกับสังกะสีแยกทางกันชัดเจน — สังกะสีขึ้นทั้งสองขาและ backwardation กว้างขึ้น ส่วนอะลูมิเนียมลงทั้งสองขาและพลิกเป็น contango</b> แปลว่าแรงซื้อรอบนี้เป็นเรื่องเฉพาะของสังกะสี ไม่ใช่การขยับของโลหะพื้นฐานทั้งกระดาน · ราคาบาท Al Cash <b style="color:var(--red)">▼0.86%</b> (ราคาสินค้า −0.56% + FX −0.30% — <b>ราคา USD ลงและบาทแข็งไปด้วยกัน ต้นทุนนำเข้าถูกลงสองต่อ</b>) · ราคาบาท Al 3M <b style="color:var(--red)">▼0.69%</b> (ราคาสินค้า −0.39% + FX −0.30%) · opening stock 242,600 mt (live 238,475 / cancelled 4,125 — <b style="color:var(--amber)">สต็อกรวมลดลง 1,000 mt แต่ cancelled warrants กลับเพิ่ม +200</b>) · <b style="color:var(--green)">LME Aluminium Alloy ชุดใหม่ด้วย (data valid 18 ก.ย.)</b>: Cash = Offer ของแถว Cash ใน Official Prices (bid 3,190.00 / offer 3,200.00 — เท่ารอบก่อน) · 3M closing 3,200.00 (ทุก prompt เท่ากันหมด สภาพคล่องต่ำ Cash − 3M = 0.00) · opening stock <b>1,500 mt</b> (live 1,500 / cancelled 0 — เท่ารอบก่อน) · SMM A00 3,348.18 <b>คงค่าเดิม</b> (ชุด 25 มิ.ย. — ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
 
   <!-- IRON ORE -->
   <h2><span class="bar"></span>ราคาแร่เหล็ก (Iron Ore)</h2>
@@ -459,7 +459,7 @@
 </div>
 
 <footer>
-  Dashboard นี้ดึงข้อมูลสด ณ 18 ก.ย. 2026 (รอบล่าสุด — LME Zinc/Aluminium/Alloy ชุดใหม่ data valid 17 ก.ย. 2026 และ FX BOT ชุดใหม่ as of 17 ก.ย. 2026 อัปเดตเรียบร้อย · <b style="color:#ff6b6b">SMM (0# Zinc / Slab / HRC / GZ-056) รอบนี้อ่านไม่ได้เป็นวันที่สองติด เพราะ Chrome ที่ล็อกอิน metal.com ไม่ได้เชื่อมต่อ — ค่าที่แสดงจึงเป็นชุด 15 ก.ย. 2026 ที่ยืนยันไว้เดิม ไม่ได้เดาตัวเลข ต้องตรวจซ้ำรอบถัดไป</b>) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
+  Dashboard นี้ดึงข้อมูลสด ณ 21 ก.ย. 2026 (รอบล่าสุด — LME Zinc/Aluminium/Alloy ชุดใหม่ data valid 18 ก.ย. 2026 · FX BOT ชุดใหม่ as of 18 ก.ย. 2026 · <b style="color:#37d39b">SMM (0# Zinc / Slab / HRC-001 / HRC-002 / GZ-056) อ่านสดได้ครบทุกตัว ทุกหน้าระบุวันที่ 21 ก.ย. 2026</b>) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
   <br>จัดทำสำหรับ Asia Metal Public Company Limited (AMC)
 </footer>
 
@@ -527,7 +527,8 @@
     "2026-09-15":{fx_usd:33.3138,fx_eur:38.7177,fx_cny:4.9981,fx_usdcny:6.6653,lme_zn:3793.50,lme_zn_cash:3951.00,smm_zn:3870.17,st_slab:470,st_hr1:491,st_hr2:491,st_gz:643.79,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3244.50,lme_al_cash:3311.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-09-16":{fx_usd:33.4204,fx_eur:38.7170,fx_cny:5.0099,fx_usdcny:6.6709,lme_zn:3824.00,lme_zn_cash:3922.00,smm_zn:3870.17,st_slab:470,st_hr1:492,st_hr2:492,st_gz:643.79,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3251.50,lme_al_cash:3260.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-09-17":{fx_usd:33.4412,fx_eur:38.7549,fx_cny:5.0156,fx_usdcny:6.6674,lme_zn:3812.50,lme_zn_cash:3937.00,smm_zn:3870.17,st_slab:470,st_hr1:492,st_hr2:492,st_gz:643.79,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3269.00,lme_al_cash:3310.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
-    "2026-09-18":{fx_usd:33.5422,fx_eur:38.6441,fx_cny:5.0320,fx_usdcny:6.6658,lme_zn:3881.50,lme_zn_cash:3941.00,smm_zn:3939.34,st_slab:475,st_hr1:495,st_hr2:495,st_gz:642.55,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3301.50,lme_al_cash:3303.50,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
+    "2026-09-18":{fx_usd:33.5422,fx_eur:38.6441,fx_cny:5.0320,fx_usdcny:6.6658,lme_zn:3881.50,lme_zn_cash:3941.00,smm_zn:3939.34,st_slab:475,st_hr1:495,st_hr2:495,st_gz:642.55,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3301.50,lme_al_cash:3303.50,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
+    "2026-09-21":{fx_usd:33.4416,fx_eur:38.5465,fx_cny:5.0208,fx_usdcny:6.6606,lme_zn:3920.00,lme_zn_cash:4010.00,smm_zn:3984.84,st_slab:475,st_hr1:495,st_hr2:496,st_gz:643.17,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3288.50,lme_al_cash:3285.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
   };
 
   function num(s){ return parseFloat(String(s).replace(/[^0-9.\-]/g,"")); }
