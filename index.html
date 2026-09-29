@@ -93,6 +93,11 @@
   .cm-meta{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:12.5px;color:var(--muted)}
   .cm-meta .mv{color:var(--txt);font-weight:700}
   .cm-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 10px}
+  /* view-only mode (public GitHub Pages copy) */
+  html.viewonly .base{border-bottom:none;cursor:default}
+  html.viewonly .card .val{cursor:default}
+  html.viewonly .toolbar{display:none}
+  html.viewonly .edit-hint{display:none}
 </style>
 </head>
 <body>
@@ -103,7 +108,7 @@
   </div>
   <div class="meta">
     ข้อมูล ณ <b id="snapDate">29 ก.ย. 2026</b><br>
-    อัปเดตค่าได้เอง · บันทึกอัตโนมัติ
+    <span id="metaMode">อัปเดตค่าได้เอง · บันทึกอัตโนมัติ</span>
     <div class="toolbar" style="justify-content:flex-end">
       <button onclick="saveAll()">💾 บันทึกค่าที่แก้</button>
       <button class="ghost" onclick="resetAll()">↺ คืนค่าเริ่มต้น</button>
@@ -114,8 +119,8 @@
 <main>
   <div class="note">
     <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>29 ก.ย. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = data valid 28 ก.ย. 2026 — ค่าใหม่</b>, <b style="color:var(--green)">FX BOT = as of 28 ก.ย. 2026 — ค่าใหม่</b>, <b style="color:var(--amber)">SMM = หน้าเว็บยังระบุ Sep 28, 2026 (ยังไม่มีพิมพ์ราคา 29 ก.ย. ณ เวลารัน; SMM ประกาศหยุดอัปเดตช่วงวันชาติจีน 1–7 ต.ค.) — HR-001 = 495 / HR-002 = 496 ขยับลง ส่วน Slab / SMM Zn / GZ-056 คงค่า</b>, SMM A00/IronOre/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
-    คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน —
-    แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”
+    คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน<span class="edit-hint"> —
+    แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”</span>
   </div>
 
   <div class="hint">
@@ -465,6 +470,9 @@
 
 <script>
   const KEY="amc_metal_fx_dashboard_v3";
+  // โหมดดูอย่างเดียว: เปิดจาก GitHub Pages (*.github.io) หรือใส่ ?view ต่อท้าย URL — ปิดการแก้ตัวเลข ซ่อนปุ่มบันทึก/คืนค่า และไม่โหลดค่าที่เคยแก้ไว้ในเครื่องผู้ดู
+  const VIEW_ONLY=/\.github\.io$/i.test(location.hostname)||new URLSearchParams(location.search).has("view");
+  if(VIEW_ONLY) document.documentElement.classList.add("viewonly");
   const KEY_HIST="amc_metal_fx_history_v1";
   const TH_ABBR=["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
   const TH_MO={"ม.ค.":1,"ก.พ.":2,"มี.ค.":3,"เม.ย.":4,"พ.ค.":5,"มิ.ย.":6,"ก.ค.":7,"ส.ค.":8,"ก.ย.":9,"ต.ค.":10,"พ.ย.":11,"ธ.ค.":12};
@@ -569,7 +577,7 @@
   function fmtThai(iso){ const p=iso.split("-").map(Number); return p[2]+" "+TH_ABBR[p[1]]; }
 
   // --- history accumulation ---
-  function loadHist(){ try{ return JSON.parse(localStorage.getItem(KEY_HIST)||"{}"); }catch(e){ return {}; } }
+  function loadHist(){ if(VIEW_ONLY) return {}; try{ return JSON.parse(localStorage.getItem(KEY_HIST)||"{}"); }catch(e){ return {}; } }
   function recordHistory(){
     const hist=loadHist();
     // merge seed without clobbering anything already recorded
@@ -584,7 +592,7 @@
       });
       hist[iso]=snap;
     }
-    try{ localStorage.setItem(KEY_HIST,JSON.stringify(hist)); }catch(e){}
+    if(!VIEW_ONLY){ try{ localStorage.setItem(KEY_HIST,JSON.stringify(hist)); }catch(e){} }
     return hist;
   }
 
@@ -725,6 +733,11 @@
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") document.getElementById("chartModal").classList.remove("show"); });
 
   function loadAll(){
+    if(VIEW_ONLY){
+      document.querySelectorAll("[contenteditable]").forEach(el=>el.removeAttribute("contenteditable"));
+      const meta=document.getElementById("metaMode"); if(meta) meta.textContent="โหมดดูอย่างเดียว · เผยแพร่ผ่าน GitHub Pages — อัปเดตอัตโนมัติทุกวันทำการ";
+      recompute(); recordHistory(); return;
+    }
     try{
       const d=JSON.parse(localStorage.getItem(KEY)||"{}");
       document.querySelectorAll("[data-k]").forEach(el=>{
@@ -736,6 +749,7 @@
     recordHistory();
   }
   function saveAll(){
+    if(VIEW_ONLY) return;
     const d={};
     document.querySelectorAll("[data-k]").forEach(el=>{ d[el.dataset.k]=el.textContent.trim(); });
     const now=new Date();
