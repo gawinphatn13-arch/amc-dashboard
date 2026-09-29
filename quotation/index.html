@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบใบเสนอราคา</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ใบเสนอราคา">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        @page { margin: 10mm; }
+        body { font-family: 'Sarabun', sans-serif; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .print-color-adjust { print-color-adjust: exact; }
+        }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #16a34a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 print:p-0 print:bg-white" x-data="quotationApp()">
+    <div x-cloak x-show="!user" class="no-print fixed inset-0 z-50 bg-gray-100 flex items-center justify-center p-4">
+        <div class="bg-white rounded shadow-lg w-full max-w-sm p-6">
+            <div class="flex items-center justify-center mb-4"><div class="bg-[#1e3a8a] text-[#ffd700] px-5 py-2 font-bold text-lg rounded-sm">QUOTATION</div></div>
+            <h1 class="text-center font-bold text-lg mb-1" x-text="lang === 'th' ? 'ระบบใบเสนอราคา AMC GI' : 'AMC GI Quotation System'"></h1>
+            <p class="text-center text-xs text-gray-500 mb-5" x-text="lang === 'th' ? 'เข้าสู่ระบบด้วยรหัสพนักงานและ PIN ที่ได้รับจากผู้บริหาร' : 'Sign in with the staff code and PIN from your manager'"></p>
+            <label class="block text-sm mb-1" x-text="lang === 'th' ? 'รหัสพนักงาน' : 'Staff code'"></label>
+            <input type="text" x-model="loginForm.code" @keydown.enter="login" autocapitalize="characters" autocomplete="username" placeholder="SALE01" class="w-full border p-2.5 rounded mb-3 uppercase">
+            <label class="block text-sm mb-1">PIN</label>
+            <input type="password" inputmode="numeric" x-model="loginForm.pin" @keydown.enter="login" autocomplete="current-password" placeholder="******" class="w-full border p-2.5 rounded mb-3">
+            <div x-show="loginError" class="text-sm text-red-600 mb-3" x-text="loginError"></div>
+            <button @click="login" :disabled="loginBusy" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700 transition disabled:opacity-60 flex justify-center items-center">
+                <span x-show="loginBusy" class="loader"></span><span x-text="loginBusy ? (lang === 'th' ? 'กำลังตรวจสอบ...' : 'Checking...') : (lang === 'th' ? 'เข้าสู่ระบบ' : 'Sign in')"></span>
+            </button>
+            <div class="flex justify-between items-center mt-4 text-xs text-gray-500">
+                <button type="button" @click="lang = (lang === 'th' ? 'en' : 'th')" class="underline" x-text="lang === 'th' ? 'English' : 'ภาษาไทย'"></button>
+                <button type="button" @click="configureApi" class="underline" x-text="lang === 'th' ? 'ตั้งค่าเซิร์ฟเวอร์' : 'Server settings'"></button>
+            </div>
+            <div x-show="installPrompt" class="mt-4 border-t pt-3">
+                <button type="button" @click="installApp" class="w-full border border-blue-600 text-blue-700 p-2 rounded font-bold hover:bg-blue-50" x-text="lang === 'th' ? '📲 ติดตั้งลงหน้าจอโฮม' : '📲 Install to home screen'"></button>
+            </div>
+            <p x-show="isIos && !installPrompt" class="mt-3 text-xs text-gray-500 text-center" x-text="lang === 'th' ? 'iPhone: กดปุ่มแชร์ แล้วเลือก เพิ่มไปยังหน้าจอโฮม' : 'iPhone: tap Share, then Add to Home Screen'"></p>
+        </div>
+    </div>
+
+
+    <div class="no-print max-w-7xl mx-auto mb-4 flex flex-wrap gap-2 justify-between items-center">
+        <div class="flex flex-wrap gap-2">
+            <button @click="activeTab = 'form'" :class="{'bg-blue-600 text-white': activeTab === 'form', 'bg-white text-gray-700': activeTab !== 'form'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📝 สร้างใบเสนอราคา' : '📝 Create Quotation'"></button>
+            <button @click="activeTab = 'tracker'; loadHistory()" :class="{'bg-blue-600 text-white': activeTab === 'tracker', 'bg-white text-gray-700': activeTab !== 'tracker'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📚 ประวัติใบเสนอราคา' : '📚 Quotation History'"></button>
+            <button x-show="user && user.role === 'manager'" @click="activeTab = 'users'; loadUsersTab()" :class="{'bg-blue-600 text-white': activeTab === 'users', 'bg-white text-gray-700': activeTab !== 'users'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '👥 พนักงานขาย' : '👥 Sales Staff'"></button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <div x-show="user" class="text-sm bg-white rounded shadow px-3 py-2"><span class="font-bold" x-text="user ? user.name : ''"></span> <span class="text-gray-500" x-text="user && user.role === 'manager' ? (lang === 'th' ? '(ผู้บริหาร)' : '(Manager)') : ''"></span></div>
+            <button x-show="user" @click="logout()" class="text-sm bg-white text-gray-600 rounded shadow px-3 py-2 hover:bg-gray-100" x-text="lang === 'th' ? 'ออกจากระบบ' : 'Sign out'"></button>
+            <div class="flex bg-white rounded shadow overflow-hidden">
+                <button @click="lang = 'th'" :class="lang === 'th' ? 'bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100'" class="px-4 py-2 text-sm font-bold transition">TH</button>
+                <button @click="lang = 'en'" :class="lang === 'en' ? 'bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100'" class="px-4 py-2 text-sm font-bold transition">EN</button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="activeTab === 'form'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
+        
+        <div class="no-print lg:col-span-5 space-y-4">
+            
+            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''">
+                <h2 class="text-lg font-bold mb-3 border-b pb-2" x-text="lang === 'th' ? 'ข้อมูลเอกสารและลูกค้า' : 'Document & Customer Info'"></h2>
+                
+                <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'บริษัทผู้ออกใบเสนอราคา' : 'Issuing Company'"></label>
+                <select x-model="companyPrefix" @change="updateRunningNo()" class="w-full border p-2.5 rounded mb-3">
+                    <option value="STC">STC Steel Co.,Ltd.</option>
+                    <option value="AMC">Asia Metal PLC</option>
+                    <option value="GAS">Grand Asia Steel Processing Center Co.,Ltd.</option>
+                </select>
+
+                <label class="block text-sm mb-1 mt-2 text-blue-600 font-bold" x-text="lang === 'th' ? 'อัปโหลดโลโก้บริษัท (ถ้ามี)' : 'Upload Company Logo (Optional)'"></label>
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="w-full border p-2.5 rounded mb-3 text-sm bg-blue-50">
+
+                <label class="block text-sm mb-1 mt-2 font-bold" x-text="lang === 'th' ? 'ชื่อพนักงานขาย (Sales Rep.)' : 'Sales Representative'"></label>
+                <input type="text" x-model="salesName" readonly class="w-full border p-2.5 rounded mb-3 bg-gray-100 text-gray-700" :title="lang === 'th' ? 'ชื่อจากบัญชีที่เข้าสู่ระบบ' : 'Name from the signed-in account'">
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'วันที่เสนอราคา' : 'Quotation Date'"></label>
+                        <input type="date" x-model="quoteDate" @change="updateRunningNo()" class="w-full border p-2.5 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'เลขที่เบื้องต้น' : 'Running No.'"></label>
+                        <input type="text" x-model="runningNo" class="w-full border p-2.5 rounded bg-gray-100 text-gray-500" readonly>
+                    </div>
+                </div>
+
+                <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'ชื่อลูกค้า / บริษัท' : 'Customer / Company Name'"></label>
+                <input type="text" x-model="customerInfo.name" class="w-full border p-2.5 rounded mb-3">
+
+                <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'ที่อยู่ลูกค้า' : 'Customer Address'"></label>
+                <textarea x-model="customerInfo.address" class="w-full border p-2.5 rounded mb-3" rows="2"></textarea>
+
+                <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'เบอร์โทรศัพท์' : 'Phone Number'"></label>
+                <input type="text" x-model="customerInfo.phone" class="w-full border p-2.5 rounded mb-3">
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'กำหนดส่งมอบ' : 'Delivery Schedule'"></label>
+                        <input type="text" x-model="customerInfo.delivery" class="w-full border p-2.5 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'เงื่อนไขการชำระเงิน' : 'Payment Terms'"></label>
+                        <input type="text" x-model="customerInfo.payment" class="w-full border p-2.5 rounded">
+                    </div>
+                </div>
+                
+                <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'การขนส่ง (Transportation)' : 'Transportation'"></label>
+                <select x-model="transportExtra" @change="calculatePrice" class="w-full border p-2.5 rounded mb-3">
+                    <option value="0">None (+0 ฿)</option>
+                    <option value="200">Include (+200 ฿)</option>
+                </select>
+            </div>
+
+            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''">
+                <h2 class="text-lg font-bold mb-3 border-b pb-2" x-text="lang === 'th' ? 'กำหนดสเปกสินค้า' : 'Product Specifications'"></h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'ประเภทสินค้า' : 'Product Type'"></label>
+                        <select x-model="productType" @change="spec = (productType === 'mgalzn' ? 'CS-B' : 'SGCC'); coating = (productType === 'mgalzn' ? 'ZM60' : 'G60'); if(productType === 'mgalzn') spangleType = 'Zero'; calculatePrice()" class="w-full border p-2.5 rounded bg-blue-50 font-bold">
+                            <option value="galvanized">Galvanized (สังกะสี)</option>
+                            <option value="mgalzn">Mg-Al-Zn</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 font-bold text-red-600" x-text="lang === 'th' ? 'ราคา Base' : 'Base Price'"></label>
+                        <input type="number" x-model.number="basePrice" @input="calculatePrice" class="w-full border p-2.5 rounded bg-yellow-50 font-bold text-red-600" placeholder="บาท/ตัน">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 font-bold text-green-600" x-text="lang === 'th' ? 'ส่วนลด/ตัน' : 'Discount'"></label>
+                        <input type="number" x-model.number="discountPerTon" @input="calculatePrice" class="w-full border p-2.5 rounded bg-green-50 font-bold text-green-700" placeholder="บาท/ตัน">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3 mt-2">
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'ปริมาณ (ตัน)' : 'Quantity (Tons)'"></label>
+                        <input type="number" x-model.number="qty" class="w-full border p-2.5 rounded" step="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'เกรดเหล็ก' : 'Steel Grade'"></label>
+                        <select x-model="spec" @change="calculatePrice" class="w-full border p-2.5 rounded">
+                            <template x-for="(extra, name) in pricingData[productType].specs" :key="name">
+                                <option :value="name" x-text="name + ' (+' + extra + ' ฿)'"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'อ้างอิงความหนา' : 'Base Thickness'"></label>
+                        <select x-model="baseThicknessType" @change="calculatePrice" class="w-full border p-2.5 rounded bg-blue-50 font-bold text-blue-800">
+                            <option value="TCT">TCT (+0 ฿)</option>
+                            <option value="BMT">BMT (+100 ฿)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 text-blue-600"><span x-text="lang === 'th' ? 'ความหนา' : 'Thickness'"></span> <span x-text="extraThicknessPrice ? '(' + formatSigned(extraThicknessPrice) + ')' : ''"></span></label>
+                        <input type="number" x-model.number="thickness" @input="calculatePrice" class="w-full border p-2.5 rounded" step="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 text-blue-600"><span x-text="lang === 'th' ? 'ความกว้าง' : 'Width'"></span> <span x-text="widthExtraPrice ? '(+' + widthExtraPrice + ')' : ''"></span></label>
+                        <input type="number" x-model.number="width" @input="calculatePrice" class="w-full border p-2.5 rounded">
+                    </div>
+                </div>
+
+                <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'สารเคลือบ (Coating Mass)' : 'Coating Mass'"></label>
+                <select x-model="coating" @change="calculatePrice" class="w-full border p-2.5 rounded mb-3">
+                    <optgroup label="Galvanized (Z/G)" x-show="productType === 'galvanized'">
+                        <option value="Z60" x-text="getCoatingLabel('Z60')"></option>
+                        <option value="Z80" x-text="getCoatingLabel('Z80')"></option>
+                        <option value="Z100" x-text="getCoatingLabel('Z100')"></option>
+                        <option value="Z120" x-text="getCoatingLabel('Z120')"></option>
+                        <option value="Z140" x-text="getCoatingLabel('Z140')"></option>
+                        <option value="Z180" x-text="getCoatingLabel('Z180')"></option>
+                        <option value="Z200" x-text="getCoatingLabel('Z200')"></option>
+                        <option value="Z220" x-text="getCoatingLabel('Z220')"></option>
+                        <option value="Z250" x-text="getCoatingLabel('Z250')"></option>
+                        <option value="Z275" x-text="getCoatingLabel('Z275')"></option>
+                        <option value="G01" x-text="getCoatingLabel('G01')"></option>
+                        <option value="G30" x-text="getCoatingLabel('G30')"></option>
+                        <option value="G40" x-text="getCoatingLabel('G40')"></option>
+                        <option value="G60" x-text="getCoatingLabel('G60')"></option>
+                        <option value="G90" x-text="getCoatingLabel('G90')"></option>
+                    </optgroup>
+                    <optgroup label="Mg-Al-Zn (ZM)" x-show="productType === 'mgalzn'">
+                        <option value="ZM60" x-text="getCoatingLabel('ZM60')"></option>
+                        <option value="ZM90" x-text="getCoatingLabel('ZM90')"></option>
+                        <option value="ZM120" x-text="getCoatingLabel('ZM120')"></option>
+                        <option value="ZM150" x-text="getCoatingLabel('ZM150')"></option>
+                        <option value="ZM180" x-text="getCoatingLabel('ZM180')"></option>
+                        <option value="ZM210" x-text="getCoatingLabel('ZM210')"></option>
+                        <option value="ZM220" x-text="getCoatingLabel('ZM220')"></option>
+                        <option value="ZM275" x-text="getCoatingLabel('ZM275')"></option>
+                    </optgroup>
+                </select>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'ประเภทขอบ (Edge Type)' : 'Edge Type'"></label>
+                        <select x-model="edgeType" @change="calculatePrice" class="w-full border p-2.5 rounded">
+                            <option value="0">Mill edge (+0 ฿)</option>
+                            <option value="250">Slit edge (base) (+250 ฿)</option>
+                        </select>
+                    </div>
+                    <template x-if="edgeType === '250'">
+                        <div>
+                            <label class="block text-sm mb-1" x-text="lang === 'th' ? 'ขนาดสลิต (มม.)' : 'Slit Size (mm)'"></label>
+                            <input type="text" x-model="slitSize" :placeholder="lang === 'th' ? 'เช่น 100+150 หรือ 50x4' : 'e.g., 100+150 or 50x4'" class="w-full border p-2.5 rounded">
+                        </div>
+                    </template>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3 mt-4 border-t pt-4">
+                    <div>
+                        <label class="block text-sm mb-1">Spangle</label>
+                        <select x-model="spangleType" @change="calculatePrice" class="w-full border p-2.5 rounded">
+                            <template x-if="productType === 'galvanized'">
+                                <option value="Minimize">Minimize (+0 ฿)</option>
+                            </template>
+                            <option value="Zero" x-text="'Zero (+' + (productType === 'galvanized' ? '150' : '0') + ' ฿)'"></option>
+                        </select>
+                    </div>
+                    
+                    <div><label class="block text-sm mb-1">Chrome treatment</label>
+                        <select x-model="chromeTreatment" @change="calculatePrice" class="w-full border p-2.5 rounded">
+                            <option value="None chrome">None chrome (+0 ฿)</option>
+                            <option value="Cr3">Cr3 (+0 ฿)</option>
+                            <option value="CrFree">CrFree (+200 ฿)</option>
+                        </select>
+                    </div>
+
+                    <div><label class="block text-sm mb-1">Oil treatment</label><select x-model="oilExtra" @change="calculatePrice" class="w-full border p-2.5 rounded"><option value="0">Unoil (+0 ฿)</option><option value="200">Slightly oil (+200 ฿)</option></select></div>
+                    <div><label class="block text-sm mb-1">Skinpass</label><select x-model="skinpassExtra" @change="calculatePrice" class="w-full border p-2.5 rounded"><option value="0">non skinpass (+0 ฿)</option><option value="200">skinpass (+200 ฿)</option></select></div>
+                    <div><label class="block text-sm mb-1">Non finger (AFP)</label><select x-model="fingerExtra" @change="calculatePrice" class="w-full border p-2.5 rounded"><option value="0">Non AFP (+0 ฿)</option><option value="200">AFP (+200 ฿)</option></select></div>
+                    
+                    <div><label class="block text-sm mb-1">Customer Segment</label>
+                        <select x-model="customerSegment" @change="calculatePrice" class="w-full border p-2.5 rounded">
+                            <option value="Pipe construction">Pipe construction (+0 ฿)</option>
+                            <option value="Export">Export (+600 ฿)</option>
+                            <option value="Pipe Industry">Pipe Industry (+0 ฿)</option>
+                            <option value="Furniture">Furniture (+0 ฿)</option>
+                            <option value="Purlin">Purlin (+1000 ฿)</option>
+                            <option value="Local content">Local content (+1500 ฿)</option>
+                            <option value="Home Appliance">Home Appliance (+2000 ฿)</option>
+                            <option value="Grand Asia">Grand Asia (+1000 ฿)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-span-2 border-t pt-3 mt-1">
+                        <label class="block text-sm mb-1" x-text="lang === 'th' ? 'แพ็กเกจจิ้ง (Packaging Extra)' : 'Packaging Extra'"></label>
+                        <select x-model="packagingType" @change="calculatePrice" class="w-full border p-2.5 rounded bg-blue-50 font-bold text-blue-800">
+                            <option value="0">None (+0 ฿)</option>
+                            <option value="Coil">Coil (+300 ฿)</option>
+                            <option value="Slit">Slit (+300 ฿)</option>
+                            <option value="Sheet">Sheet (+300 ฿)</option>
+                            <option value="Export">Export (+500 ฿)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <template x-if="customerSegment === 'Export'">
+                    <div class="mb-3 p-4 bg-green-50 border border-green-200 rounded grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                        <div>
+                            <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'Term การขาย' : 'Sales Term'"></label>
+                            <select x-model="exportTerm" @change="calculatePrice" class="w-full border border-green-300 p-2.5 rounded bg-white font-bold">
+                                <option value="Ex.work">Ex.work</option>
+                                <option value="FOB">FOB</option>
+                                <option value="CFR">CFR</option>
+                                <option value="CIF">CIF</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'บวกเพิ่ม (USD/Ton)' : 'Extra Cost (USD/Ton)'"></label>
+                            <input type="number" x-model.number="exportExtraUsd" @input="calculatePrice" placeholder="เช่น 15" class="w-full border border-green-300 p-2.5 rounded bg-white" step="0.01">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'อัตราแลกเปลี่ยน (THB/USD)' : 'Exchange Rate'"></label>
+                            <input type="number" x-model.number="exchangeRate" @input="calculatePrice" placeholder="เช่น 35.50" class="w-full border border-green-300 p-2.5 rounded bg-white" step="0.01">
+                        </div>
+                        <div class="col-span-1 md:col-span-3 text-xs text-green-600" x-text="lang === 'th' ? '* ระบบจะคำนวณราคาในใบเสนอราคาเป็นสกุลเงิน USD อัตโนมัติ (ปัดเศษทศนิยม)' : '* Quotation prices will be automatically calculated and rounded to whole numbers in USD'"></div>
+                    </div>
+                </template>
+
+                <label class="block text-sm mb-1 mt-4" x-text="lang === 'th' ? 'รายละเอียดเพิ่มเติม' : 'Additional Details'"></label>
+                <textarea x-model="additionalDetails" class="w-full border p-2.5 rounded mb-4" rows="2" placeholder="..."></textarea>
+
+                <div class="bg-gray-100 p-4 rounded text-center mb-4 border border-gray-300 shadow-inner">
+                    <div class="text-sm text-gray-500 font-bold" x-text="lang === 'th' ? 'ราคาประเมิน (ไม่รวม VAT)' : 'Estimated Net Price (excl. VAT)'"></div>
+                    <div class="text-3xl font-bold text-red-600 mt-1" x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(calculatedPrice / exchangeRate) + ' USD/Ton' : formatCurrency(calculatedPrice) + ' THB/Ton'"></div>
+                    <template x-if="exchangeRate > 0">
+                        <div class="text-sm text-gray-500 mt-1" x-text="'( ≈ ' + formatCurrency(calculatedPrice) + ' THB/Ton )'"></div>
+                    </template>
+                </div>
+
+                <button @click="addItem" :disabled="!!savedNo" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700 transition text-lg disabled:opacity-50 disabled:cursor-not-allowed" x-text="lang === 'th' ? '+ เพิ่มรายการลงใบเสนอราคา' : '+ Add Item to Quotation'"></button>
+            </div>
+
+            <template x-if="!savedNo">
+                <button @click="saveAndPrint" :disabled="isSaving" :class="isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'" class="w-full text-white p-4 rounded shadow font-bold transition text-lg mt-4 flex justify-center items-center">
+                    <span x-show="isSaving" class="loader"></span>
+                    <span x-text="isSaving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (lang === 'th' ? '💾 บันทึกส่วนกลางและสั่งพิมพ์' : '💾 Save to Central & Print')"></span>
+                </button>
+            </template>
+            <template x-if="savedNo">
+                <div class="mt-4 space-y-2">
+                    <div class="bg-green-50 border border-green-300 text-green-800 rounded p-3 text-sm text-center"><span x-text="lang === 'th' ? 'บันทึกแล้ว เลขที่ ' : 'Saved as No. '"></span><b x-text="savedNo"></b><div class="text-xs text-green-700 mt-1" x-text="lang === 'th' ? 'เอกสารนี้แก้ไขไม่ได้แล้ว กด เริ่มใบเสนอราคาใหม่ เพื่อทำใบต่อไป' : 'This document is locked. Press New quotation to start the next one.'"></div></div>
+                    <button @click="printAgain" class="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded shadow font-bold transition text-lg" x-text="lang === 'th' ? '🖨️ พิมพ์ซ้ำ' : '🖨️ Print again'"></button>
+                    <button @click="newQuotation" class="w-full bg-white border border-blue-600 text-blue-700 p-3 rounded shadow font-bold hover:bg-blue-50 transition" x-text="lang === 'th' ? '🆕 เริ่มใบเสนอราคาใหม่' : '🆕 New quotation'"></button>
+                </div>
+            </template>
+        </div>
+
+        <div class="lg:col-span-7 print:col-span-12 print:static relative print:p-0 overflow-x-auto lg:overflow-visible print:overflow-visible">
+            <div class="bg-white p-8 print:p-2 border print:border-none print:shadow-none shadow-lg min-h-[1000px] text-sm sticky top-4 min-w-[640px] lg:min-w-0 print:min-w-0">
+                
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-1/4">
+                        <template x-if="!logoBase64">
+                            <div class="w-24 h-24 border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold bg-gray-50">LOGO</div>
+                        </template>
+                        <template x-if="logoBase64">
+                            <img :src="logoBase64" class="max-h-24 max-w-[150px] object-contain">
+                        </template>
+                    </div>
+                    <div class="w-2/4 text-center">
+                        <h1 class="text-xl font-bold" x-text="getCompanyInfo().name"></h1>
+                        <p class="text-xs text-gray-600 mt-1" x-text="getCompanyInfo().address"></p>
+                    </div>
+                    <div class="w-1/4 flex justify-end">
+                        <div class="bg-[#1e3a8a] text-[#ffd700] px-6 py-2 font-bold text-lg rounded-sm print-color-adjust">QUOTATION</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between border-b pb-4 mb-4">
+                    <div class="w-1/2 pr-4">
+                        <div class="flex mb-1"><span class="w-20 font-bold flex-shrink-0">To.:</span> <span x-text="customerInfo.name"></span></div>
+                        <div class="flex mb-1"><span class="w-20 font-bold flex-shrink-0">Address:</span> <span class="whitespace-pre-wrap" x-text="customerInfo.address"></span></div>
+                        <div class="flex mb-1"><span class="w-20 font-bold flex-shrink-0">Phone:</span> <span x-text="customerInfo.phone"></span></div>
+                    </div>
+                    <div class="w-1/2 pl-4 border-l">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-bold">Quotation No.:</span> 
+                            <span class="text-red-600 font-bold" x-text="runningNo"></span>
+                        </div>
+                        <div class="flex justify-between mb-1"><span class="font-bold">Date:</span> <span class="text-red-600" x-text="formatDate(quoteDate)"></span></div>
+                        <div class="flex justify-between mb-1"><span class="font-bold" x-text="lang === 'th' ? 'พนักงานขาย:' : 'Sales:'"></span> <span x-text="salesName"></span></div>
+                        
+                        <div class="flex justify-between mb-1"><span class="font-bold">Price Term:</span> <span class="text-blue-800 font-bold" x-text="items.length > 0 && items[0].exportTerm ? items[0].exportTerm : '-'"></span></div>
+                        
+                        <div class="flex justify-between mb-1"><span class="font-bold">Delivery:</span> <span x-text="customerInfo.delivery"></span></div>
+                        <div class="flex justify-between mb-1"><span class="font-bold">Payment:</span> <span x-text="customerInfo.payment"></span></div>
+                        <div class="flex justify-between mb-1"><span class="font-bold">Transport:</span> <span x-text="transportExtra == '0' ? 'Exclude Freight' : 'Include Freight'"></span></div>
+                    </div>
+                </div>
+
+                <table class="w-full mb-6 border-collapse">
+                    <thead>
+                        <tr class="bg-[#1e3a8a] text-white print-color-adjust">
+                            <th class="border p-2 w-10 text-center">No.</th><th class="border p-2">Description</th><th class="border p-2 text-center w-24">Q'ty<br>(Tons)</th><th class="border p-2 text-right w-32">Unit Price<br>(Net Price)</th><th class="border p-2 text-right w-32">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(item, index) in items" :key="index">
+                            <tr class="print:break-inside-avoid">
+                                <td class="border p-2 text-center align-top" x-text="index + 1"></td>
+                                <td class="border p-2 text-xs">
+                                    <div class="font-bold text-sm" x-text="(item.productType === 'galvanized' ? 'GALVANIZED STEEL THICKNESS ' : 'Mg-Al-Zn STEEL THICKNESS ') + Number(item.thickness).toFixed(2) + ' MM'"></div>
+                                    <div class="text-gray-700 mt-1">Grade: <span x-text="item.spec"></span> | Coating: <span x-text="item.coating"></span></div>
+                                    <div class="text-gray-700">Dimension: <span x-text="item.baseThicknessType + ', Width ' + item.width + ' mm, ' + item.edgeLabel + (item.slitSize ? ' (Size ' + item.slitSize + ' mm)' : '')"></span></div>
+                                    <div class="text-gray-700">Surface: <span x-text="item.surfaceLabel"></span> <span class="font-bold ml-1 text-blue-800" x-text="item.packagingLabel !== '0' ? '| Packaging: ' + item.packagingLabel : ''"></span></div>
+                                    
+                                    <template x-if="item.additionalDetails"><div class="text-gray-600 italic mt-1" x-text="item.additionalDetails"></div></template>
+                                </td>
+                                <td class="border p-2 text-center align-top" x-text="item.qty.toFixed(2)"></td>
+                                <td class="border p-2 text-right align-top">
+                                    <div x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(item.price / exchangeRate) + ' USD' : formatCurrency(item.price) + ' THB'"></div>
+                                </td>
+                                <td class="border p-2 text-right align-top">
+                                    <div x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(item.amount / exchangeRate) + ' USD' : formatCurrency(item.amount) + ' THB'"></div>
+                                    <button x-show="!savedNo" @click="items.splice(index, 1)" class="no-print text-red-500 text-xs mt-2 underline" x-text="lang === 'th' ? 'ลบ' : 'Delete'"></button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                    <tbody x-show="items.length > 0" class="print:break-inside-avoid">
+                        <tr class="font-bold bg-gray-50 print-color-adjust">
+                            <td colspan="2" class="border p-2 text-right">GRAND TOTAL</td><td class="border p-2 text-center" x-text="grandTotalQty.toFixed(2)"></td><td class="border p-2"></td>
+                            <td class="border p-2 text-right text-red-600">
+                                <div x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(grandTotalAmount / exchangeRate) + ' USD' : formatCurrency(grandTotalAmount) + ' THB'"></div>
+                                <template x-if="exchangeRate > 0">
+                                    <div class="text-xs text-gray-500 mt-1 font-normal" x-text="'( ≈ ' + formatCurrency(grandTotalAmount) + ' THB )'"></div>
+                                </template>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="text-xs print:break-inside-avoid">
+                    <div class="font-bold mb-1">Remarks:</div>
+                    <ul class="list-disc pl-5 mb-4 text-gray-700 space-y-1">
+                        <li>Thickness tolerance +/- 0.03 mm</li><li>Width tolerance -0.00 mm / +3.00 mm</li><li>Slit tolerance +/- 0.50 mm or -0.00/+0.50 mm</li><li>Quantity +/- 10% each size and total amount</li><li>The above price is net price per ton (including all surcharges) excluding VAT.</li><li>We reserve the right to change prices according to company conditions.</li><li class="font-bold text-red-600">To confirm the terms and prices specified in this quotation, kindly confirm your purchase order within 3 days after receiving this document.</li>
+                    </ul>
+                    <div class="flex justify-between mt-12 px-8">
+                        <div class="text-center"><div class="mb-8">__________________________________</div><div class="font-bold" x-text="salesName ? salesName : 'Seller'"></div><div class="mt-2">Date......./......./........</div></div>
+                        <div class="text-center"><div class="mb-8">__________________________________</div><div class="font-bold">Buyer / Accepted By</div><div class="mt-2">Date......./......./........</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="activeTab === 'tracker'" x-cloak class="max-w-7xl mx-auto bg-white p-6 rounded shadow no-print">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2">
+            <h2 class="text-xl font-bold" x-text="user && user.role === 'manager' ? (lang === 'th' ? 'ประวัติใบเสนอราคาทุกคน' : 'All Quotations') : (lang === 'th' ? 'ประวัติใบเสนอราคาของฉัน' : 'My Quotations')"></h2>
+            <button @click="loadHistory(true)" :disabled="historyLoading" class="text-sm bg-blue-600 text-white px-3 py-2 rounded disabled:opacity-60" x-text="historyLoading ? (lang === 'th' ? 'กำลังโหลด...' : 'Loading...') : (lang === 'th' ? '🔄 โหลดใหม่' : '🔄 Refresh')"></button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+            <template x-if="user && user.role === 'manager'">
+                <div>
+                    <label class="block text-xs mb-1" x-text="lang === 'th' ? 'พนักงานขาย' : 'Salesperson'"></label>
+                    <select x-model="historyFilter.salesCode" @change="loadHistory(true)" class="w-full border p-2 rounded">
+                        <option value="" x-text="lang === 'th' ? 'ทุกคน' : 'Everyone'"></option>
+                        <template x-for="u in usersList" :key="u.code"><option :value="u.code" x-text="u.name + ' (' + u.code + ')'"></option></template>
+                    </select>
+                </div>
+            </template>
+            <div>
+                <label class="block text-xs mb-1" x-text="lang === 'th' ? 'เดือน' : 'Month'"></label>
+                <input type="month" x-model="historyFilter.month" @change="loadHistory(true)" class="w-full border p-2 rounded">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs mb-1" x-text="lang === 'th' ? 'ค้นหา' : 'Search'"></label>
+                <input type="text" x-model="historyFilter.q" :placeholder="lang === 'th' ? 'ลูกค้า / เลขที่ / สินค้า' : 'Customer / No. / product'" class="w-full border p-2 rounded">
+            </div>
+        </div>
+        <div x-show="historyError" class="text-sm text-red-600 mb-3" x-text="historyError"></div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left border">
+                <thead class="bg-gray-100 text-gray-700">
+                    <tr><th class="border p-2">No.</th><th class="border p-2">Date</th><th class="border p-2">Customer</th><th class="border p-2">Sales</th><th class="border p-2 text-center">Items</th><th class="border p-2 text-right">Qty (Tons)</th><th class="border p-2 text-right">Amount (THB)</th><th class="border p-2"></th></tr>
+                </thead>
+                <tbody>
+                    <template x-for="row in filteredHistory" :key="row.runningNo">
+                        <tr class="hover:bg-gray-50">
+                            <td class="border p-2 font-bold text-blue-600 whitespace-nowrap" x-text="row.runningNo"></td>
+                            <td class="border p-2 whitespace-nowrap" x-text="formatDate(row.quoteDate)"></td>
+                            <td class="border p-2" x-text="row.customer"></td>
+                            <td class="border p-2" x-text="row.salesName"></td>
+                            <td class="border p-2 text-center" x-text="row.itemCount"></td>
+                            <td class="border p-2 text-right" x-text="Number(row.totalQty).toFixed(2)"></td>
+                            <td class="border p-2 text-right text-red-600 font-bold" x-text="formatCurrency(Number(row.totalAmount))"></td>
+                            <td class="border p-2 whitespace-nowrap">
+                                <button @click="openQuotation(row.runningNo, false)" class="text-blue-600 underline text-xs mr-3" x-text="lang === 'th' ? 'เปิดดู/พิมพ์' : 'View/Print'"></button>
+                                <button @click="openQuotation(row.runningNo, true)" class="text-green-700 underline text-xs" x-text="lang === 'th' ? 'ทำสำเนา' : 'Duplicate'"></button>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="!historyLoading && filteredHistory.length === 0"><td colspan="8" class="border p-4 text-center text-gray-400" x-text="lang === 'th' ? 'ยังไม่มีข้อมูล' : 'No data'"></td></tr>
+                </tbody>
+                <tfoot x-show="filteredHistory.length > 0" class="bg-gray-50 font-bold">
+                    <tr>
+                        <td colspan="4" class="border p-2 text-right" x-text="(lang === 'th' ? 'รวม ' : 'Total ') + filteredHistory.length + (lang === 'th' ? ' ใบ' : ' docs')"></td>
+                        <td class="border p-2"></td>
+                        <td class="border p-2 text-right" x-text="historyTotals.qty.toFixed(2)"></td>
+                        <td class="border p-2 text-right text-red-600" x-text="formatCurrency(historyTotals.amount)"></td>
+                        <td class="border p-2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="text-xs text-gray-400 mt-2" x-show="historyFromCache" x-text="lang === 'th' ? '* แสดงข้อมูลล่าสุดที่เคยโหลดไว้ (ออฟไลน์)' : '* Showing the last cached data (offline)'"></div>
+    </div>
+
+    <div x-show="activeTab === 'users'" x-cloak class="max-w-7xl mx-auto bg-white p-6 rounded shadow no-print">
+        <h2 class="text-xl font-bold mb-1 border-b pb-2" x-text="lang === 'th' ? '👥 จัดการพนักงานขาย' : '👥 Manage Sales Staff'"></h2>
+        <p class="text-xs text-gray-500 mb-4" x-text="lang === 'th' ? 'พนักงานใหม่จะได้รหัสและ PIN ทันที (แสดงครั้งเดียว) พนักงานที่ลาออกให้กด ปิดใช้งาน ข้อมูลเดิมยังอยู่ครบ' : 'New staff get a code and PIN immediately (shown once). Disable staff who leave; their data is kept.'"></p>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 items-end">
+            <div class="md:col-span-2"><label class="block text-xs mb-1" x-text="lang === 'th' ? 'ชื่อ-นามสกุล' : 'Full name'"></label><input type="text" x-model="newUser.name" @keydown.enter="addUser" class="w-full border p-2.5 rounded"></div>
+            <div><label class="block text-xs mb-1" x-text="lang === 'th' ? 'บทบาท' : 'Role'"></label><select x-model="newUser.role" class="w-full border p-2.5 rounded"><option value="sales" x-text="lang === 'th' ? 'พนักงานขาย' : 'Sales'"></option><option value="manager" x-text="lang === 'th' ? 'ผู้บริหาร' : 'Manager'"></option></select></div>
+            <button @click="addUser" :disabled="usersBusy" class="bg-blue-600 text-white p-2.5 rounded font-bold hover:bg-blue-700 disabled:opacity-60" x-text="lang === 'th' ? '+ เพิ่มพนักงาน' : '+ Add staff'"></button>
+        </div>
+        <div x-show="usersMessage" class="mb-3 p-3 rounded bg-green-50 border border-green-300 text-green-800 text-sm whitespace-pre-wrap font-bold" x-text="usersMessage"></div>
+        <div x-show="usersError" class="text-sm text-red-600 mb-3" x-text="usersError"></div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left border">
+                <thead class="bg-gray-100 text-gray-700">
+                    <tr><th class="border p-2" x-text="lang === 'th' ? 'รหัส' : 'Code'"></th><th class="border p-2" x-text="lang === 'th' ? 'ชื่อ' : 'Name'"></th><th class="border p-2" x-text="lang === 'th' ? 'บทบาท' : 'Role'"></th><th class="border p-2">PIN</th><th class="border p-2" x-text="lang === 'th' ? 'สถานะ' : 'Status'"></th><th class="border p-2"></th></tr>
+                </thead>
+                <tbody>
+                    <template x-for="u in usersList" :key="u.code">
+                        <tr :class="u.active ? '' : 'bg-gray-50 text-gray-400'">
+                            <td class="border p-2 font-bold" x-text="u.code"></td>
+                            <td class="border p-2" x-text="u.name"></td>
+                            <td class="border p-2" x-text="u.role === 'manager' ? (lang === 'th' ? 'ผู้บริหาร' : 'Manager') : (lang === 'th' ? 'พนักงานขาย' : 'Sales')"></td>
+                            <td class="border p-2 font-mono" x-text="u.pin"></td>
+                            <td class="border p-2" x-text="u.active ? (lang === 'th' ? 'ใช้งาน' : 'Active') : (lang === 'th' ? 'ปิดใช้งาน' : 'Disabled')"></td>
+                            <td class="border p-2 whitespace-nowrap">
+                                <button @click="resetPin(u)" class="text-blue-600 underline text-xs mr-3" x-text="lang === 'th' ? 'รีเซ็ต PIN' : 'Reset PIN'"></button>
+                                <button x-show="!user || u.code !== user.code" @click="toggleUser(u)" class="underline text-xs" :class="u.active ? 'text-red-600' : 'text-green-700'" x-text="u.active ? (lang === 'th' ? 'ปิดใช้งาน' : 'Disable') : (lang === 'th' ? 'เปิดใช้งาน' : 'Enable')"></button>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="usersList.length === 0"><td colspan="6" class="border p-4 text-center text-gray-400">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // ===== AMC Quotation App v1.0 (2026-09-28) =====
+        // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
+        const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
+        const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
+        const USER_KEY = 'amcQuoteUser';
+
+        // ราคา Extra อ้างอิง: GI / Mg-Al-Zn Steel_Quotation_Data update 09.28.2026.xlsx (saved 28/09/2026 15:04)
+        const pricingData = {
+            galvanized: {
+                coatingMatrix: [
+                    { range: [0.35, 0.49], extraThickness: 2136, Z60: 0, Z80: 744, Z100: 1464, Z120: 2190, Z140: 2916, Z180: 4380, Z200: 5106.04, Z220: 5844, Z250: 6936, Z275: 7848, G01: 0, G30: 1464, G40: 2190, G60: 4380, G90: 7848 },
+                    { range: [0.50, 0.59], extraThickness: 1716, Z60: 0, Z80: 588, Z100: 1176, Z120: 1764, Z140: 2340, Z180: 3510, Z200: 4091.51, Z220: 4673.3, Z250: 5549.55, Z275: 6251.51, G01: 0, G30: 1176, G40: 1764, G60: 3510, G90: 6251.51 },
+                    { range: [0.60, 0.65], extraThickness: 1152, Z60: 0, Z80: 480, Z100: 972, Z120: 1464, Z140: 1944, Z180: 2934, Z200: 3408, Z220: 3894, Z250: 4626, Z275: 5232, G01: 0, G30: 972, G40: 1464, G60: 2934, G90: 5232 },
+                    { range: [0.66, 0.75], extraThickness: 900, Z60: 0, Z80: 414, Z100: 846, Z120: 1254, Z140: 1668, Z180: 2502, Z200: 2922, Z220: 3335.85, Z250: 3966, Z275: 4488, G01: 0, G30: 846, G40: 1254, G60: 2502, G90: 4488 },
+                    { range: [0.76, 0.85], extraThickness: 576, Z60: 0, Z80: 354, Z100: 732, Z120: 1098, Z140: 1458, Z180: 2190, Z200: 2556, Z220: 2922, Z250: 3468, Z275: 3924, G01: 0, G30: 732, G40: 1098, G60: 2190, G90: 3924 },
+                    { range: [0.86, 0.95], extraThickness: 468, Z60: 0, Z80: 342, Z100: 654, Z120: 972, Z140: 1296, Z180: 1944, Z200: 2268, Z220: 2591.89, Z250: 3084, Z275: 3486, G01: 0, G30: 654, G40: 972, G60: 1944, G90: 3486 },
+                    { range: [0.96, 1.05], extraThickness: 384, Z60: 0, Z80: 294, Z100: 582, Z120: 876, Z140: 1170, Z180: 1758, Z200: 2045.76, Z220: 2339.76, Z250: 2777.76, Z275: 3143.76, G01: 0, G30: 582, G40: 876, G60: 1758, G90: 3143.76 },
+                    { range: [1.06, 1.15], extraThickness: 300, Z60: 0, Z80: 264, Z100: 534, Z120: 810, Z140: 1062, Z180: 1596, Z200: 1860, Z220: 2124, Z250: 2526, Z275: 2856, G01: 0, G30: 534, G40: 810, G60: 1596, G90: 2856 },
+                    { range: [1.16, 1.25], extraThickness: 240, Z60: 0, Z80: 246, Z100: 486, Z120: 732, Z140: 972, Z180: 1464, Z200: 1704, Z220: 1950, Z250: 2310.52, Z275: 2616, G01: 0, G30: 486, G40: 732, G60: 1464, G90: 2616 },
+                    { range: [1.26, 1.85], extraThickness: 0, Z60: 0, Z80: 204, Z100: 414, Z120: 630, Z140: 834, Z180: 1248, Z200: 1464, Z220: 1667.8, Z250: 1986, Z275: 2250, G01: 0, G30: 414, G40: 630, G60: 1248, G90: 2250 },
+                    { range: [1.86, 2.25], extraThickness: -114, Z60: 0, Z80: 141, Z100: 291, Z120: 435, Z140: 582, Z180: 879, Z200: 1026, Z220: 1170, Z250: 1392, Z275: 1575, G01: 0, G30: 291, G40: 435, G60: 879, G90: 1575 },
+                    { range: [2.26, 2.55], extraThickness: -132, Z60: 0, Z80: 126, Z100: 246, Z120: 372, Z140: 498, Z180: 744, Z200: 888, Z220: 996, Z250: 1182, Z275: 1332.07, G01: 0, G30: 246, G40: 372, G60: 744, G90: 1332.07 },
+                    { range: [2.56, 3.20], extraThickness: -171, Z60: 0, Z80: 111, Z100: 219, Z120: 330, Z140: 438, Z180: 657, Z200: 768, Z220: 876, Z250: 1038.06, Z275: 1206, G01: 0, G30: 219, G40: 330, G60: 657, G90: 1206 }
+                ],
+                specs: { "SGCD1": 0, "SGCC": 0, "SGC400": 200, "SGC440": 350, "SGC490": 420, "G250": 0, "G300": 0, "G400": 200, "G450": 350, "G550": 420 }
+            },
+            mgalzn: {
+                coatingMatrix: [
+                    { range: [0.35, 0.49], extraThickness: 2362.5, ZM60: 0, ZM90: 1181.25, ZM120: 2362.5, ZM150: 3543.75, ZM180: 4725, ZM210: 5899.98, ZM220: 6293.43, ZM275: 8462.5 },
+                    { range: [0.50, 0.59], extraThickness: 1893.75, ZM60: 0, ZM90: 943.75, ZM120: 1887.5, ZM150: 2831.25, ZM180: 3775, ZM210: 4718.75, ZM220: 5031, ZM275: 6762.18 },
+                    { range: [0.60, 0.65], extraThickness: 1575, ZM60: 0, ZM90: 787.5, ZM120: 1575, ZM150: 2362.5, ZM180: 3150, ZM210: 3937.5, ZM220: 4200, ZM275: 5643.75 },
+                    { range: [0.66, 0.75], extraThickness: 1350, ZM60: 0, ZM90: 675, ZM120: 1350, ZM150: 2025, ZM180: 2700, ZM210: 3375, ZM220: 3600, ZM275: 4837.5 },
+                    { range: [0.76, 0.85], extraThickness: 1181.25, ZM60: 0, ZM90: 593.75, ZM120: 1181.25, ZM150: 1775, ZM180: 2362.5, ZM210: 2949.99, ZM220: 3150, ZM275: 4231.25 },
+                    { range: [0.86, 0.95], extraThickness: 1050, ZM60: 0, ZM90: 525, ZM120: 1050, ZM150: 1575, ZM180: 2100, ZM210: 2625, ZM220: 2800, ZM275: 3762.5 },
+                    { range: [0.96, 1.05], extraThickness: 943.75, ZM60: 0, ZM90: 475, ZM120: 950, ZM150: 1418.75, ZM180: 1893.75, ZM210: 2362.5, ZM220: 2518.62, ZM275: 3387.5 },
+                    { range: [1.06, 1.15], extraThickness: 862.5, ZM60: 0, ZM90: 425.16, ZM120: 856.25, ZM150: 1287.5, ZM180: 1712.82, ZM210: 2143.75, ZM220: 2287.5, ZM275: 3075 },
+                    { range: [1.16, 1.25], extraThickness: 787.5, ZM60: 0, ZM90: 393.75, ZM120: 787.5, ZM150: 1181.25, ZM180: 1575, ZM210: 1968.75, ZM220: 2100, ZM275: 2819.14 },
+                    { range: [1.26, 1.85], extraThickness: 0, ZM60: 0, ZM90: 326.56, ZM120: 653.13, ZM150: 979.69, ZM180: 1302.83, ZM210: 1629.56, ZM220: 1737.66, ZM275: 2338.41 },
+                    { range: [1.86, 2.25], extraThickness: -178.13, ZM60: 0, ZM90: 235.94, ZM120: 471.88, ZM150: 712.5, ZM180: 949.78, ZM210: 1184.79, ZM220: 1265.63, ZM275: 1703.13 },
+                    { range: [2.26, 2.55], extraThickness: -203.13, ZM60: 0, ZM90: 200, ZM120: 400, ZM150: 600, ZM180: 799.76, ZM210: 1006.25, ZM220: 1068.75, ZM275: 1437.5 },
+                    { range: [2.56, 3.20], extraThickness: -239.06, ZM60: 0, ZM90: 174.72, ZM120: 353.14, ZM150: 531.27, ZM180: 706.28, ZM210: 884.41, ZM220: 943.79, ZM275: 1268.73 }
+                ],
+                specs: { "CS-A": 0, "CS-B": 0, "SS230": 0, "SS255": 0, "SS275": 0, "SS340-1": 350, "SS340-2": 350, "SS340-3": 420, "SS340-4": 350, "SS380": 420, "SS410": 420, "SS480": 420 }
+            }
+        };
+
+        function quotationApp() {
+            return {
+                lang: 'th',
+                activeTab: 'form',
+                isSaving: false,
+                // ===== ผู้ใช้ / เซิร์ฟเวอร์ =====
+                user: null, loginForm: { code: '', pin: '' }, loginError: '', loginBusy: false,
+                savedNo: '', savedAt: '',
+                historyRows: [], historyLoading: false, historyError: '', historyFromCache: false,
+                historyFilter: { salesCode: '', month: '', q: '' },
+                usersList: [], usersBusy: false, usersMessage: '', usersError: '', newUser: { name: '', role: 'sales' },
+                installPrompt: null, isIos: /iPhone|iPad|iPod/i.test(navigator.userAgent),
+                
+                logoBase64: null,
+                companyPrefix: 'AMC',
+                quoteDate: new Date().toISOString().split('T')[0],
+                runningNo: '',
+
+                customerInfo: { name: '', address: '', phone: '', delivery: '', payment: '' },
+                salesName: '', 
+                productType: 'galvanized', 
+                basePrice: 20000, 
+                discountPerTon: 0, 
+                qty: 1, 
+                spec: 'SGCC', 
+                baseThicknessType: 'TCT', 
+                thickness: 0.45, 
+                width: 550, 
+                coating: 'G60',
+                edgeType: '250', 
+                slitSize: '', 
+                spangleType: 'Minimize', 
+                chromeTreatment: 'Cr3', 
+                oilExtra: '0', 
+                skinpassExtra: '200', 
+                fingerExtra: '0', 
+                transportExtra: '0', 
+                customerSegment: 'Pipe construction', 
+                packagingType: '0', 
+                
+                // สำหรับ Export Segment
+                exportTerm: 'Ex.work',
+                exportExtraUsd: '',
+                exchangeRate: null, 
+                
+                additionalDetails: '',
+                
+                calculatedPrice: 0, 
+                extraThicknessPrice: 0, 
+                widthExtraPrice: 0, 
+                items: [],
+
+                init() {
+                    this.updateRunningNo(); this.calculatePrice();
+                    try {
+                        const u = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+                        if (u && u.code && u.pin) { this.user = u; this.salesName = u.name; this.verifyUser(); }
+                    } catch (e) {}
+                    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this.installPrompt = e; });
+                    if ('serviceWorker' in navigator && location.protocol !== 'file:') { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+                },
+
+                // ===== เรียกเซิร์ฟเวอร์ (Apps Script) =====
+                async api(payload) {
+                    if (!API_URL || API_URL.indexOf('http') !== 0) throw new Error(this.lang === 'th' ? 'ยังไม่ได้ตั้งค่าลิงก์เซิร์ฟเวอร์ (API_URL)' : 'Server URL (API_URL) is not configured');
+                    const body = Object.assign({}, payload);
+                    if (this.user && !body.auth) body.auth = { code: this.user.code, pin: this.user.pin };
+                    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+                    let data;
+                    try { data = await res.json(); }
+                    catch (e) { throw new Error(this.lang === 'th' ? 'เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (ตรวจการ deploy: Who has access = Anyone และ URL ลงท้ายด้วย /exec)' : 'Server did not return JSON (check deployment: Anyone / URL ends with /exec)'); }
+                    if (!data || data.ok !== true) throw new Error((data && data.error) || 'Unknown error');
+                    return data;
+                },
+                async login() {
+                    this.loginError = ''; this.loginBusy = true;
+                    try {
+                        const code = (this.loginForm.code || '').trim().toUpperCase(), pin = (this.loginForm.pin || '').trim();
+                        const data = await this.api({ action: 'login', auth: { code: code, pin: pin } });
+                        this.user = { code: data.user.code, name: data.user.name, role: data.user.role, pin: pin };
+                        try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
+                        this.salesName = this.user.name; this.loginForm = { code: '', pin: '' };
+                    } catch (e) { this.loginError = e.message; }
+                    this.loginBusy = false;
+                },
+                async verifyUser() {   // ตรวจซ้ำเบื้องหลังตอนเปิดแอป: ถูกปิดใช้งาน/เปลี่ยน PIN -> ออกจากระบบ
+                    try {
+                        const data = await this.api({ action: 'login' });
+                        this.user = Object.assign({}, this.user, { name: data.user.name, role: data.user.role });
+                        try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
+                        this.salesName = this.user.name;
+                    } catch (e) {
+                        if (/PIN|ปิดใช้งาน|เข้าสู่ระบบ/i.test(e.message)) this.logout(e.message);
+                    }
+                },
+                logout(msg) {
+                    this.user = null; try { localStorage.removeItem(USER_KEY); } catch (e) {}
+                    this.loginForm = { code: '', pin: '' }; this.loginError = msg || '';
+                    this.historyRows = []; this.usersList = []; this.usersMessage = '';
+                    this.newQuotation(); this.salesName = ''; this.activeTab = 'form';
+                },
+                configureApi() {
+                    let cur = ''; try { cur = localStorage.getItem('amcQuoteApiUrl') || ''; } catch (e) {}
+                    const v = prompt((this.lang === 'th' ? 'ลิงก์ Apps Script Web App (เว้นว่าง = ใช้ค่าเริ่มต้นในแอป):' : 'Apps Script Web App URL (blank = app default):') + '\n' + API_URL_DEFAULT, cur);
+                    if (v === null) return;
+                    try { if (v.trim()) localStorage.setItem('amcQuoteApiUrl', v.trim()); else localStorage.removeItem('amcQuoteApiUrl'); } catch (e) {}
+                    location.reload();
+                },
+                async installApp() {
+                    if (!this.installPrompt) return;
+                    this.installPrompt.prompt();
+                    try { await this.installPrompt.userChoice; } catch (e) {}
+                    this.installPrompt = null;
+                },
+
+                // ===== ประวัติ =====
+                async loadHistory(force) {
+                    if (!this.user) return;
+                    if (!force && this.historyRows.length) return;
+                    const key = 'amcQuoteHistory_' + this.user.code;
+                    this.historyLoading = true; this.historyError = ''; this.historyFromCache = false;
+                    try {
+                        if (this.user.role === 'manager' && !this.usersList.length) { try { await this.loadUsers(); } catch (e) {} }
+                        const data = await this.api({ action: 'list', filter: { salesCode: this.historyFilter.salesCode, month: this.historyFilter.month } });
+                        this.historyRows = data.rows || [];
+                        try { localStorage.setItem(key, JSON.stringify(this.historyRows)); } catch (e) {}
+                    } catch (e) {
+                        this.historyError = e.message;
+                        try { const c = JSON.parse(localStorage.getItem(key) || '[]'); if (c.length) { this.historyRows = c; this.historyFromCache = true; } } catch (e2) {}
+                    }
+                    this.historyLoading = false;
+                },
+                get filteredHistory() {
+                    const q = (this.historyFilter.q || '').toLowerCase().trim();
+                    if (!q) return this.historyRows;
+                    return this.historyRows.filter(r => ((r.customer || '') + ' ' + (r.runningNo || '') + ' ' + (r.summary || '') + ' ' + (r.salesName || '')).toLowerCase().includes(q));
+                },
+                get historyTotals() {
+                    return this.filteredHistory.reduce((t, r) => ({ qty: t.qty + (Number(r.totalQty) || 0), amount: t.amount + (Number(r.totalAmount) || 0) }), { qty: 0, amount: 0 });
+                },
+                async openQuotation(no, duplicate) {
+                    try {
+                        const data = await this.api({ action: 'get', runningNo: no });
+                        const q = data.quotation || {};
+                        this.companyPrefix = q.prefix || this.companyPrefix;
+                        this.customerInfo = Object.assign({ name: '', address: '', phone: '', delivery: '', payment: '' }, q.customer || {});
+                        this.transportExtra = String(q.transport || '0');
+                        this.exchangeRate = q.exchangeRate || null;
+                        this.items = (q.items || []).map(it => Object.assign({}, it, { qty: Number(it.qty) || 0, price: Number(it.price) || 0, amount: Number(it.amount) || 0 }));
+                        if (duplicate) {
+                            this.savedNo = ''; this.savedAt = '';
+                            this.quoteDate = new Date().toISOString().split('T')[0];
+                            this.salesName = this.user ? this.user.name : this.salesName;
+                            this.updateRunningNo();
+                        } else {
+                            this.quoteDate = q.quoteDate || this.quoteDate;
+                            this.runningNo = q.runningNo; this.savedNo = q.runningNo; this.savedAt = q.savedAt || '';
+                            this.salesName = q.salesName || this.salesName;
+                        }
+                        this.calculatePrice(); this.activeTab = 'form'; window.scrollTo(0, 0);
+                    } catch (e) { alert(e.message); }
+                },
+
+                // ===== พนักงานขาย (manager) =====
+                async loadUsers() { const data = await this.api({ action: 'listUsers' }); this.usersList = data.users || []; },
+                async loadUsersTab() { this.usersError = ''; try { await this.loadUsers(); } catch (e) { this.usersError = e.message; } },
+                async addUser() {
+                    this.usersError = ''; this.usersMessage = ''; this.usersBusy = true;
+                    try {
+                        const data = await this.api({ action: 'addUser', user: { name: this.newUser.name, role: this.newUser.role } });
+                        this.usersMessage = (this.lang === 'th' ? 'เพิ่มแล้ว: ' : 'Added: ') + data.user.name + '\n' + (this.lang === 'th' ? 'รหัส ' : 'Code ') + data.user.code + '   PIN ' + data.user.pin;
+                        this.newUser = { name: '', role: 'sales' };
+                        await this.loadUsers();
+                    } catch (e) { this.usersError = e.message; }
+                    this.usersBusy = false;
+                },
+                async toggleUser(u) {
+                    const on = !u.active;
+                    if (!on && !confirm((this.lang === 'th' ? 'ปิดใช้งาน ' : 'Disable ') + u.name + ' ?')) return;
+                    this.usersError = ''; this.usersMessage = '';
+                    try { await this.api({ action: 'setUserActive', code: u.code, active: on }); await this.loadUsers(); } catch (e) { this.usersError = e.message; }
+                },
+                async resetPin(u) {
+                    if (!confirm((this.lang === 'th' ? 'รีเซ็ต PIN ของ ' : 'Reset PIN for ') + u.name + ' ?')) return;
+                    this.usersError = ''; this.usersMessage = '';
+                    try {
+                        const data = await this.api({ action: 'resetPin', code: u.code });
+                        this.usersMessage = u.name + ' \u2192 PIN ' + (this.lang === 'th' ? 'ใหม่: ' : 'new: ') + data.pin;
+                        await this.loadUsers();
+                    } catch (e) { this.usersError = e.message; }
+                },
+
+                handleLogoUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => { this.logoBase64 = e.target.result; };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                getCompanyInfo() {
+                    const companies = {
+                        'STC': { name: 'STC Steel Co.,Ltd.', address: '6/10 หมู่ 1 ซ.วัดหนามแดง ถ.ศรีนครินทร์ ต.บางแก้ว อ.บางพลี จ.สมุทรปราการ 10540' },
+                        'AMC': { name: 'ASIA METAL PLC', address: '55,55/1 หมู่ที่ 2 ซ.วัดหนามแดง ถ.ศรีนครินทร์ ต.บางแก้ว อ.บางพลี จ.สมุทรปราการ 10540' },
+                        'GAS': { name: 'Grand Asia Steel Processing Center Co.,Ltd.', address: '90/1 หมู่ 10 ต.สระสี่เหลี่ยม อ.พนัสนิคม จ.ชลบุรี 20140' }
+                    };
+                    return companies[this.companyPrefix];
+                },
+
+                updateRunningNo() {
+                    let d = new Date(this.quoteDate);
+                    let day = String(d.getDate()).padStart(2, '0'); let month = String(d.getMonth() + 1).padStart(2, '0');
+                    this.runningNo = `${this.companyPrefix}${day}${month}${d.getFullYear()}-(รันอัตโนมัติ/Auto)`;
+                },
+
+                getCoatingLabel(code) {
+                    const row = pricingData[this.productType].coatingMatrix.find(r => this.thickness >= r.range[0] && this.thickness <= r.range[1]);
+                    return `${code} (${this.formatSigned((row && row[code] !== undefined) ? row[code] : 0, 0)} ฿)`;
+                },
+
+                calculatePrice() {
+                    let pData = pricingData[this.productType];
+                    let total = parseFloat(this.basePrice) || 0;
+                    let row = pData.coatingMatrix.find(r => this.thickness >= r.range[0] && this.thickness <= r.range[1]);
+                    
+                    if (row) { 
+                        this.extraThicknessPrice = row.extraThickness; 
+                        total += row.extraThickness; 
+                        total += row[this.coating] || 0; 
+                    } 
+                    else { this.extraThicknessPrice = 0; }
+
+                    this.widthExtraPrice = (this.width >= 491 && this.width <= 580) ? 200 : 0;
+                    total += this.widthExtraPrice;
+                    if (pData.specs[this.spec]) total += pData.specs[this.spec];
+                    
+                    const chromeExtras = { "None chrome": 0, "Cr3": 0, "CrFree": 200 };
+                    const segmentExtras = { "Pipe construction": 0, "Export": 600, "Pipe Industry": 0, "Furniture": 0, "Purlin": 1000, "Local content": 1500, "Home Appliance": 2000, "Grand Asia": 1000 };
+                    const packagingExtras = { "0": 0, "Coil": 300, "Slit": 300, "Sheet": 300, "Export": 500 };
+
+                    let spangleCost = (this.spangleType === 'Zero' && this.productType === 'galvanized') ? 150 : 0;
+
+                    total += parseInt(this.edgeType) + spangleCost + parseInt(this.oilExtra) + 
+                             parseInt(this.skinpassExtra) + parseInt(this.fingerExtra) + parseInt(this.transportExtra);
+                    
+                    total += chromeExtras[this.chromeTreatment] || 0;
+                    total += segmentExtras[this.customerSegment] || 0;
+                    total += packagingExtras[this.packagingType] || 0;
+                    
+                    total += this.baseThicknessType === 'BMT' ? 100 : 0;
+                    
+                    // คำนวณค่ามูลค่าเพิ่มเติมของ Export (ถ้ามีและกรอก Exchange Rate แล้ว)
+                    let extraUsdInThb = 0;
+                    if (this.customerSegment === 'Export' && this.exchangeRate > 0 && this.exportExtraUsd > 0) {
+                        extraUsdInThb = parseFloat(this.exportExtraUsd) * parseFloat(this.exchangeRate);
+                    }
+                    total += extraUsdInThb;
+
+                    let discount = parseFloat(this.discountPerTon) || 0;
+                    total -= discount;
+
+                    this.calculatedPrice = total;
+                },
+
+                addItem() {
+                    this.calculatePrice();
+                    let surfaceParts = [
+                        this.spangleType, 
+                        this.chromeTreatment,
+                        this.oilExtra == '200' ? 'Slightly oil' : 'Unoil',
+                        this.skinpassExtra == '200' ? 'skinpass' : 'non skinpass',
+                        this.fingerExtra == '200' ? 'AFP' : 'Non AFP'
+                    ];
+
+                    this.items.push({
+                        productType: this.productType, qty: parseFloat(this.qty), spec: this.spec,
+                        baseThicknessType: this.baseThicknessType,
+                        thickness: this.thickness, width: this.width, coating: this.coating,
+                        edgeLabel: this.edgeType == '250' ? 'Slit edge' : 'Mill edge',
+                        slitSize: this.edgeType == '250' ? this.slitSize : null,
+                        surfaceLabel: surfaceParts.join(', '), 
+                        packagingLabel: this.packagingType, 
+                        customerSegment: this.customerSegment,
+                        exportTerm: this.customerSegment === 'Export' ? this.exportTerm : '',
+                        discount: parseFloat(this.discountPerTon) || 0,
+                        additionalDetails: this.additionalDetails,
+                        price: this.calculatedPrice, amount: Math.round((parseFloat(this.qty) * this.calculatedPrice) * 100) / 100
+                    });
+                    
+                    this.additionalDetails = '';
+                    this.discountPerTon = 0; 
+                    this.exportExtraUsd = ''; // รีเซ็ตหลังกดเพิ่มสินค้า
+                    this.calculatePrice();
+                },
+
+                get grandTotalQty() { return Math.round(this.items.reduce((s, i) => s + i.qty, 0) * 100) / 100; },
+                get grandTotalAmount() { return Math.round(this.items.reduce((s, i) => s + i.amount, 0) * 100) / 100; },
+                
+                formatCurrency(val) { return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+                formatCurrencyNoDecimals(val) { return Math.round(val).toLocaleString('en-US'); },
+                formatSigned(val, minDigits = 2) { return (val < 0 ? '-' : '+') + Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: minDigits, maximumFractionDigits: 2 }); },
+                
+                formatDate(dateStr) {
+                    if(!dateStr) return '';
+                    const d = new Date(dateStr);
+                    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                },
+
+                async saveAndPrint() {
+                    if (this.items.length === 0) { alert(this.lang === 'th' ? 'กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการครับ' : 'Please add at least 1 item.'); return; }
+                    if (!this.user) { alert(this.lang === 'th' ? 'กรุณาเข้าสู่ระบบก่อน' : 'Please sign in first.'); return; }
+                    this.isSaving = true;
+                    const payload = { action: 'save', quotation: {
+                        prefix: this.companyPrefix, quoteDate: this.quoteDate, customer: Object.assign({}, this.customerInfo),
+                        transport: this.transportExtra, exchangeRate: this.exchangeRate,
+                        priceTerm: (this.items.length > 0 && this.items[0].exportTerm) ? this.items[0].exportTerm : '-',
+                        lang: this.lang, items: this.items, totalQty: this.grandTotalQty, totalAmount: this.grandTotalAmount
+                    } };
+                    try {
+                        const result = await this.api(payload);
+                        this.runningNo = result.runningNo; this.savedNo = result.runningNo; this.savedAt = result.savedAt || '';
+                        this.historyRows = [];          // ให้แท็บประวัติโหลดใหม่ครั้งหน้า
+                        this.printDocument();
+                    } catch (error) {
+                        console.error(error);
+                        alert((this.lang === 'th' ? 'บันทึกไม่สำเร็จ: ' : 'Save failed: ') + error.message);
+                    }
+                    this.isSaving = false;
+                },
+                printDocument() {
+                    const d = new Date(this.quoteDate);
+                    const dateFormatted = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}`;
+                    const originalTitle = document.title;
+                    document.title = `${this.runningNo}_${dateFormatted}`;
+                    setTimeout(() => { window.print(); document.title = originalTitle; }, 300);
+                },
+                printAgain() { if (!this.savedNo) return; this.runningNo = this.savedNo; this.printDocument(); },
+                newQuotation() {
+                    this.items = []; this.savedNo = ''; this.savedAt = '';
+                    this.customerInfo = { name: '', address: '', phone: '', delivery: '', payment: '' };
+                    this.additionalDetails = ''; this.discountPerTon = 0; this.exportExtraUsd = ''; this.exchangeRate = null;
+                    this.quoteDate = new Date().toISOString().split('T')[0];
+                    this.salesName = this.user ? this.user.name : this.salesName;
+                    this.updateRunningNo(); this.calculatePrice(); this.activeTab = 'form';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
