@@ -580,7 +580,7 @@
   function fmtThai(iso){ const p=iso.split("-").map(Number); return p[2]+" "+TH_ABBR[p[1]]; }
 
   // --- history accumulation ---
-  function loadHist(){ if(VIEW_ONLY) return {}; try{ return JSON.parse(localStorage.getItem(KEY_HIST)||"{}"); }catch(e){ return {}; } }
+  function loadHist(){ if(VIEW_ONLY){ const h={}; for(const dt in SEED) h[dt]=Object.assign({},SEED[dt]); return h; } try{ return JSON.parse(localStorage.getItem(KEY_HIST)||"{}"); }catch(e){ return {}; } }
   function recordHistory(){
     const hist=loadHist();
     // merge seed without clobbering anything already recorded
