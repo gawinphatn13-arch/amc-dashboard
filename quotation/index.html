@@ -45,7 +45,7 @@
                 <button type="button" @click="configureApi" class="underline" x-text="lang === 'th' ? 'ตั้งค่าเซิร์ฟเวอร์' : 'Server settings'"></button>
             </div>
             <div x-show="installPrompt" class="mt-4 border-t pt-3">
-                <button type="button" @click="installApp" class="w-full border border-blue-600 text-blue-700 p-2 rounded font-bold hover:bg-blue-50" x-text="lang === 'th' ? '📲 ติดตั้งลงหน้าจอโฮม' : '📲 Install to home screen'"></button>
+                <button type="button" @click="installApp" class="w-full border border-blue-600 text-blue-700 p-2 rounded font-bold hover:bg-blue-50" x-text="installLabel(false)"></button>
             </div>
             <p x-show="isIos && !installPrompt" class="mt-3 text-xs text-gray-500 text-center" x-text="lang === 'th' ? 'iPhone: กดปุ่มแชร์ แล้วเลือก เพิ่มไปยังหน้าจอโฮม' : 'iPhone: tap Share, then Add to Home Screen'"></p>
         </div>
@@ -59,6 +59,7 @@
             <button x-show="user && user.role === 'manager'" @click="activeTab = 'users'; loadUsersTab()" :class="{'bg-blue-600 text-white': activeTab === 'users', 'bg-white text-gray-700': activeTab !== 'users'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '👥 พนักงานขาย' : '👥 Sales Staff'"></button>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            <button x-show="user && installPrompt" @click="installApp" class="text-sm bg-white text-blue-700 border border-blue-600 rounded shadow px-3 py-2 hover:bg-blue-50 font-bold" x-text="installLabel(true)"></button>
             <div x-show="user" class="text-sm bg-white rounded shadow px-3 py-2"><span class="font-bold" x-text="user ? user.name : ''"></span> <span class="text-gray-500" x-text="user && user.role === 'manager' ? (lang === 'th' ? '(ผู้บริหาร)' : '(Manager)') : ''"></span></div>
             <button x-show="user" @click="logout()" class="text-sm bg-white text-gray-600 rounded shadow px-3 py-2 hover:bg-gray-100" x-text="lang === 'th' ? 'ออกจากระบบ' : 'Sign out'"></button>
             <div class="flex bg-white rounded shadow overflow-hidden">
@@ -524,7 +525,7 @@
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.0 (2026-09-28) =====
+        // ===== AMC Quotation App v1.1 (2026-10-02) =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -582,6 +583,7 @@
                 historyFilter: { salesCode: '', month: '', q: '' },
                 usersList: [], usersBusy: false, usersMessage: '', usersError: '', newUser: { name: '', role: 'sales' },
                 installPrompt: null, isIos: /iPhone|iPad|iPod/i.test(navigator.userAgent),
+                isMobile: /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
                 
                 logoBase64: null,
                 companyPrefix: 'AMC',
@@ -629,6 +631,7 @@
                         if (u && u.code && u.pin) { this.user = u; this.salesName = u.name; this.verifyUser(); }
                     } catch (e) {}
                     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this.installPrompt = e; });
+                    window.addEventListener('appinstalled', () => { this.installPrompt = null; });
                     if ('serviceWorker' in navigator && location.protocol !== 'file:') { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
                 },
 
@@ -677,6 +680,10 @@
                     if (v === null) return;
                     try { if (v.trim()) localStorage.setItem('amcQuoteApiUrl', v.trim()); else localStorage.removeItem('amcQuoteApiUrl'); } catch (e) {}
                     location.reload();
+                },
+                installLabel(short) {   // มือถือ = หน้าจอโฮม · คอม = ไอคอนบน Desktop
+                    if (this.isMobile) return this.lang === 'th' ? (short ? '📲 ติดตั้งแอป' : '📲 ติดตั้งลงหน้าจอโฮม') : (short ? '📲 Install app' : '📲 Install to home screen');
+                    return this.lang === 'th' ? (short ? '💻 ติดตั้งลงเครื่อง' : '💻 ติดตั้งลงเครื่องนี้ (ไอคอนบน Desktop)') : (short ? '💻 Install app' : '💻 Install on this computer (desktop icon)');
                 },
                 async installApp() {
                     if (!this.installPrompt) return;
