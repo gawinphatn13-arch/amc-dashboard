@@ -104,7 +104,7 @@
 <header>
   <div>
     <h1>Metal &amp; FX Dashboard</h1>
-    <div class="sub">อัตราแลกเปลี่ยน · ราคาสังกะสี · ราคาเหล็ก · ราคาอะลูมิเนียม · ราคาแร่เหล็ก · ราคาน้ำมันดิบ · สรุปข่าวตลาดโลหะ — สำหรับ Asia Metal (AMC)</div>
+    <div class="sub">อัตราแลกเปลี่ยน · ราคาสังกะสี · ราคาเหล็ก · ราคาอะลูมิเนียม · ราคาแมกนีเซียม · ราคาแร่เหล็ก · ถ่านหินโค้ก · ราคาน้ำมันดิบ · สรุปข่าวตลาดโลหะ — สำหรับ Asia Metal (AMC)</div>
   </div>
   <div class="meta">
     ข้อมูล ณ <b id="snapDate">2 ต.ค. 2026</b><br>
@@ -118,7 +118,7 @@
 
 <main>
   <div class="note">
-    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>2 ต.ค. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = data valid 1 ต.ค. 2026 — ค่าใหม่</b>, <b style="color:var(--amber)">SMM Zn / Slab / HRC / GZ = วันที่ Sep 30, 2026 (ยังไม่มีค่าวันที่ 1–2 ต.ค. — ค่าเดิม)</b>, <b style="color:var(--green)">FX BOT = as of 1 ต.ค. 2026 — ค่าใหม่</b>, SMM A00/IronOre/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้); SMM ประกาศหยุดอัปเดตช่วงวันชาติจีน 1–7 ต.ค.)
+    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>2 ต.ค. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = data valid 1 ต.ค. 2026 — ค่าใหม่</b>, <b style="color:var(--amber)">SMM Zn / Slab / HRC / GZ = วันที่ Sep 30, 2026 (ยังไม่มีค่าวันที่ 1–2 ต.ค. — ค่าเดิม)</b>, <b style="color:var(--green)">FX BOT = as of 1 ต.ค. 2026 — ค่าใหม่</b>, <b style="color:var(--green)">TE Iron Ore / Coking Coal = Oct 1, Magnesium = Sep 30 — ค่าใหม่ (Coking Coal / Magnesium เพิ่ม 2 ต.ค.)</b>, SMM A00/PB Fines/Billet/Scrap = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้); SMM ประกาศหยุดอัปเดตช่วงวันชาติจีน 1–7 ต.ค.)
     คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน<span class="edit-hint"> —
     แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”</span>
   </div>
@@ -317,8 +317,31 @@
   </table>
   <div class="updt">✓ <b style="color:var(--green)">LME Aluminium รอบ 2 ต.ค. 2026 — data valid 1 ต.ค. 2026 ค่าใหม่</b> — <b>Cash (offer) 3,120.00 (bid 3,119.50) ▼2.62%</b> จาก 3,204.00 · <b>3-month closing 3,123.00 ▼1.47%</b> จาก 3,169.50 · ส่วนต่าง Cash − 3M = <b style="color:var(--green)">−3.00 USD/tonne (contango — กลับด้านจาก backwardation +34.50)</b> · ราคาบาท Cash ▼2.43% · 3M ▼1.27% · <b>LME Aluminium Alloy คงเดิม</b>: Cash offer 3,200.00 (bid 3,190.00) · 3M closing 3,200.00 (Cash − 3M = 0.00; ราคาบาท ▲0.20% จาก FX) · SMM A00 3,348.18 <b>คงค่าเดิม</b> (ชุด 25 มิ.ย. — ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
 
+  <!-- MAGNESIUM -->
+  <h2><span class="bar"></span>ราคาแมกนีเซียม (Magnesium)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:33%">รายการ</th>
+        <th class="num">ราคาฐาน</th><th>สกุล</th>
+        <th class="num">USD</th><th class="num">CNY</th><th class="num">THB</th>
+        <th>แหล่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-cur="CNY" data-unit="/T">
+        <td class="prod" onclick="openChart('mg','Magnesium (China, CFD)','CNY/T')"><b>Magnesium</b> · แมกนีเซียม ตลาดจีน · CFD <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="mg" contenteditable="true">16,750.00</span></td>
+        <td><span class="cur-pill">CNY</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://tradingeconomics.com/commodity/magnesium" target="_blank">Trading Economics ↗</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="updt">✓ <b style="color:var(--green)">รอบ 2 ต.ค. 2026 — Trading Economics</b> · <b>Magnesium = 16,750 CNY/T ทรงตัว</b> (Sep 30 · เดือน −0.30% · ปี −4.56%) · ราคาฐานเป็นหยวน — คอลัมน์ USD/THB แปลงด้วยอัตรา BOT (CNY/THB, USD/THB) · กราฟใช้ค่าเงิน CNY-THB เป็นตัวแยกส่วน <b style="color:var(--amber)">— เพิ่มใหม่ 2 ต.ค. 2026 ประวัติในกราฟเริ่มจากวันนี้</b></div>
+
   <!-- IRON ORE -->
-  <h2><span class="bar"></span>ราคาแร่เหล็ก (Iron Ore)</h2>
+  <h2><span class="bar"></span>ราคาแร่เหล็กและถ่านหินโค้ก (Iron Ore &amp; Coking Coal)</h2>
   <table>
     <thead>
       <tr>
@@ -337,15 +360,22 @@
         <td><a href="https://www.metal.com/iron-ore-price" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/MT">
-        <td class="prod" onclick="openChart('ore_fe','Iron Ore 62% Fe CFR Tianjin (CFD)','USD/MT')"><b>Iron Ore</b> 62% Fe CFR Tianjin · CFD <span class="chgneg" style="font-size:11px">▼0.01%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="ore_fe" contenteditable="true">100.52</span></td>
+        <td class="prod" onclick="openChart('ore_fe','Iron Ore 62% Fe CFR Tianjin (CFD)','USD/MT')"><b>Iron Ore</b> 62% Fe CFR Tianjin · CFD <span class="chgneg" style="font-size:11px">▼4.65%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="ore_fe" contenteditable="true">92.10</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://tradingeconomics.com/commodity/iron-ore" target="_blank">Trading Economics ↗</a></td>
       </tr>
+      <tr data-cur="USD" data-unit="/T">
+        <td class="prod" onclick="openChart('coal_coking','Coking Coal (CFD)','USD/T')"><b>Coking Coal</b> · ถ่านหินโค้ก (ใช้ผลิตโค้กถลุงเหล็ก) · CFD <span class="chgpos" style="font-size:11px">▲0.77%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="coal_coking" contenteditable="true">263.00</span></td>
+        <td><span class="cur-pill">USD</span></td>
+        <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
+        <td><a href="https://tradingeconomics.com/commodity/coking-coal" target="_blank">Trading Economics ↗</a></td>
+      </tr>
     </tbody>
   </table>
-  <div class="updt">✓ ดึงสดจาก metal.com (SMM) และ Trading Economics — SMM PB Fines = 25 มิ.ย. 2026 · Iron Ore CFD (TE) = 24 มิ.ย. 2026 · หน่วย: USD/wmt (wet metric tonne) / USD/MT</div>
+  <div class="updt">✓ <b style="color:var(--green)">รอบ 2 ต.ค. 2026 — Trading Economics ค่าใหม่</b> · <b>Iron Ore 62% Fe (TE) = 92.10 USD/MT ▼4.65%</b> (Oct 1 จากวันก่อน 96.59 · เดือน −5.75% · ปี −11.53%) — หมายเหตุ: ค่าเดิมในไฟล์ 100.52 เป็นชุด 24 มิ.ย. ที่ไม่ได้อัปเดต จึงกราฟจะเห็นกระโดดลงในวันนี้ · <b>Coking Coal (TE) = 263.00 USD/T ▲0.77%</b> (Oct 1 · เดือน −3.31% · ปี +36.27%) <b style="color:var(--amber)">— เพิ่มใหม่ 2 ต.ค. 2026 ประวัติในกราฟเริ่มจากวันนี้</b> · SMM PB Fines = 25 มิ.ย. 2026 <b>คงค่าเดิม</b> · หน่วย: USD/wmt (wet metric tonne) / USD/MT / USD/T</div>
 
   <!-- CRUDE OIL -->
   <h2><span class="bar"></span>ราคาน้ำมันดิบ (Crude Oil — WTI)</h2>
@@ -464,7 +494,7 @@
 </div>
 
 <footer>
-  Dashboard นี้ดึงข้อมูลสด ณ 30 ก.ย. 2026 (รอบล่าสุด — LME Zinc/Aluminium/Alloy = data valid 29 ก.ย. 2026, FX BOT = as of 29 ก.ย. 2026 และ SMM (metal.com) Zn/Slab/HRC/GZ = Sep 30, 2026 — ค่าใหม่ · <b style="color:#ffc24b">SMM ประกาศหยุดอัปเดตช่วงวันชาติจีน 1–7 ต.ค.</b>) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
+  Dashboard นี้ดึงข้อมูลสด ณ 2 ต.ค. 2026 (รอบล่าสุด — LME Zinc/Aluminium/Alloy = data valid 1 ต.ค. 2026, FX BOT = as of 1 ต.ค. 2026, Trading Economics Iron Ore/Coking Coal = Oct 1 · Magnesium = Sep 30 และ SMM (metal.com) Zn/Slab/HRC/GZ = Sep 30, 2026 · <b style="color:#ffc24b">SMM ประกาศหยุดอัปเดตช่วงวันชาติจีน 1–7 ต.ค.</b>) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
   <br>จัดทำสำหรับ Asia Metal Public Company Limited (AMC)
 </footer>
 
@@ -545,7 +575,7 @@
     "2026-09-29":{fx_usd:33.5902,fx_eur:38.3456,fx_cny:5.0111,fx_usdcny:6.7032,lme_zn:3852.50,lme_zn_cash:3957.00,smm_zn:3942.25,st_slab:475,st_hr1:495,st_hr2:496,st_gz:640.21,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3251.50,lme_al_cash:3248.50,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-09-30":{fx_usd:33.7613,fx_eur:38.5256,fx_cny:5.0493,fx_usdcny:6.6863,lme_zn:3870.00,lme_zn_cash:3977.00,smm_zn:3931.93,st_slab:475,st_hr1:495,st_hr2:497,st_gz:640.83,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3214.00,lme_al_cash:3225.50,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
     "2026-10-01":{fx_usd:33.7180,fx_eur:38.3393,fx_cny:5.0558,fx_usdcny:6.6692,lme_zn:3829.50,lme_zn_cash:3954.00,smm_zn:3931.93,st_slab:475,st_hr1:495,st_hr2:497,st_gz:640.83,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3169.50,lme_al_cash:3204.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65},
-    "2026-10-02":{fx_usd:33.7852,fx_eur:38.4256,fx_cny:5.0588,fx_usdcny:6.6785,lme_zn:3724.00,lme_zn_cash:3834.00,smm_zn:3931.93,st_slab:475,st_hr1:495,st_hr2:497,st_gz:640.83,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3123.00,lme_al_cash:3120.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:100.52,st_sq_bil:474,st_scrap:373.65}
+    "2026-10-02":{fx_usd:33.7852,fx_eur:38.4256,fx_cny:5.0588,fx_usdcny:6.6785,lme_zn:3724.00,lme_zn_cash:3834.00,smm_zn:3931.93,st_slab:475,st_hr1:495,st_hr2:497,st_gz:640.83,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3123.00,lme_al_cash:3120.00,lme_al_alloy:3200.00,lme_al_alloy_cash:3200.00,smm_al:3348.18,ore_pb:101.84,ore_fe:92.10,st_sq_bil:474,st_scrap:373.65,coal_coking:263.00,mg:16750.00}
   };
 
   function num(s){ return parseFloat(String(s).replace(/[^0-9.\-]/g,"")); }
@@ -601,7 +631,8 @@
 
   // --- chart ---
   let cmChart=null;
-  const FXK="fx_usd";                      // ทุกสินค้าในหน้านี้ตั้งราคาเป็น USD → ใช้ USD/THB เป็นตัวแปลง
+  const FXK="fx_usd";                      // สินค้าที่ตั้งราคาเป็น USD → ใช้ USD/THB เป็นตัวแปลง
+  const CNY_KEYS={mg:1};                   // สินค้าที่ตั้งราคาเป็นหยวน (เพิ่ม 2 ต.ค. 2026) → ใช้ CNY/THB เป็นตัวแปลง
   function pctStr(p){
     const c=p>=0?"chgpos":"chgneg", s=p>=0?"▲":"▼";
     return '<span class="mv '+c+'">'+s+' '+Math.abs(p).toFixed(2)+'%</span>';
@@ -609,6 +640,8 @@
   function openChart(key,title,unit){
     const hist=loadHist();
     const isFx=key.indexOf("fx_")===0;
+    const isCny=!!CNY_KEYS[key];
+    const fxk=isCny?"fx_cny":FXK, ccy=isCny?"CNY":"USD";
     document.getElementById("cmTitle").textContent=title;
     const meta=document.getElementById("cmMeta");
     const wrap=document.querySelector(".cm-canvas-wrap");
@@ -619,15 +652,15 @@
     const dates=Object.keys(hist).filter(d=>{
       const r=hist[d];
       if(!r||!isFinite(r[key])||r[key]===0) return false;
-      return isFx || (isFinite(r[FXK]) && r[FXK]!==0);
+      return isFx || (isFinite(r[fxk]) && r[fxk]!==0);
     }).sort();
     const labels=dates.map(fmtThai);
     const usd=dates.map(d=>hist[d][key]);
-    const fx = isFx?null:dates.map(d=>hist[d][FXK]);
+    const fx = isFx?null:dates.map(d=>hist[d][fxk]);
     const thb= isFx?null:usd.map((v,i)=>v*fx[i]);
 
     document.getElementById("cmUnit").textContent =
-      isFx?unit:(unit+" · ตามมูลค่าจริง — แกนซ้าย: ราคา USD · แกนขวา: ราคาบาท / ค่าเงิน USD-THB");
+      isFx?unit:(unit+" · ตามมูลค่าจริง — แกนซ้าย: ราคา "+ccy+" · แกนขวา: ราคาบาท / ค่าเงิน "+ccy+"-THB");
 
     if(typeof Chart==="undefined"){
       wrap.innerHTML='<div class="cm-empty">โหลดไลบรารีกราฟไม่ได้ (ต้องต่ออินเทอร์เน็ตเพื่อโหลด Chart.js)</div>';
@@ -684,8 +717,8 @@
     cmChart=new Chart(ctx,{
       type:"line",
       data:{labels,datasets:[
-        mk("ราคาสินค้า (USD)",usd,"#3ea6ff",[],2.5,unit,"yUsd"),
-        mk("ค่าเงิน USD/THB",fx,"#ffc24b",[6,4],2,"บาท/ดอลลาร์","yFx"),
+        mk("ราคาสินค้า ("+ccy+")",usd,"#3ea6ff",[],2.5,unit,"yUsd"),
+        mk("ค่าเงิน "+ccy+"/THB",fx,"#ffc24b",[6,4],2,isCny?"บาท/หยวน":"บาท/ดอลลาร์","yFx"),
         mk("ราคาเป็นเงินบาท (THB)",thb,"#7ee0c0",[],3.2,"บาท","yThb")
       ]},
       options:{responsive:true,maintainAspectRatio:false,
@@ -705,7 +738,7 @@
              title:{display:true,text:"บาท (ราคาเป็นเงินบาท)",color:"#7ee0c0",font:{size:10}}},
           yFx:{type:"linear",position:"right",offset:true,grid:{drawOnChartArea:false},
              ticks:{color:"#ffc24b",callback:v=>v.toFixed(2)},
-             title:{display:true,text:"บาท/USD (ค่าเงิน)",color:"#ffc24b",font:{size:10}}}
+             title:{display:true,text:"บาท/"+ccy+" (ค่าเงิน)",color:"#ffc24b",font:{size:10}}}
         }}
     });
 
