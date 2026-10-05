@@ -54,7 +54,7 @@
 
     <div class="no-print max-w-7xl mx-auto mb-4 flex flex-wrap gap-2 justify-between items-center">
         <div class="flex flex-wrap gap-2">
-            <button @click="activeTab = 'form'" :class="{'bg-blue-600 text-white': activeTab === 'form', 'bg-white text-gray-700': activeTab !== 'form'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📝 สร้างใบเสนอราคา' : '📝 Create Quotation'"></button>
+            <button @click="goCreateTab()" :class="{'bg-blue-600 text-white': activeTab === 'form', 'bg-white text-gray-700': activeTab !== 'form'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📝 สร้างใบเสนอราคา' : '📝 Create Quotation'"></button>
             <button @click="activeTab = 'tracker'; loadHistory()" :class="{'bg-blue-600 text-white': activeTab === 'tracker', 'bg-white text-gray-700': activeTab !== 'tracker'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📚 ประวัติใบเสนอราคา' : '📚 Quotation History'"></button>
             <button x-show="user" @click="activeTab = 'spec'; loadSpecSummary()" :class="{'bg-blue-600 text-white': activeTab === 'spec', 'bg-white text-gray-700': activeTab !== 'spec'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📊 สรุปสเปกลูกค้า' : '📊 Customer Specs'"></button>
             <button x-show="user && user.role === 'manager'" @click="activeTab = 'users'; loadUsersTab()" :class="{'bg-blue-600 text-white': activeTab === 'users', 'bg-white text-gray-700': activeTab !== 'users'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '👥 พนักงานขาย' : '👥 Sales Staff'"></button>
@@ -73,12 +73,34 @@
     <div x-show="activeTab === 'form'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
         
         <div class="no-print lg:col-span-5 space-y-4">
-            
-            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''">
+
+            <!-- ฟอร์มล็อก (บันทึกแล้ว/เปิดดูอยู่): บอกชัด ๆ ด้านบน และให้ปุ่มเริ่มใบใหม่โดยไม่ต้องเลื่อนหา -->
+            <template x-if="savedNo">
+                <div class="bg-blue-50 border border-blue-300 text-blue-900 rounded shadow p-4 text-sm">
+                    <div class="font-bold" x-text="L('กำลังแสดงใบเลขที่ ', 'Showing quotation ') + savedNo"></div>
+                    <div class="text-xs mt-1" x-text="docMeta && !canEditDeal(docMeta) ? L('ใบของ ' + salesName + ' — ดู/พิมพ์ซ้ำได้อย่างเดียว', 'Belongs to ' + salesName + ' — view/print only') : L('บันทึกแล้ว — ฟอร์มนี้แก้ไม่ได้ (ดู/พิมพ์ซ้ำ)', 'Saved — this form is locked (view/print)')"></div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button type="button" @click="newQuotation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold" x-text="L('🆕 เริ่มใบเสนอราคาใหม่', '🆕 New quotation')"></button>
+                        <button type="button" x-show="hasFeature('revise') && docMeta && canEditDeal(docMeta)" @click="reviseCurrentDoc()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded font-bold" x-text="L('📝 ออกฉบับแก้ไข', '📝 Revise')"></button>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="reviseOf">
+                <div class="bg-amber-50 border border-amber-300 text-amber-900 rounded shadow p-4 text-sm">
+                    <div class="font-bold text-base" x-text="L('✏️ กำลังออกฉบับแก้ไข (Rev.' + (reviseOf.rev + 1) + ')', '✏️ Issuing a revision (Rev.' + (reviseOf.rev + 1) + ')')"></div>
+                    <div class="mt-1"><span x-text="L('แทนที่ใบ ', 'Replaces ')"></span><b x-text="reviseOf.no"></b><span x-show="reviseOf.reopen" class="ml-1 text-xs bg-amber-200 rounded px-1" x-text="L('เปิดดีลอีกครั้ง', 'reopened')"></span></div>
+                    <div class="text-xs mt-1" x-text="L('ลูกค้า: ', 'Customer: ') + reviseOf.customer"></div>
+                    <div class="text-xs mt-1 text-amber-800" x-text="L('แก้ราคา/ปริมาณ/สเปกได้ทุกช่อง · บันทึกแล้วใบเดิมจะเป็น “ถูกแทนที่” และหน้าสรุปนับเฉพาะฉบับนี้', 'Edit any field · on save the old version becomes “superseded” and the summary counts only this one')"></div>
+                    <button type="button" @click="cancelRevise()" :disabled="isSaving" class="mt-2 text-xs underline text-amber-900 disabled:opacity-40 disabled:cursor-not-allowed" x-text="L('ยกเลิกการแก้ไข', 'Discard revision')"></button>
+                </div>
+            </template>
+
+            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''" :inert="!!savedNo">
                 <h2 class="text-lg font-bold mb-3 border-b pb-2" x-text="lang === 'th' ? 'ข้อมูลเอกสารและลูกค้า' : 'Document & Customer Info'"></h2>
-                
+
                 <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'บริษัทผู้ออกใบเสนอราคา' : 'Issuing Company'"></label>
-                <select x-model="companyPrefix" @change="updateRunningNo()" class="w-full border p-2.5 rounded mb-3">
+                <select x-model="companyPrefix" @change="updateRunningNo()" :disabled="!!reviseOf" :title="reviseOf ? L('ฉบับแก้ไขใช้บริษัทเดียวกับใบเดิม', 'A revision keeps the original company') : ''" class="w-full border p-2.5 rounded mb-3 disabled:bg-gray-100">
                     <option value="STC">STC Steel Co.,Ltd.</option>
                     <option value="AMC">Asia Metal PLC</option>
                     <option value="GAS">Grand Asia Steel Processing Center Co.,Ltd.</option>
@@ -129,7 +151,7 @@
                 </select>
             </div>
 
-            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''">
+            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''" :inert="!!savedNo">
                 <h2 class="text-lg font-bold mb-3 border-b pb-2" x-text="lang === 'th' ? 'กำหนดสเปกสินค้า' : 'Product Specifications'"></h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
@@ -318,13 +340,23 @@
             <template x-if="!savedNo">
                 <button @click="saveAndPrint" :disabled="isSaving" :class="isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'" class="w-full text-white p-4 rounded shadow font-bold transition text-lg mt-4 flex justify-center items-center">
                     <span x-show="isSaving" class="loader"></span>
-                    <span x-text="isSaving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (lang === 'th' ? '💾 บันทึกส่วนกลางและสั่งพิมพ์' : '💾 Save to Central & Print')"></span>
+                    <span x-text="isSaving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (reviseOf ? L('💾 บันทึกฉบับแก้ไข (Rev.' + (reviseOf.rev + 1) + ') และสั่งพิมพ์', '💾 Save revision (Rev.' + (reviseOf.rev + 1) + ') & Print') : (lang === 'th' ? '💾 บันทึกส่วนกลางและสั่งพิมพ์' : '💾 Save to Central & Print'))"></span>
                 </button>
             </template>
             <template x-if="savedNo">
                 <div class="mt-4 space-y-2">
-                    <div class="bg-green-50 border border-green-300 text-green-800 rounded p-3 text-sm text-center"><span x-text="lang === 'th' ? 'บันทึกแล้ว เลขที่ ' : 'Saved as No. '"></span><b x-text="savedNo"></b><div class="text-xs text-green-700 mt-1" x-text="lang === 'th' ? 'เอกสารนี้แก้ไขไม่ได้แล้ว กด เริ่มใบเสนอราคาใหม่ เพื่อทำใบต่อไป' : 'This document is locked. Press New quotation to start the next one.'"></div></div>
+                    <div class="bg-green-50 border border-green-300 text-green-800 rounded p-3 text-sm text-center">
+                        <span x-text="lang === 'th' ? 'บันทึกแล้ว เลขที่ ' : 'Saved as No. '"></span><b x-text="savedNo"></b>
+                        <span x-show="docMeta && docMeta.status" class="ml-1 text-[11px] rounded px-1.5 py-0.5 font-bold" :class="statusClass(docMeta ? (docMeta.cur ? docMeta.status : 'superseded') : '')" x-text="docMeta ? statusLabel(docMeta.cur ? docMeta.status : 'superseded') : ''"></span>
+                        <div x-show="docMeta && docMeta.replaces" class="text-xs text-green-700 mt-1" x-text="L('แทนที่ใบ ', 'Replaces ') + (docMeta ? docMeta.replaces : '')"></div>
+                        <div class="text-xs text-green-700 mt-1" x-text="docMeta && !canEditDeal(docMeta) ? L('ใบของ ' + salesName + ' — ผู้บริหารดู/พิมพ์ซ้ำได้อย่างเดียว (แก้ไข/เปลี่ยนสถานะได้เฉพาะเจ้าของดีล)', 'Belongs to ' + salesName + ' — view/print only (only the deal owner can revise or change status)') : (hasFeature('revise') ? L('ลูกค้าต่อรองราคา/เปลี่ยนปริมาณหรือสเปก กด 📝 ออกฉบับแก้ไข (ไม่นับซ้ำ) · งานใหม่กด เริ่มใบเสนอราคาใหม่', 'Customer renegotiated? Press 📝 Revise (not double-counted) · new job: New quotation') : L('เอกสารนี้แก้ไขไม่ได้แล้ว กด เริ่มใบเสนอราคาใหม่ เพื่อทำใบต่อไป', 'This document is locked. Press New quotation to start the next one.'))"></div>
+                    </div>
+                    <div x-show="docMeta && !docMeta.cur" class="bg-gray-50 border border-gray-300 text-gray-700 rounded p-3 text-xs text-center">
+                        <span x-text="L('ฉบับนี้ถูกแทนที่แล้ว ฉบับล่าสุดคือ ', 'Superseded — latest version is ')"></span>
+                        <button type="button" class="underline text-blue-700 font-bold" @click="openQuotation(docMeta.currentNo, 'view')" x-text="docMeta ? docMeta.currentNo : ''"></button>
+                    </div>
                     <button @click="printAgain" class="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded shadow font-bold transition text-lg" x-text="lang === 'th' ? '🖨️ พิมพ์ซ้ำ' : '🖨️ Print again'"></button>
+                    <button x-show="hasFeature('revise') && docMeta && canEditDeal(docMeta)" @click="reviseCurrentDoc()" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-3 rounded shadow font-bold transition" x-text="docMeta && !docMeta.cur ? L('📝 ออกฉบับแก้ไขจากฉบับล่าสุด', '📝 Revise the latest version') : L('📝 ออกฉบับแก้ไข (Rev. ใหม่)', '📝 Revise (new Rev.)')"></button>
                     <button @click="newQuotation" class="w-full bg-white border border-blue-600 text-blue-700 p-3 rounded shadow font-bold hover:bg-blue-50 transition" x-text="lang === 'th' ? '🆕 เริ่มใบเสนอราคาใหม่' : '🆕 New quotation'"></button>
                 </div>
             </template>
@@ -362,6 +394,7 @@
                             <span class="font-bold">Quotation No.:</span> 
                             <span class="text-red-600 font-bold" x-text="runningNo"></span>
                         </div>
+                        <div x-show="docReplaces" class="flex justify-between mb-1 text-xs text-gray-600"><span class="font-bold">Supersedes:</span> <span x-text="docReplaces"></span></div>
                         <div class="flex justify-between mb-1"><span class="font-bold">Date:</span> <span class="text-red-600" x-text="formatDate(quoteDate)"></span></div>
                         <div class="flex justify-between mb-1"><span class="font-bold" x-text="lang === 'th' ? 'พนักงานขาย:' : 'Sales:'"></span> <span x-text="salesName"></span></div>
                         
@@ -434,7 +467,8 @@
             <h2 class="text-xl font-bold" x-text="user && user.role === 'manager' ? (lang === 'th' ? 'ประวัติใบเสนอราคาทุกคน' : 'All Quotations') : (lang === 'th' ? 'ประวัติใบเสนอราคาของฉัน' : 'My Quotations')"></h2>
             <button @click="loadHistory(true)" :disabled="historyLoading" class="text-sm bg-blue-600 text-white px-3 py-2 rounded disabled:opacity-60" x-text="historyLoading ? (lang === 'th' ? 'กำลังโหลด...' : 'Loading...') : (lang === 'th' ? '🔄 โหลดใหม่' : '🔄 Refresh')"></button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <div x-show="user && user.role === 'manager' && !hasFeature('revise')" class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3" x-text="L('⚠️ หลังบ้าน (Apps Script) ยังเป็นรุ่นเก่า: ปุ่มออกฉบับแก้ไข (Rev.) และเปลี่ยนสถานะดีลจะใช้ได้หลังอัปเดตโค้ด + รัน migrateV13 — ระหว่างนี้หน้าสรุปอาจนับใบที่ต่อรองซ้ำ', '⚠️ The Apps Script backend is still the old version: Revise (Rev.) and deal status unlock after updating the code + running migrateV13 — until then the summary may double-count renegotiated quotes')"></div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
             <template x-if="user && user.role === 'manager'">
                 <div>
                     <label class="block text-xs mb-1" x-text="lang === 'th' ? 'พนักงานขาย' : 'Salesperson'"></label>
@@ -448,38 +482,62 @@
                 <label class="block text-xs mb-1" x-text="lang === 'th' ? 'เดือน' : 'Month'"></label>
                 <input type="month" x-model="historyFilter.month" @change="loadHistory(true)" class="w-full border p-2 rounded">
             </div>
+            <div x-show="hasFeature('status')">
+                <label class="block text-xs mb-1" x-text="L('สถานะ', 'Status')"></label>
+                <select x-model="historyFilter.status" class="w-full border p-2 rounded">
+                    <option value="all" x-text="L('ทุกสถานะ', 'All')"></option>
+                    <option value="open" x-text="L('เสนอราคา (≤ 45 วัน)', 'Quoted (≤ 45 days)')"></option>
+                    <option value="stale" x-text="L('⏰ ค้าง > 45 วัน', '⏰ Stale > 45 days')"></option>
+                    <option value="won" x-text="L('ปิดการขาย', 'Won')"></option>
+                    <option value="lost" x-text="L('ไม่ซื้อ / ยกเลิก', 'Lost / cancelled')"></option>
+                    <option value="superseded" x-text="L('ถูกแทนที่', 'Superseded')"></option>
+                </select>
+            </div>
             <div class="md:col-span-2">
                 <label class="block text-xs mb-1" x-text="lang === 'th' ? 'ค้นหา' : 'Search'"></label>
                 <input type="text" x-model="historyFilter.q" :placeholder="lang === 'th' ? 'ลูกค้า / เลขที่ / สินค้า' : 'Customer / No. / product'" class="w-full border p-2 rounded">
             </div>
         </div>
+        <label x-show="hasFeature('listRoot')" class="inline-flex items-center gap-2 text-sm mb-3 cursor-pointer select-none">
+            <input type="checkbox" :checked="historyFilter.latestOnly !== false" @change="historyFilter.latestOnly = $event.target.checked; loadHistory(true)" class="w-4 h-4">
+            <span x-text="L('แสดงเฉพาะฉบับล่าสุดของแต่ละดีล (ฉบับเก่าดูได้ที่ปุ่ม “ประวัติ n ฉบับ”)', 'Latest version of each deal only (older versions under “n versions”)')"></span>
+        </label>
         <div x-show="historyError" class="text-sm text-red-600 mb-3" x-text="historyError"></div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left border">
                 <thead class="bg-gray-100 text-gray-700">
-                    <tr><th class="border p-2">No.</th><th class="border p-2">Date</th><th class="border p-2">Customer</th><th class="border p-2">Sales</th><th class="border p-2 text-center">Items</th><th class="border p-2 text-right">Qty (Tons)</th><th class="border p-2 text-right">Amount (THB)</th><th class="border p-2"></th></tr>
+                    <tr><th class="border p-2">No.</th><th class="border p-2">Date</th><th class="border p-2">Customer</th><th class="border p-2">Sales</th><th x-show="hasFeature('status')" class="border p-2" x-text="L('สถานะ', 'Status')"></th><th class="border p-2 text-center">Items</th><th class="border p-2 text-right">Qty (Tons)</th><th class="border p-2 text-right">Amount (THB)</th><th class="border p-2"></th></tr>
                 </thead>
                 <tbody>
                     <template x-for="row in filteredHistory" :key="row.runningNo">
-                        <tr class="hover:bg-gray-50">
-                            <td class="border p-2 font-bold text-blue-600 whitespace-nowrap" x-text="row.runningNo"></td>
+                        <tr class="hover:bg-gray-50" :class="row.cur === false ? 'text-gray-400' : ''">
+                            <td class="border p-2 font-bold whitespace-nowrap" :class="row.cur === false ? 'text-gray-400' : 'text-blue-600'">
+                                <span x-text="row.runningNo"></span>
+                                <button x-show="hasFeature('listRoot') && Number(row.versions) > 1" type="button" @click="openChain(row)" class="block text-[11px] font-normal text-purple-700 underline" x-text="L('ประวัติ ' + row.versions + ' ฉบับ', row.versions + ' versions')"></button>
+                            </td>
                             <td class="border p-2 whitespace-nowrap" x-text="formatDate(row.quoteDate)"></td>
                             <td class="border p-2" x-text="row.customer"></td>
                             <td class="border p-2" x-text="row.salesName"></td>
+                            <td x-show="hasFeature('status')" class="border p-2 whitespace-nowrap">
+                                <span class="text-[11px] rounded px-1.5 py-0.5 font-bold" :class="statusClass(rowStatus(row))" x-text="statusLabel(rowStatus(row)) + (rowStatus(row) === 'stale' ? ' ' + ageDays(row.quoteDate) + L(' วัน', 'd') : '')"></span>
+                                <div x-show="row.statusNote && row.status !== 'superseded'" class="text-[11px] text-gray-500 max-w-[180px] truncate" :title="row.statusNote" x-text="row.statusNote"></div>
+                            </td>
                             <td class="border p-2 text-center" x-text="row.itemCount"></td>
                             <td class="border p-2 text-right" x-text="Number(row.totalQty).toFixed(2)"></td>
-                            <td class="border p-2 text-right text-red-600 font-bold" x-text="formatCurrency(Number(row.totalAmount))"></td>
-                            <td class="border p-2 whitespace-nowrap">
-                                <button @click="openQuotation(row.runningNo, false)" class="text-blue-600 underline text-xs mr-3" x-text="lang === 'th' ? 'เปิดดู/พิมพ์' : 'View/Print'"></button>
-                                <button @click="openQuotation(row.runningNo, true)" class="text-green-700 underline text-xs" x-text="lang === 'th' ? 'ทำสำเนา' : 'Duplicate'"></button>
+                            <td class="border p-2 text-right font-bold" :class="row.cur === false ? '' : 'text-red-600'" x-text="formatCurrency(Number(row.totalAmount))"></td>
+                            <td class="border p-2 whitespace-nowrap text-xs">
+                                <button @click="openQuotation(row.runningNo, 'view')" class="text-blue-600 underline mr-3" x-text="lang === 'th' ? 'เปิดดู/พิมพ์' : 'View/Print'"></button>
+                                <button x-show="hasFeature('revise') && row.cur !== false && canEditDeal(row)" @click="openQuotation(row.runningNo, 'revise')" class="text-amber-700 underline font-bold mr-3" x-text="L('📝 แก้ไข (Rev.)', '📝 Revise')"></button>
+                                <button x-show="hasFeature('status') && row.cur !== false && canEditDeal(row)" @click="openStatusDialog(row)" class="text-purple-700 underline mr-3" x-text="L('เปลี่ยนสถานะ', 'Status')"></button>
+                                <button x-show="canEditDeal(row)" @click="openQuotation(row.runningNo, 'duplicate')" class="text-green-700 underline" :title="L('ทำเป็นดีลใหม่ (ได้เลขที่ใหม่)', 'Start a new deal (new number)')" x-text="lang === 'th' ? 'ทำสำเนา' : 'Duplicate'"></button>
                             </td>
                         </tr>
                     </template>
-                    <tr x-show="!historyLoading && filteredHistory.length === 0"><td colspan="8" class="border p-4 text-center text-gray-400" x-text="lang === 'th' ? 'ยังไม่มีข้อมูล' : 'No data'"></td></tr>
+                    <tr x-show="!historyLoading && filteredHistory.length === 0"><td colspan="9" class="border p-4 text-center text-gray-400" x-text="lang === 'th' ? 'ยังไม่มีข้อมูล' : 'No data'"></td></tr>
                 </tbody>
                 <tfoot x-show="filteredHistory.length > 0" class="bg-gray-50 font-bold">
                     <tr>
-                        <td colspan="4" class="border p-2 text-right" x-text="(lang === 'th' ? 'รวม ' : 'Total ') + filteredHistory.length + (lang === 'th' ? ' ใบ' : ' docs')"></td>
+                        <td :colspan="hasFeature('status') ? 5 : 4" class="border p-2 text-right" x-text="(lang === 'th' ? 'รวม ' : 'Total ') + filteredHistory.length + (lang === 'th' ? ' ใบ' : ' docs')"></td>
                         <td class="border p-2"></td>
                         <td class="border p-2 text-right" x-text="historyTotals.qty.toFixed(2)"></td>
                         <td class="border p-2 text-right text-red-600" x-text="formatCurrency(historyTotals.amount)"></td>
@@ -488,8 +546,81 @@
                 </tfoot>
             </table>
         </div>
+        <div x-show="hasFeature('listRoot') && historyFilter.latestOnly === false && filteredHistory.some(r => r.cur === false)" class="text-xs text-amber-700 mt-2" x-text="L('* กำลังแสดงทุกฉบับ: ยอดรวมด้านบนนับฉบับที่ถูกแทนที่ด้วย (ดีลเดียวกันจะถูกบวกซ้ำ)', '* Showing every version: the totals include superseded versions (the same deal is added more than once)')"></div>
         <div class="text-xs text-gray-400 mt-2" x-show="historyFromCache" x-text="lang === 'th' ? '* แสดงข้อมูลล่าสุดที่เคยโหลดไว้ (ออฟไลน์)' : '* Showing the last cached data (offline)'"></div>
     </div>
+
+    <!-- ===== หน้าต่าง: ประวัติทุกฉบับของดีล (ย้อนถึงใบแรก) ===== -->
+    <template x-if="chainView">
+        <div class="no-print fixed inset-0 z-40 bg-black/40 flex items-start md:items-center justify-center p-4 overflow-y-auto" @click.self="chainView = null" @keydown.escape.window="chainView = null">
+            <div class="bg-white rounded shadow-xl w-full max-w-3xl p-5 text-sm">
+                <div class="flex justify-between items-start gap-3 border-b pb-2 mb-3">
+                    <div>
+                        <div class="font-bold text-lg" x-text="L('ประวัติดีล ', 'Deal history ') + chainView.root"></div>
+                        <div class="text-xs text-gray-500" x-text="L('ทุกฉบับตั้งแต่ใบแรก · หน้าสรุปนับเฉพาะฉบับล่าสุด', 'Every version from the first · the summary counts only the latest')"></div>
+                    </div>
+                    <button type="button" @click="chainView = null" class="text-gray-500 hover:text-gray-800 text-xl leading-none px-2" aria-label="close">✕</button>
+                </div>
+                <div x-show="chainView.loading" class="text-gray-500 py-4 text-center" x-text="L('กำลังโหลด...', 'Loading...')"></div>
+                <div x-show="chainView.error" class="text-red-600 mb-2" x-text="chainView.error"></div>
+                <div class="overflow-x-auto" x-show="!chainView.loading">
+                    <table class="w-full text-xs border border-collapse">
+                        <thead class="bg-gray-100 text-gray-700"><tr>
+                            <th class="border p-1.5 text-left" x-text="L('ฉบับ', 'Version')"></th><th class="border p-1.5 text-left" x-text="L('วันที่', 'Date')"></th>
+                            <th class="border p-1.5 text-left" x-text="L('สถานะ', 'Status')"></th><th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('มูลค่า (บาท)', 'Amount (THB)')"></th><th class="border p-1.5"></th>
+                        </tr></thead>
+                        <tbody>
+                            <template x-for="v in chainView.rows" :key="v.runningNo">
+                                <tr :class="v.cur ? 'bg-green-50 font-bold' : ''">
+                                    <td class="border p-1.5 whitespace-nowrap"><span x-text="v.runningNo"></span><span x-show="v.cur" class="ml-1 text-[10px] bg-green-600 text-white rounded px-1" x-text="L('ล่าสุด', 'latest')"></span></td>
+                                    <td class="border p-1.5 whitespace-nowrap" x-text="formatDate(v.quoteDate)"></td>
+                                    <td class="border p-1.5"><span class="text-[11px] rounded px-1.5 py-0.5" :class="statusClass(rowStatus(v))" x-text="statusLabel(rowStatus(v))"></span><div x-show="v.statusNote" class="text-[10px] text-gray-500 font-normal" x-text="v.statusNote"></div></td>
+                                    <td class="border p-1.5 text-right" x-text="Number(v.totalQty).toFixed(2)"></td>
+                                    <td class="border p-1.5 text-right" x-text="formatCurrency(Number(v.totalAmount))"></td>
+                                    <td class="border p-1.5 whitespace-nowrap"><button type="button" @click="openQuotation(v.runningNo, 'view')" class="text-blue-600 underline font-normal" x-text="L('เปิดดู/พิมพ์', 'View/Print')"></button></td>
+                                </tr>
+                            </template>
+                            <tr x-show="!chainView.loading && !chainView.rows.length"><td colspan="6" class="border p-3 text-center text-gray-400">-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ===== หน้าต่าง: เปลี่ยนสถานะดีล ===== -->
+    <template x-if="statusDialog">
+        <div class="no-print fixed inset-0 z-40 bg-black/40 flex items-start md:items-center justify-center p-4 overflow-y-auto" @click.self="statusDialog.busy || (statusDialog = null)" @keydown.escape.window="statusDialog && !statusDialog.busy && (statusDialog = null)">
+            <div class="bg-white rounded shadow-xl w-full max-w-md p-5 text-sm">
+                <div class="font-bold text-lg" x-text="L('เปลี่ยนสถานะดีล', 'Change deal status')"></div>
+                <div class="text-xs text-gray-600 mb-3"><b x-text="statusDialog.no"></b><span x-text="' · ' + statusDialog.customer"></span><div x-text="L('สถานะตอนนี้: ', 'Current: ') + statusLabel(statusDialog.from)"></div></div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <template x-for="st in ['won', 'open', 'lost', 'cancelled']" :key="st">
+                        <label class="border rounded p-2 cursor-pointer flex items-center gap-2" :class="statusDialog.to === st ? 'ring-2 ring-blue-500 ' + statusClass(st) : 'hover:bg-gray-50'">
+                            <input type="radio" name="dealStatus" :value="st" x-model="statusDialog.to" @change="statusDialog.error = ''" class="w-4 h-4">
+                            <span class="font-bold" x-text="({ won: '✅ ', open: '⏳ ', lost: '❌ ', cancelled: '⛔ ' })[st] + statusLabel(st)"></span>
+                        </label>
+                    </template>
+                </div>
+                <div x-show="statusDialog.to === 'lost'" class="mb-3">
+                    <label class="block text-xs mb-1 font-bold" x-text="L('เหตุผลที่ลูกค้าไม่ซื้อ *', 'Why did the customer not buy? *')"></label>
+                    <select x-model="statusDialog.reason" @change="statusDialog.error = ''" class="w-full border p-2 rounded">
+                        <option value="" x-text="L('— เลือก —', '— choose —')"></option>
+                        <template x-for="r in LOST_REASONS_LIST" :key="r"><option :value="r" x-text="r"></option></template>
+                    </select>
+                </div>
+                <label class="block text-xs mb-1" x-text="statusDialog.to === 'cancelled' ? L('หมายเหตุ (เช่น “ซ้ำกับ AMC01102026-1”)', 'Note (e.g. “duplicate of AMC01102026-1”)') : (statusDialog.to === 'won' ? L('หมายเหตุ (เช่น เลขที่ PO)', 'Note (e.g. PO number)') : L('หมายเหตุ', 'Note'))"></label>
+                <input type="text" x-model="statusDialog.note" maxlength="250" class="w-full border p-2 rounded mb-2">
+                <div x-show="statusDialog.to === 'won'" class="text-[11px] text-gray-500 mb-2" x-text="L('“ปิดการขาย” = ลูกค้ายืนยันสั่งซื้อแล้ว ตันของดีลนี้จะไปอยู่ในช่อง ปิดการขาย ของหน้าสรุป', '“Won” = the customer confirmed the order; its tons move to Won on the summary')"></div>
+                <div x-show="statusDialog.error" class="text-red-600 text-xs mb-2 whitespace-pre-wrap" x-text="statusDialog.error"></div>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" @click="statusDialog = null" :disabled="statusDialog.busy" class="px-4 py-2 rounded border" x-text="L('ยกเลิก', 'Cancel')"></button>
+                    <button type="button" @click="saveStatus()" :disabled="statusDialog.busy" class="px-4 py-2 rounded bg-blue-600 text-white font-bold disabled:opacity-60" x-text="statusDialog.busy ? L('กำลังบันทึก...', 'Saving...') : L('บันทึกสถานะ', 'Save status')"></button>
+                </div>
+            </div>
+        </div>
+    </template>
 
     <div x-show="activeTab === 'users'" x-cloak class="max-w-7xl mx-auto bg-white p-6 rounded shadow no-print">
         <h2 class="text-xl font-bold mb-1 border-b pb-2" x-text="lang === 'th' ? '👥 จัดการพนักงานขาย' : '👥 Manage Sales Staff'"></h2>
@@ -550,7 +681,7 @@
             </div>
         </div>
 
-        <div class="no-print grid grid-cols-2 md:grid-cols-6 gap-3 mb-3">
+        <div class="no-print grid grid-cols-2 md:grid-cols-7 gap-3 mb-3">
             <template x-if="user && user.role === 'manager'">
                 <div class="col-span-2 md:col-span-1">
                     <label class="block text-xs mb-1" x-text="L('พนักงานขาย', 'Salesperson')"></label>
@@ -587,6 +718,17 @@
                     <option value="mgalzn">Mg-Al-Zn</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-xs mb-1" x-text="L('สถานะดีล', 'Deal status')"></label>
+                <select x-model="specFilter.status" @change="rebuildSpec()" class="w-full border p-2 rounded">
+                    <option value="active" x-text="L('ปิดการขาย + ระหว่างเสนอ', 'Won + open')"></option>
+                    <option value="won" x-text="L('✅ ปิดการขาย', '✅ Won')"></option>
+                    <option value="open" x-text="L('⏳ ระหว่างเสนอ (≤ 45 วัน)', '⏳ Open (≤ 45 days)')"></option>
+                    <option value="stale" x-text="L('⏰ ค้าง > 45 วัน', '⏰ Stale > 45 days')"></option>
+                    <option value="lost" x-text="L('❌ ไม่ซื้อ + ยกเลิก', '❌ Lost + cancelled')"></option>
+                    <option value="all" x-text="L('ทุกสถานะ', 'All statuses')"></option>
+                </select>
+            </div>
             <div class="col-span-2 md:col-span-1">
                 <label class="block text-xs mb-1" x-text="L('ค้นหา', 'Search')"></label>
                 <input type="search" x-model="specFilter.q" @input.debounce.300ms="rebuildSpec()" :placeholder="L('ลูกค้า / เกรด / หน้ากว้าง', 'Customer / grade / width')" class="w-full border p-2 rounded">
@@ -597,33 +739,67 @@
         <div x-show="specFromCache" class="no-print text-xs text-gray-500 mb-2" x-text="L('* แสดงข้อมูลล่าสุดที่เคยโหลดไว้ในเครื่องนี้ (ออฟไลน์)', '* Showing the last data loaded on this device (offline)')"></div>
         <div x-show="specMeta && specMeta.truncated" class="text-xs text-amber-700 mb-2" x-text="L('* ข้อมูลมาก แสดงเฉพาะ 10,000 บรรทัดสินค้าล่าสุด', '* Large data set: showing the latest 10,000 lines only')"></div>
         <div x-show="specMeta && specMeta.badDate" class="no-print text-xs text-amber-700 mb-2" x-text="L('* มี ' + (specMeta ? specMeta.badDate : 0) + ' บรรทัดที่วันที่ใบเสนอราคาในชีตอ่านไม่ได้ จะนับเฉพาะเมื่อเลือกช่วงเวลา “ทั้งหมด” — แก้วันที่ในชีตเป็นรูปแบบ ปี-เดือน-วัน', '* ' + (specMeta ? specMeta.badDate : 0) + ' lines have an unreadable quotation date in the sheet; they only count under All time')"></div>
-        <div class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3 print:mb-2" x-text="L('⚠️ ตันในหน้านี้คือ “ตันที่เสนอราคา” ไม่ใช่ยอดสั่งซื้อ · ข้อมูลภายในบริษัท', '⚠️ Tons on this page are quoted tons, not orders · internal data')"></div>
+        <div x-show="specMeta && specMeta.legacy && user && user.role === 'manager'" class="no-print text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-2" x-text="L('⚠️ หลังบ้านยังเป็นรุ่นเก่า: ยังไม่มีสถานะดีล/ฉบับแก้ไข ทุกใบนับเป็น “ระหว่างเสนอ” และใบที่ต่อรองซ้ำจะถูกนับซ้ำ — อัปเดต Apps Script + รัน migrateV13', '⚠️ Old backend: no deal status/revisions yet — every quote counts as open and renegotiated quotes are double-counted. Update the Apps Script + run migrateV13')"></div>
+        <div class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3 print:mb-2" x-text="L('⚠️ นับจากฉบับล่าสุดของแต่ละดีล (ใบที่ออก Rev. ใหม่แล้วไม่นับซ้ำ) · “ปิดการขาย” = เซลล์กดยืนยันว่าลูกค้าสั่งซื้อ ไม่ใช่ยอดส่งของจริง · ข้อมูลภายในบริษัท', '⚠️ Counts the latest version of each deal (revised quotes are not double-counted) · “Won” = confirmed by the salesperson, not shipped volume · internal data')"></div>
 
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 print:mb-3">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5 print:mb-3 print:grid-cols-7">
             <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ลูกค้า (ราย)', 'Customers')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.customers"></div></div>
-            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ใบเสนอราคา (ใบ)', 'Quotations')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.quotes"></div></div>
-            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ตันที่เสนอรวม', 'Quoted tons')"></div><div class="text-2xl font-bold text-blue-900" x-text="specFmtTon(specSum.kpi.tons)"></div></div>
-            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ลูกค้า×สเปก (รายการ)', 'Customer × spec')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.specs"></div></div>
-            <div class="border rounded p-3 col-span-2 md:col-span-1"><div class="text-xs text-gray-500" x-text="L('🆕 สเปกใหม่ของลูกค้าใน 30 วัน', '🆕 New customer specs (30 days)')"></div><div class="text-2xl font-bold text-green-700" x-text="specSum.kpi.newSpecs"></div></div>
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ดีล (นับฉบับล่าสุด)', 'Deals (latest version)')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.deals"></div><div class="text-[11px] text-gray-500" x-text="specFmtTon(specSum.kpi.tons) + ' ' + L('ตันตามตัวกรอง', 't in filter')"></div></div>
+            <div class="border rounded p-3 bg-green-50"><div class="text-xs text-gray-600" x-text="L('✅ ตันปิดการขาย', '✅ Won tons')"></div><div class="text-2xl font-bold text-green-700" x-text="specFmtTon(specSum.kpi.wonTons)"></div><div class="text-[11px] text-gray-500" x-text="specSum.kpi.wonDeals + ' ' + L('ดีล', 'deals')"></div></div>
+            <div class="border rounded p-3 bg-blue-50"><div class="text-xs text-gray-600" x-text="L('⏳ ตันระหว่างเสนอ (≤ 45 วัน)', '⏳ Open tons (≤ 45 days)')"></div><div class="text-2xl font-bold text-blue-800" x-text="specFmtTon(specSum.kpi.openTons)"></div><div class="text-[11px] text-gray-500" x-text="specSum.kpi.openDeals + ' ' + L('ดีล', 'deals')"></div></div>
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('อัตราปิดการขาย', 'Win rate')"></div><div class="text-2xl font-bold text-blue-900" x-text="specPct(specSum.kpi.winRate)"></div><div class="text-[11px] text-gray-500" x-text="L('ปิดได้ ' + specSum.kpi.wonDeals + ' / ไม่ซื้อ ' + specSum.kpi.lostDeals, 'won ' + specSum.kpi.wonDeals + ' / lost ' + specSum.kpi.lostDeals)"></div></div>
+            <div class="border rounded p-3" :class="specSum.kpi.staleDeals ? 'bg-amber-50 border-amber-300' : ''"><div class="text-xs text-gray-600" x-text="L('⏰ ดีลค้าง > 45 วัน (ต้องอัปเดต)', '⏰ Stale deals > 45 days')"></div><div class="text-2xl font-bold text-amber-700" x-text="specSum.kpi.staleDeals"></div><div class="text-[11px] text-gray-500" x-text="specFmtTon(specSum.kpi.staleTons) + ' ' + L('ตัน', 't')"></div></div>
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('🆕 สเปกใหม่ของลูกค้าใน 30 วัน', '🆕 New customer specs (30 days)')"></div><div class="text-2xl font-bold text-green-700" x-text="specSum.kpi.newSpecs"></div><div x-show="specSum.kpi.dupOpen" class="text-[11px] text-red-600" x-text="'⚠ ' + specSum.kpi.dupOpen + L(' สเปกมีดีลเปิดซ้ำ', ' specs with duplicate open deals')"></div></div>
         </div>
 
-        <template x-if="user && user.role === 'manager' && !specFilter.salesCode && specSum.groups.length > 1">
+        <template x-if="user && user.role === 'manager' && !specFilter.salesCode && specSum.overview.length > 1">
             <div class="mb-6 print:break-inside-avoid" :class="specPrint === 'production' ? 'print:hidden' : ''">
-                <h3 class="font-bold text-base mb-2" x-text="L('ภาพรวมรายพนักงานขาย', 'Overview by salesperson')"></h3>
+                <h3 class="font-bold text-base mb-2" x-text="L('ภาพรวมรายพนักงานขาย (ทุกสถานะ)', 'Overview by salesperson (all statuses)')"></h3>
                 <div class="overflow-x-auto print:overflow-visible">
                     <table class="w-full text-xs border border-collapse">
                         <thead class="bg-gray-100 text-gray-700">
-                            <tr><th class="border p-1.5 text-left" x-text="L('พนักงานขาย', 'Salesperson')"></th><th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Customers')"></th><th class="border p-1.5 text-right" x-text="L('ใบเสนอราคา', 'Quotes')"></th><th class="border p-1.5 text-right" x-text="L('สเปก', 'Specs')"></th><th class="border p-1.5 text-right" x-text="L('ตันที่เสนอ', 'Quoted t')"></th><th class="border p-1.5 text-left" x-text="L('หน้ากว้างหลัก (มม.)', 'Main widths (mm)')"></th></tr>
+                            <tr><th class="border p-1.5 text-left" x-text="L('พนักงานขาย', 'Salesperson')"></th><th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Customers')"></th><th class="border p-1.5 text-right" x-text="L('ดีล', 'Deals')"></th><th class="border p-1.5 text-right" x-text="L('✅ ปิดการขาย (ตัน)', '✅ Won t')"></th><th class="border p-1.5 text-right" x-text="L('⏳ ระหว่างเสนอ (ตัน)', '⏳ Open t')"></th><th class="border p-1.5 text-right" x-text="L('⏰ ค้าง (ดีล)', '⏰ Stale deals')"></th><th class="border p-1.5 text-right" x-text="L('อัตราปิด', 'Win rate')"></th><th class="border p-1.5 text-left" x-text="L('หน้ากว้างหลัก (มม.)', 'Main widths (mm)')"></th></tr>
                         </thead>
                         <tbody>
-                            <template x-for="g in specSum.groups" :key="g.code">
+                            <template x-for="g in specSum.overview" :key="g.code">
                                 <tr class="hover:bg-gray-50">
                                     <td class="border p-1.5 font-bold"><button type="button" class="no-print underline text-blue-700" @click="specFilter.salesCode = g.code; rebuildSpec()" x-text="g.name"></button><span class="hidden print:inline" x-text="g.name"></span></td>
                                     <td class="border p-1.5 text-right" x-text="g.nCustomers"></td>
-                                    <td class="border p-1.5 text-right" x-text="g.nQuotes"></td>
-                                    <td class="border p-1.5 text-right" x-text="g.nSpecs"></td>
-                                    <td class="border p-1.5 text-right" x-text="specFmtTon(g.tons)"></td>
+                                    <td class="border p-1.5 text-right" x-text="g.nDeals"></td>
+                                    <td class="border p-1.5 text-right text-green-700 font-bold" x-text="specFmtTon(g.by.won)"></td>
+                                    <td class="border p-1.5 text-right text-blue-800" x-text="specFmtTon(g.by.open)"></td>
+                                    <td class="border p-1.5 text-right" :class="g.staleDeals ? 'text-amber-700 font-bold' : ''" x-text="g.staleDeals"></td>
+                                    <td class="border p-1.5 text-right" x-text="specPct(g.winRate)"></td>
                                     <td class="border p-1.5" x-text="g.topWidths || '-'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="specSum.staleDeals.length">
+            <div class="mb-6 border border-amber-300 rounded p-3 bg-amber-50/40 print:break-inside-avoid" :class="specPrint === 'production' ? 'print:hidden' : ''">
+                <h3 class="font-bold text-sm mb-1 text-amber-900" x-text="L('⏰ ดีลที่เสนอราคาค้างเกิน 45 วัน — กรุณาอัปเดตสถานะ (ปิดการขาย / ไม่ซื้อ / ยกเลิก)', '⏰ Quotes open for more than 45 days — please update their status')"></h3>
+                <div class="text-[11px] text-amber-800 mb-2" x-text="L('ดีลเหล่านี้ไม่ถูกนับในตัน “ระหว่างเสนอ” จนกว่าจะอัปเดต', 'These are not counted in open tons until updated')"></div>
+                <div class="overflow-x-auto print:overflow-visible">
+                    <table class="w-full text-xs border border-collapse bg-white">
+                        <thead class="bg-amber-100 text-amber-900"><tr>
+                            <th class="border p-1.5 text-left" x-text="L('เลขที่ (ฉบับล่าสุด)', 'No. (latest)')"></th><th class="border p-1.5 text-left" x-text="L('วันที่เสนอ', 'Quoted')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('ค้าง (วัน)', 'Age (days)')"></th><th class="border p-1.5 text-left" x-text="L('ลูกค้า', 'Customer')"></th>
+                            <th x-show="user && user.role === 'manager'" class="border p-1.5 text-left" x-text="L('พนักงานขาย', 'Sales')"></th><th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th><th class="no-print border p-1.5"></th>
+                        </tr></thead>
+                        <tbody>
+                            <template x-for="d in specSum.staleDeals" :key="d.root">
+                                <tr>
+                                    <td class="border p-1.5 font-bold whitespace-nowrap" x-text="d.no"></td>
+                                    <td class="border p-1.5 whitespace-nowrap" x-text="specDate(d.date)"></td>
+                                    <td class="border p-1.5 text-right" x-text="d.ageDays"></td>
+                                    <td class="border p-1.5" x-text="d.customer"></td>
+                                    <td x-show="user && user.role === 'manager'" class="border p-1.5" x-text="d.salesName"></td>
+                                    <td class="border p-1.5 text-right" x-text="specFmtTon(d.tons)"></td>
+                                    <td class="no-print border p-1.5 whitespace-nowrap"><button x-show="hasFeature('status') && canEditDeal(d)" type="button" @click="openStatusDialog(d)" class="text-purple-700 underline" x-text="L('อัปเดตสถานะ', 'Update status')"></button><span x-show="hasFeature('status') && !canEditDeal(d)" class="text-gray-400" x-text="L('เจ้าของดีลเป็นผู้อัปเดต', 'Owner updates')"></span></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -639,10 +815,10 @@
                 <div class="mb-6">
                     <div class="flex flex-wrap items-baseline gap-x-3 mb-1">
                         <div class="font-bold text-blue-900 text-sm" x-text="'👤 ' + g.name"></div>
-                        <div class="text-xs text-gray-500" x-text="g.nCustomers + ' ' + L('ลูกค้า', 'customers') + ' · ' + g.nQuotes + ' ' + L('ใบ', 'quotes') + ' · ' + specFmtTon(g.tons) + ' ' + L('ตันที่เสนอ', 'quoted t')"></div>
+                        <div class="text-xs text-gray-500" x-text="g.nCustomers + ' ' + L('ลูกค้า', 'customers') + ' · ' + g.nDeals + ' ' + L('ดีล', 'deals') + ' · ' + specFmtTon(g.tons) + ' ' + L('ตัน', 't') + (g.by.won ? ' · ✅ ' + specFmtTon(g.by.won) : '') + (g.by.open ? ' · ⏳ ' + specFmtTon(g.by.open) : '')"></div>
                     </div>
                     <div class="overflow-x-auto print:overflow-visible">
-                        <table class="w-full text-xs border border-collapse min-w-[760px] print:min-w-0">
+                        <table class="w-full text-xs border border-collapse min-w-[1000px] print:min-w-0">
                             <thead class="bg-gray-100 text-gray-700">
                                 <tr>
                                     <th class="border p-1.5 text-left" x-text="L('ประเภท', 'Type')"></th>
@@ -651,19 +827,22 @@
                                     <th class="border p-1.5 text-right" x-text="L('ความหนา (มม.)', 'Thick. (mm)')"></th>
                                     <th class="border p-1.5 text-right" x-text="L('หน้ากว้าง (มม.)', 'Width (mm)')"></th>
                                     <th class="border p-1.5 text-left" x-text="L('ขอบ / ขนาดสลิต', 'Edge / slit sizes')"></th>
-                                    <th class="border p-1.5 text-center" x-text="L('เสนอ (ครั้ง)', 'Quoted (x)')"></th>
-                                    <th class="border p-1.5 text-right" x-text="L('ตันรวม', 'Total t')"></th>
-                                    <th class="border p-1.5 text-right" x-text="L('ตันใบล่าสุด', 'Latest t')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('ผิว', 'Surface')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('แพ็กเกจ', 'Packing')"></th>
+                                    <th class="border p-1.5 text-center" x-text="L('ดีล', 'Deals')"></th>
+                                    <th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('ตามสถานะ (ตัน)', 'By status (t)')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('กำหนดส่ง', 'Delivery')"></th>
                                     <th class="border p-1.5 text-left" x-text="L('เสนอล่าสุด', 'Last quoted')"></th>
                                 </tr>
                             </thead>
                             <template x-for="c in g.customers" :key="c.key">
                                 <tbody class="break-inside-avoid">
                                     <tr class="bg-blue-50">
-                                        <td colspan="10" class="border p-1.5">
+                                        <td colspan="13" class="border p-1.5">
                                             <span class="font-bold text-blue-900" x-text="c.name"></span>
                                             <span x-show="c.variants.length" class="ml-1 text-[10px] bg-gray-200 text-gray-700 rounded px-1 cursor-help" :title="L('ชื่อที่สะกดต่างกันซึ่งรวมไว้ด้วยกัน: ', 'Merged spellings: ') + c.variants.join(' | ')" x-text="'+' + c.variants.length + ' ' + L('แบบสะกด', 'spellings')"></span>
-                                            <span class="ml-2 text-gray-500" x-text="(c.segment ? c.segment + ' · ' : '') + c.nQuotes + ' ' + L('ใบ', 'quotes') + ' · ' + specFmtTon(c.tons) + ' ' + L('ตัน', 't') + ' · ' + L('เสนอล่าสุด ', 'last quote ') + specDate(c.lastAll)"></span>
+                                            <span class="ml-2 text-gray-500" x-text="(c.segment ? c.segment + ' · ' : '') + c.nDeals + ' ' + L('ดีล', 'deals') + ' · ' + specFmtTon(c.tons) + ' ' + L('ตัน', 't') + ' · ' + L('เสนอล่าสุด ', 'last quote ') + specDate(c.lastAll)"></span>
                                             <span x-show="c.dormant" class="ml-1 text-[10px] bg-amber-100 text-amber-800 rounded px-1" x-text="L('ไม่ได้เสนอราคา > 90 วัน', 'no quote > 90 days')"></span>
                                         </td>
                                     </tr>
@@ -675,10 +854,13 @@
                                             <td class="border p-1.5 text-right whitespace-nowrap" x-text="specFmtT(s.t) + (s.bt ? ' ' + s.bt : '')"></td>
                                             <td class="border p-1.5 text-right font-bold" x-text="specFmtW(s.w)"></td>
                                             <td class="border p-1.5" x-text="(s.edge || '-') + (s.slits ? ' (' + s.slits + ')' : '')"></td>
-                                            <td class="border p-1.5 text-center" x-text="s.nQuotes"></td>
-                                            <td class="border p-1.5 text-right" x-text="specFmtTon(s.tons)"></td>
-                                            <td class="border p-1.5 text-right" x-text="specFmtTon(s.latestTons)"></td>
-                                            <td class="border p-1.5 whitespace-nowrap"><span x-text="specDate(s.last)"></span><span x-show="s.isNew" class="ml-1 text-[10px] bg-green-100 text-green-800 rounded px-1" x-text="L('🆕 ใหม่', '🆕 new')"></span></td>
+                                            <td class="border p-1.5 text-[10px] leading-tight" x-text="s.surfaces.join(' | ') || '-'"></td>
+                                            <td class="border p-1.5" x-text="s.packagings.join(', ') || '-'"></td>
+                                            <td class="border p-1.5 text-center whitespace-nowrap"><span x-text="s.nDeals"></span><span x-show="s.dupOpen" class="ml-1 text-[10px] bg-red-100 text-red-700 rounded px-1 cursor-help" :title="L('ลูกค้านี้มีดีลที่ยังเปิดอยู่ ' + s.dupOpen + ' ดีลในสเปกเดียวกัน — ถ้าเป็นดีลเดียวกันที่ต่อรอง ให้ยกเลิกใบซ้ำ หรือออกเป็น Rev. ครั้งหน้า', s.dupOpen + ' open deals for the same spec — if it is the same deal, cancel the duplicate')" x-text="'⚠ ' + s.dupOpen"></span></td>
+                                            <td class="border p-1.5 text-right font-bold" x-text="specFmtTon(s.tons)"></td>
+                                            <td class="border p-1.5"><template x-for="ch in specByChips(s.by)" :key="ch.k"><span class="inline-block text-[10px] rounded px-1 mr-0.5 mb-0.5 whitespace-nowrap" :class="ch.cls" x-text="ch.label"></span></template></td>
+                                            <td class="border p-1.5 text-[11px]" x-text="s.delivery || '-'"></td>
+                                            <td class="border p-1.5 whitespace-nowrap"><span x-text="specDate(s.last)"></span><span x-show="s.isNew" class="ml-1 text-[10px] bg-green-100 text-green-800 rounded px-1" x-text="L('🆕 ใหม่', '🆕 new')"></span><div class="text-[10px] text-gray-400" x-text="s.lastNo"></div></td>
                                         </tr>
                                     </template>
                                 </tbody>
@@ -695,7 +877,7 @@
                 <div class="text-xs text-gray-600" x-text="specPrintSubtitle()"></div>
             </div>
             <h3 class="font-bold text-base mb-1" x-text="L('2) สำหรับฝ่ายผลิต: หน้ากว้าง × ความหนา × เกรด', '2) For production: width × thickness × grade')"></h3>
-            <p class="text-xs text-gray-500 mb-3" x-text="L('นับตันจากใบเสนอราคาล่าสุดของแต่ละ ลูกค้า×สเปก (ไม่บวกซ้ำเมื่อเสนอราคาหลายรอบ) รวม ', 'Tons from the latest quotation per customer×spec (re-quotes are not added twice), total ') + specFmtTon(specSum.kpi.prodTons) + L(' ตัน', ' t')"></p>
+            <p class="text-xs text-gray-500 mb-3" x-text="L('นับตันจากฉบับล่าสุดของแต่ละดีล (ฉบับที่ถูกแทนที่ไม่นับ) · สถานะ: ', 'Tons from the latest version of each deal (superseded versions excluded) · status: ') + specStatusFilterLabel(specFilter.status) + L(' · รวม ', ' · total ') + specFmtTon(specSum.kpi.prodTons) + L(' ตัน', ' t')"></p>
 
             <h4 class="font-bold text-sm mb-1" x-text="L('2.1 หน้ากว้างที่ลูกค้าใช้ (เรียงตามตัน)', '2.1 Widths in demand (by tons)')"></h4>
             <div class="overflow-x-auto print:overflow-visible mb-5">
@@ -704,10 +886,12 @@
                         <tr>
                             <th class="border p-1.5 text-right" x-text="L('หน้ากว้าง (มม.)', 'Width (mm)')"></th>
                             <th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('✅ ปิดแล้ว', '✅ Won')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('⏳ ระหว่างเสนอ + ค้าง', '⏳ Open + stale')"></th>
                             <th class="border p-1.5 text-right">GI</th>
                             <th class="border p-1.5 text-right">Mg-Al-Zn</th>
                             <th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Cust.')"></th>
-                            <th class="border p-1.5 text-right" x-text="L('ใบ', 'Quotes')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('ดีล', 'Deals')"></th>
                             <th class="border p-1.5 text-left" x-text="L('ความหนา (มม.) ต่ำสุด–สูงสุด · ที่ใช้บ่อย', 'Thickness (mm) min–max · common')"></th>
                             <th class="border p-1.5 text-left" x-text="L('เกรด', 'Grades')"></th>
                             <th class="border p-1.5 text-left" x-text="L('เคลือบ', 'Coatings')"></th>
@@ -721,10 +905,12 @@
                             <tr class="hover:bg-gray-50 break-inside-avoid">
                                 <td class="border p-1.5 text-right font-bold whitespace-nowrap"><span x-text="specFmtW(w.w)"></span><span x-show="w.isNew" class="ml-1 text-[10px] bg-green-100 text-green-800 rounded px-1">🆕</span></td>
                                 <td class="border p-1.5 text-right font-bold" x-text="specFmtTon(w.tons)"></td>
+                                <td class="border p-1.5 text-right text-green-700" x-text="w.won ? specFmtTon(w.won) : '-'"></td>
+                                <td class="border p-1.5 text-right text-blue-800" x-text="w.pipe ? specFmtTon(w.pipe) : '-'"></td>
                                 <td class="border p-1.5 text-right" x-text="w.gi ? specFmtTon(w.gi) : '-'"></td>
                                 <td class="border p-1.5 text-right" x-text="w.zm ? specFmtTon(w.zm) : '-'"></td>
                                 <td class="border p-1.5 text-right" x-text="w.nCustomers"></td>
-                                <td class="border p-1.5 text-right" x-text="w.nQuotes"></td>
+                                <td class="border p-1.5 text-right" x-text="w.nDeals"></td>
                                 <td class="border p-1.5 whitespace-nowrap" x-text="(w.tMin !== null ? specFmtT(w.tMin) + '–' + specFmtT(w.tMax) : '-') + (w.topThick.length ? ' · ' + w.topThick.map(t => specFmtT(t)).join(', ') : '')"></td>
                                 <td class="border p-1.5" x-text="w.grades.join(', ') || '-'"></td>
                                 <td class="border p-1.5" x-text="w.coatings.join(', ') || '-'"></td>
@@ -733,7 +919,7 @@
                                 <td class="border p-1.5 whitespace-nowrap" x-text="specDate(w.last)"></td>
                             </tr>
                         </template>
-                        <tr x-show="specSum.widths.length === 0"><td colspan="12" class="border p-4 text-center text-gray-400">-</td></tr>
+                        <tr x-show="specSum.widths.length === 0"><td colspan="14" class="border p-4 text-center text-gray-400">-</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -793,15 +979,37 @@
                     </tbody>
                 </table>
             </div>
+
+            <h4 class="font-bold text-sm mb-1 mt-5" x-text="L('2.4 ผิว × แพ็กเกจ', '2.4 Surface × packing')"></h4>
+            <div class="overflow-x-auto print:overflow-visible">
+                <table class="text-xs border border-collapse min-w-[520px] print:min-w-0">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr><th class="border p-1.5 text-left" x-text="L('ประเภท', 'Type')"></th><th class="border p-1.5 text-left" x-text="L('ผิว (spangle · chrome · oil · skinpass · AFP)', 'Surface (spangle · chrome · oil · skinpass · AFP)')"></th><th class="border p-1.5 text-left" x-text="L('แพ็กเกจ', 'Packing')"></th><th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th><th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Customers')"></th></tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="x in specSum.surfPack" :key="x.type + x.surface + x.packaging">
+                            <tr class="hover:bg-gray-50">
+                                <td class="border p-1.5" x-text="x.type === 'mgalzn' ? 'Mg-Al-Zn' : 'GI'"></td>
+                                <td class="border p-1.5" x-text="x.surface"></td>
+                                <td class="border p-1.5" x-text="x.packaging"></td>
+                                <td class="border p-1.5 text-right" x-text="specFmtTon(x.tons)"></td>
+                                <td class="border p-1.5 text-right" x-text="x.nCustomers"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="specSum.surfPack.length === 0"><td colspan="5" class="border p-4 text-center text-gray-400">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.2 (2026-10-05) =====
+        // ===== AMC Quotation App v1.3 (2026-10-05) — ฉบับแก้ไข (Rev.) + สถานะดีล =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
         const USER_KEY = 'amcQuoteUser';
+        const SPEC_CACHE = 'amcQuoteSpec2_', HIST_CACHE = 'amcQuoteHistory2_';   // v1.3: รูปแบบข้อมูลใหม่ (มีสถานะ/ฉบับ) จึงเปลี่ยนชื่อคีย์
 
         // ราคา Extra อ้างอิง: GI / Mg-Al-Zn Steel_Quotation_Data update 09.28.2026.xlsx (saved 28/09/2026 15:04)
         const pricingData = {
@@ -904,12 +1112,25 @@
         }
         function topKeys(map, n) { return Object.keys(map).sort((a, b) => map[b] - map[a]).slice(0, n); }
 
-        /* rows = บรรทัดสินค้าจาก specSummary (ล่าสุดก่อน) · o = {from,to,type,q,salesCode,today}
-           คืน {kpi, groups(พนักงานขาย→ลูกค้า→สเปก), widths, matrices, gradeCoat} */
+        // ===== สถานะดีล (v1.3) =====
+        const STALE_DAYS = 45;                                                          // เสนอราคาค้างเกินนี้ = "ค้าง ต้องอัปเดตสถานะ"
+        const STATUS_SETS = { active: ['won', 'open'], won: ['won'], open: ['open'], stale: ['stale'], lost: ['lost', 'cancelled'], all: ['won', 'open', 'stale', 'lost', 'cancelled'] };
+        const LOST_REASONS = ['ราคา', 'แพ้คู่แข่ง', 'เลื่อน', 'สเปกไม่ได้', 'อื่นๆ'];
+        // สถานะที่ใช้นับ: won / lost / cancelled ตามที่บันทึก · open ที่เก่ากว่า 45 วัน = stale · ฉบับที่ถูกแทนที่ = superseded
+        function dealStatus(status, date, staleSince) {
+            if (status === 'won' || status === 'lost' || status === 'cancelled' || status === 'superseded') return status;
+            return date && date < staleSince ? 'stale' : 'open';
+        }
+        function emptyBy() { return { won: 0, open: 0, stale: 0, lost: 0, cancelled: 0 }; }
+
+        /* rows = บรรทัดสินค้าจาก specSummary (ล่าสุดก่อน, มีฉบับที่ถูกแทนที่ cur:false ปนมาได้)
+           o = {from,to,type,q,salesCode,status('active'|'won'|'open'|'stale'|'lost'|'all'),today}
+           นับเฉพาะฉบับล่าสุดของแต่ละดีล (cur) · ฉบับเก่าใช้แค่หา "พบครั้งแรก"/ชื่อสะกด/ลูกค้าเงียบ
+           คืน {kpi, overview, groups(พนักงานขาย→ลูกค้า→สเปก), widths, matrices, gradeCoat, surfPack, staleDeals} */
         function buildSpecSummary(rows, o) {
             o = o || {};
             const today = o.today || localToday();
-            const since30 = shiftYmd(today, -30), since90 = shiftYmd(today, -90);
+            const since30 = shiftYmd(today, -30), since90 = shiftYmd(today, -90), staleSince = shiftYmd(today, -STALE_DAYS);
             const r3 = x => Math.round(x * 1000) / 1000;
             const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
             const all = (rows || []).map((r, i) => {
@@ -919,9 +1140,12 @@
                 const bt = r.baseThickness === 'BMT' || r.baseThickness === 'TCT' ? r.baseThickness : '';
                 const edge = r.edge === 'Slit' || r.edge === 'Mill' ? r.edge : '';
                 const grade = String(r.grade || ''), coating = String(r.coating || '');
-                return { i, no: String(r.no || ''), date: String(r.date || ''), salesCode: String(r.salesCode || ''), salesName: String(r.salesName || ''),
+                const no = String(r.no || ''), date = String(r.date || ''), cur = r.cur !== false;   // หลังบ้านรุ่นเก่าไม่มี cur/status = ทุกใบเป็นฉบับล่าสุด เสนอราคา
+                return { i, no, date, salesCode: String(r.salesCode || ''), salesName: String(r.salesName || ''),
                     customer: String(r.customer || '').trim(), ck: normCustomer(r.customer) || '__none__', type, grade, coating, t, w, bt, edge,
-                    sk: [type, grade, coating, t, bt, w, edge].join('|'), slit: String(r.slitSize || '').trim(), segment: String(r.segment || ''), qty: Number(r.qty) || 0 };
+                    sk: [type, grade, coating, t, bt, w, edge].join('|'), slit: String(r.slitSize || '').trim(), segment: String(r.segment || ''), qty: Number(r.qty) || 0,
+                    cur, root: String(r.root || no), st: cur ? dealStatus(r.status, date, staleSince) : 'superseded',
+                    surface: String(r.surface || '').trim(), packaging: String(r.packaging || '').trim(), delivery: String(r.delivery || '').trim() };
             });
             // ชื่อที่แสดง = ตัวสะกดที่ใช้บ่อยสุด (เท่ากันใช้ล่าสุด) จากข้อมูลทั้งหมดที่มองเห็น
             const spell = {};
@@ -936,28 +1160,55 @@
                 if (r.w) { if (!firstW[r.w] || r.date < firstW[r.w]) firstW[r.w] = r.date; }
                 const k3 = r.salesCode + '#' + r.ck; if (!lastSC[k3] || r.date > lastSC[k3]) lastSC[k3] = r.date;
             });
-            // ตัวกรอง
+            // ตัวกรอง (นับเฉพาะฉบับล่าสุดของดีล)
             const qn = String(o.q || '').toLowerCase().trim(), qk = normCustomer(o.q);
             const qNum = /^\d+(\.\d+)?$/.test(qn) ? Number(qn) : null;                // ตัวเลขล้วน = หน้ากว้าง/ความหนา ไม่ค้นในเลขที่ใบ (AMC05102026-1 มี 1020 อยู่)
             const hit = r => qNum !== null
                 ? (r.w === qNum || r.t === qNum || (r.grade + ' ' + r.coating).toLowerCase().includes(qn))
-                : ((r.customer + ' ' + nameOf[r.ck] + ' ' + r.no + ' ' + r.grade + ' ' + r.coating).toLowerCase().includes(qn) || (qk && r.ck.includes(qk)));
-            const f = all.filter(r => (!o.salesCode || r.salesCode === o.salesCode)
+                : ((r.customer + ' ' + nameOf[r.ck] + ' ' + r.no + ' ' + r.root + ' ' + r.grade + ' ' + r.coating).toLowerCase().includes(qn) || (qk && r.ck.includes(qk)));
+            const base = all.filter(r => r.cur && (!o.salesCode || r.salesCode === o.salesCode)
                 && (!o.type || o.type === 'all' || r.type === o.type)
                 && (!o.from || (r.date && r.date >= o.from)) && (!o.to || (r.date && r.date <= o.to))
                 && (!qn || hit(r)));
+            const allowed = STATUS_SETS[o.status] || STATUS_SETS.active;
+            const f = base.filter(r => allowed.indexOf(r.st) >= 0);                     // ตามตัวกรองสถานะ (ค่าเริ่มต้น = ปิดการขาย + ระหว่างเสนอ)
             // ใบล่าสุด = วันที่ล่าสุด เท่ากันใช้แถวที่ใหม่กว่า (ข้อมูลเรียงล่าสุดก่อน)
             const takeLatest = (s, r) => { if (r.date > s.last || (r.date === s.last && r.i < s.lastI)) { s.last = r.date; s.lastI = r.i; s.lastNo = r.no; } };
+            const addBy = (by, r) => { if (by[r.st] !== undefined) by[r.st] += r.qty; };
+            const roundBy = by => { const x = {}; Object.keys(by).forEach(k => { x[k] = r3(by[k]); }); return x; };
+            // ดีลที่ยังเปิด (เสนอราคา/ค้าง) ซ้ำกันใน ลูกค้า×สเปกเดียวกัน — ตรวจจากทุกสถานะ ไม่ขึ้นกับตัวกรองสถานะ
+            const openDeals = {};
+            base.forEach(r => { if (r.st === 'open' || r.st === 'stale') { const k = r.salesCode + '#' + r.ck + '#' + r.sk; (openDeals[k] || (openDeals[k] = new Set())).add(r.root); } });
+            const dupOf = (code, ck, sk) => { const s = openDeals[code + '#' + ck + '#' + sk]; return s && s.size >= 2 ? s.size : 0; };
+
+            // ---- ภาพรวมรายพนักงานขาย (ทุกสถานะ) ----
+            const omap = {};
+            base.forEach(r => {
+                const g = omap[r.salesCode] || (omap[r.salesCode] = { name: r.salesName, cust: {}, deals: new Set(), by: emptyBy(), dealsBy: { won: new Set(), lost: new Set(), stale: new Set() }, wt: {} });
+                g.cust[r.ck] = 1; g.deals.add(r.root); addBy(g.by, r);
+                if (g.dealsBy[r.st]) g.dealsBy[r.st].add(r.root);
+                if (r.w && (r.st === 'won' || r.st === 'open')) g.wt[r.w] = (g.wt[r.w] || 0) + r.qty;
+            });
+            const overview = Object.keys(omap).map(code => {
+                const g = omap[code], won = g.dealsBy.won.size, lost = g.dealsBy.lost.size;
+                return { code, name: g.name || code, nCustomers: Object.keys(g.cust).length, nDeals: g.deals.size, by: roundBy(g.by),
+                    wonDeals: won, lostDeals: lost, staleDeals: g.dealsBy.stale.size, winRate: won + lost ? won / (won + lost) : null,
+                    topWidths: topKeys(g.wt, 3).map(w => fmtW(Number(w))).join(', ') };
+            }).sort((a, b) => cmp(a.name, b.name));
 
             // ---- ส่วนที่ 1: พนักงานขาย → ลูกค้า → สเปก ----
             const gmap = {};
             f.forEach(r => {
-                const g = gmap[r.salesCode] || (gmap[r.salesCode] = { name: r.salesName, cmap: {}, quotes: new Set(), tons: 0, wt: {} });
-                g.quotes.add(r.no); g.tons += r.qty; if (r.w) g.wt[r.w] = (g.wt[r.w] || 0) + r.qty;
-                const c = g.cmap[r.ck] || (g.cmap[r.ck] = { smap: {}, quotes: new Set(), tons: 0, segs: {}, last: '', lastI: Infinity, lastNo: '' });
-                c.quotes.add(r.no); c.tons += r.qty; if (r.segment) c.segs[r.segment] = (c.segs[r.segment] || 0) + 1; takeLatest(c, r);
-                const s = c.smap[r.sk] || (c.smap[r.sk] = { r, slits: {}, quotes: new Set(), tons: 0, perQuote: {}, last: '', lastI: Infinity, lastNo: '' });
-                s.quotes.add(r.no); s.tons += r.qty; s.perQuote[r.no] = (s.perQuote[r.no] || 0) + r.qty; if (r.slit) s.slits[r.slit] = 1; takeLatest(s, r);
+                const g = gmap[r.salesCode] || (gmap[r.salesCode] = { name: r.salesName, cmap: {}, deals: new Set(), tons: 0, by: emptyBy(), wt: {} });
+                g.deals.add(r.root); g.tons += r.qty; addBy(g.by, r); if (r.w) g.wt[r.w] = (g.wt[r.w] || 0) + r.qty;
+                const c = g.cmap[r.ck] || (g.cmap[r.ck] = { smap: {}, deals: new Set(), tons: 0, by: emptyBy(), segs: {}, last: '', lastI: Infinity, lastNo: '' });
+                c.deals.add(r.root); c.tons += r.qty; addBy(c.by, r); if (r.segment) c.segs[r.segment] = (c.segs[r.segment] || 0) + 1; takeLatest(c, r);
+                const s = c.smap[r.sk] || (c.smap[r.sk] = { r, slits: {}, deals: new Set(), tons: 0, by: emptyBy(), surf: {}, pack: {}, deliv: '', delivAt: '', last: '', lastI: Infinity, lastNo: '' });
+                s.deals.add(r.root); s.tons += r.qty; addBy(s.by, r); if (r.slit) s.slits[r.slit] = 1;
+                if (r.surface) s.surf[r.surface] = (s.surf[r.surface] || 0) + r.qty;
+                if (r.packaging) s.pack[r.packaging] = (s.pack[r.packaging] || 0) + r.qty;
+                if (r.delivery && (r.date > s.delivAt || !s.deliv)) { s.deliv = r.delivery; s.delivAt = r.date; }
+                takeLatest(s, r);
             });
             const groups = Object.keys(gmap).map(code => {
                 const g = gmap[code];
@@ -966,68 +1217,87 @@
                     const specs = Object.keys(c.smap).map(sk => {
                         const s = c.smap[sk], r = s.r, first = firstCS[ck + '#' + sk] || '';
                         return { key: sk, type: r.type, grade: r.grade, coating: r.coating, t: r.t, bt: r.bt, w: r.w, edge: r.edge,
-                            slits: Object.keys(s.slits).join(', '), nQuotes: s.quotes.size, tons: r3(s.tons), latestTons: r3(s.perQuote[s.lastNo] || 0),
+                            slits: Object.keys(s.slits).join(', '), surfaces: topKeys(s.surf, 2), packagings: topKeys(s.pack, 2), delivery: s.deliv,
+                            nDeals: s.deals.size, nQuotes: s.deals.size, tons: r3(s.tons), by: roundBy(s.by), dupOpen: dupOf(code, ck, sk),
                             first, last: s.last, lastNo: s.lastNo, isNew: !!first && first >= since30 };
                     }).sort((a, b) => cmp(a.type, b.type) || cmp(a.grade, b.grade) || (a.t - b.t) || (a.w - b.w) || cmp(a.coating, b.coating));
                     const lastAll = lastSC[code + '#' + ck] || c.last;
                     return { key: ck, name: nameOf[ck], variants: variantsOf[ck] || [], segment: topKeys(c.segs, 1)[0] || '',
-                        nQuotes: c.quotes.size, tons: r3(c.tons), nSpecs: specs.length, last: c.last, lastNo: c.lastNo,
-                        lastAll, dormant: !!lastAll && lastAll < since90, specs };
+                        nDeals: c.deals.size, nQuotes: c.deals.size, tons: r3(c.tons), by: roundBy(c.by), nSpecs: specs.length, last: c.last, lastNo: c.lastNo,
+                        lastAll, dormant: !!lastAll && lastAll < since90, dupOpen: specs.some(s => s.dupOpen), specs };
                 }).sort((a, b) => (b.tons - a.tons) || cmp(a.name, b.name));
-                return { code, name: g.name || code, nQuotes: g.quotes.size, tons: r3(g.tons), nCustomers: customers.length,
+                return { code, name: g.name || code, nDeals: g.deals.size, nQuotes: g.deals.size, tons: r3(g.tons), by: roundBy(g.by), nCustomers: customers.length,
                     nSpecs: customers.reduce((n, c) => n + c.nSpecs, 0), topWidths: topKeys(g.wt, 3).map(w => fmtW(Number(w))).join(', '), customers };
             }).sort((a, b) => cmp(a.name, b.name));
 
-            // ---- ส่วนที่ 2: ฝ่ายผลิต — ตันของใบล่าสุดต่อ ลูกค้า×สเปก (ไม่บวกซ้ำเมื่อเสนอราคาหลายรอบ) ----
-            const cs = {};
-            f.forEach(r => {
-                const k = r.ck + '#' + r.sk;
-                const x = cs[k] || (cs[k] = { r, slits: {}, perQuote: {}, quotes: new Set(), last: '', lastI: Infinity, lastNo: '' });
-                x.perQuote[r.no] = (x.perQuote[r.no] || 0) + r.qty; x.quotes.add(r.no); if (r.slit) x.slits[r.slit] = 1; takeLatest(x, r);
-            });
-            const csList = Object.keys(cs).map(k => { const x = cs[k]; return Object.assign({ key: k, tons: x.perQuote[x.lastNo] || 0, slits: x.slits, quotes: x.quotes, last: x.last }, { ck: x.r.ck, type: x.r.type, grade: x.r.grade, coating: x.r.coating, t: x.r.t, w: x.r.w, edge: x.r.edge }); });
+            // ---- ส่วนที่ 2: ฝ่ายผลิต — ทุกบรรทัดของฉบับล่าสุด (ดีลที่ต่อรองแล้วนับฉบับเดียว ไม่บวกซ้ำ) ----
             const wmap = {};
-            csList.forEach(x => {
-                if (!x.w) return;
-                const e = wmap[x.w] || (wmap[x.w] = { w: x.w, tons: 0, gi: 0, zm: 0, cust: {}, quotes: new Set(), tMin: Infinity, tMax: -Infinity, thick: {}, grades: {}, coats: {}, mill: 0, slit: 0, slits: {}, last: '' });
-                e.tons += x.tons; if (x.type === 'mgalzn') e.zm += x.tons; else e.gi += x.tons;
-                e.cust[x.ck] = 1; x.quotes.forEach(q => e.quotes.add(q));
-                if (x.t) { e.tMin = Math.min(e.tMin, x.t); e.tMax = Math.max(e.tMax, x.t); e.thick[x.t] = (e.thick[x.t] || 0) + x.tons; }
-                if (x.grade) e.grades[x.grade] = (e.grades[x.grade] || 0) + x.tons;
-                if (x.coating) e.coats[x.coating] = (e.coats[x.coating] || 0) + x.tons;
-                if (x.edge === 'Slit') e.slit += x.tons; else e.mill += x.tons;
-                Object.keys(x.slits).forEach(s => { e.slits[s] = 1; });
-                if (x.last > e.last) e.last = x.last;
+            f.forEach(r => {
+                if (!r.w) return;
+                const e = wmap[r.w] || (wmap[r.w] = { w: r.w, tons: 0, won: 0, pipe: 0, gi: 0, zm: 0, cust: {}, deals: new Set(), tMin: Infinity, tMax: -Infinity, thick: {}, grades: {}, coats: {}, mill: 0, slit: 0, slits: {}, last: '' });
+                e.tons += r.qty; if (r.st === 'won') e.won += r.qty; else if (r.st === 'open' || r.st === 'stale') e.pipe += r.qty;
+                if (r.type === 'mgalzn') e.zm += r.qty; else e.gi += r.qty;
+                e.cust[r.ck] = 1; e.deals.add(r.root);
+                if (r.t) { e.tMin = Math.min(e.tMin, r.t); e.tMax = Math.max(e.tMax, r.t); e.thick[r.t] = (e.thick[r.t] || 0) + r.qty; }
+                if (r.grade) e.grades[r.grade] = (e.grades[r.grade] || 0) + r.qty;
+                if (r.coating) e.coats[r.coating] = (e.coats[r.coating] || 0) + r.qty;
+                if (r.edge === 'Slit') e.slit += r.qty; else e.mill += r.qty;
+                if (r.slit) e.slits[r.slit] = 1;
+                if (r.date > e.last) e.last = r.date;
             });
             const widths = Object.keys(wmap).map(k => {
                 const e = wmap[k], first = firstW[e.w] || '', pats = Object.keys(e.slits);
-                return { w: e.w, tons: r3(e.tons), gi: r3(e.gi), zm: r3(e.zm), nCustomers: Object.keys(e.cust).length, nQuotes: e.quotes.size,
+                return { w: e.w, tons: r3(e.tons), won: r3(e.won), pipe: r3(e.pipe), gi: r3(e.gi), zm: r3(e.zm), nCustomers: Object.keys(e.cust).length, nDeals: e.deals.size, nQuotes: e.deals.size,
                     tMin: isFinite(e.tMin) ? e.tMin : null, tMax: isFinite(e.tMax) ? e.tMax : null, topThick: topKeys(e.thick, 3).map(Number),
                     grades: topKeys(e.grades, 4), coatings: topKeys(e.coats, 4), mill: r3(e.mill), slit: r3(e.slit),
                     slitPatterns: pats.slice(0, 6), moreSlits: Math.max(0, pats.length - 6), last: e.last, first, isNew: !!first && first >= since30 };
             }).sort((a, b) => (b.tons - a.tons) || (a.w - b.w));
             const matrices = ['galvanized', 'mgalzn'].map(type => {
-                const items = csList.filter(x => x.type === type && x.w);
+                const items = f.filter(x => x.type === type && x.w);
                 if (!items.length) return null;
-                const wt = {}; items.forEach(x => { wt[x.w] = (wt[x.w] || 0) + x.tons; });
+                const wt = {}; items.forEach(x => { wt[x.w] = (wt[x.w] || 0) + x.qty; });
                 const top = topKeys(wt, 10).map(Number).sort((a, b) => a - b);
                 const cols = top.map(w => ({ key: String(w), label: fmtW(w) })).concat(Object.keys(wt).length > top.length ? [{ key: 'other', label: 'อื่นๆ' }] : []);
                 const cells = {};
-                items.forEach(x => { const k = thickBand(type, x.t) + '#' + (top.indexOf(x.w) >= 0 ? String(x.w) : 'other'); cells[k] = (cells[k] || 0) + x.tons; });
+                items.forEach(x => { const k = thickBand(type, x.t) + '#' + (top.indexOf(x.w) >= 0 ? String(x.w) : 'other'); cells[k] = (cells[k] || 0) + x.qty; });
                 let max = 0;
                 const bands = bandLabels(type).map(b => { const vals = cols.map(c => r3(cells[b + '#' + c.key] || 0)); vals.forEach(v => { if (v > max) max = v; }); return { label: b, vals, total: r3(vals.reduce((s, v) => s + v, 0)) }; }).filter(b => b.total > 0);
                 const colTotals = cols.map((c, j) => r3(bands.reduce((s, b) => s + b.vals[j], 0)));
                 return { type, label: type === 'mgalzn' ? 'Mg-Al-Zn' : 'Galvanized (GI)', cols, bands, colTotals, total: r3(colTotals.reduce((s, v) => s + v, 0)), max };
             }).filter(Boolean);
             const gc = {};
-            csList.forEach(x => { const k = x.type + '|' + x.grade + '|' + x.coating; const e = gc[k] || (gc[k] = { type: x.type, grade: x.grade || '-', coating: x.coating || '-', tons: 0, cust: {} }); e.tons += x.tons; e.cust[x.ck] = 1; });
+            f.forEach(x => { const k = x.type + '|' + x.grade + '|' + x.coating; const e = gc[k] || (gc[k] = { type: x.type, grade: x.grade || '-', coating: x.coating || '-', tons: 0, cust: {} }); e.tons += x.qty; e.cust[x.ck] = 1; });
             const gradeCoat = Object.keys(gc).map(k => { const e = gc[k]; return { type: e.type, grade: e.grade, coating: e.coating, tons: r3(e.tons), nCustomers: Object.keys(e.cust).length }; })
                 .sort((a, b) => (b.tons - a.tons) || cmp(a.grade, b.grade));
+            const sp = {};
+            f.forEach(x => { const k = x.type + '|' + x.surface + '|' + x.packaging; const e = sp[k] || (sp[k] = { type: x.type, surface: x.surface || '-', packaging: x.packaging || '-', tons: 0, cust: {} }); e.tons += x.qty; e.cust[x.ck] = 1; });
+            const surfPack = Object.keys(sp).map(k => { const e = sp[k]; return { type: e.type, surface: e.surface, packaging: e.packaging, tons: r3(e.tons), nCustomers: Object.keys(e.cust).length }; })
+                .sort((a, b) => (b.tons - a.tons) || cmp(a.surface, b.surface));
 
-            const kpi = { customers: new Set(f.map(r => r.ck)).size, quotes: new Set(f.map(r => r.no)).size, tons: r3(f.reduce((s, r) => s + r.qty, 0)),
-                specs: csList.length, lines: f.length, prodTons: r3(csList.reduce((s, x) => s + x.tons, 0)),   // specs = ลูกค้า×สเปก (หน่วยเดียวกับ 🆕)
-                newSpecs: csList.filter(x => (firstCS[x.key] || '') >= since30).length };
-            return { kpi, groups, widths, matrices, gradeCoat, today, since30 };
+            // ---- ดีลค้าง > 45 วัน ให้เซลล์ไล่อัปเดตสถานะ (เก่าสุดก่อน) ----
+            const sd = {};
+            base.forEach(r => {
+                if (r.st !== 'stale') return;
+                const d = sd[r.root] || (sd[r.root] = { root: r.root, no: r.no, date: r.date, ck: r.ck, salesCode: r.salesCode, salesName: r.salesName, tons: 0 });
+                d.tons += r.qty;
+            });
+            const staleDeals = Object.keys(sd).map(k => { const d = sd[k]; return Object.assign({}, d, { customer: nameOf[d.ck], tons: r3(d.tons), status: 'open',
+                ageDays: Math.round((new Date(today + 'T00:00:00') - new Date(d.date + 'T00:00:00')) / 86400000) }); })
+                .sort((a, b) => cmp(a.date, b.date) || cmp(a.no, b.no));
+
+            const sum = (arr, sts) => r3(arr.reduce((s, r) => s + (!sts || sts.indexOf(r.st) >= 0 ? r.qty : 0), 0));
+            const dealsIn = (arr, sts) => new Set(arr.filter(r => sts.indexOf(r.st) >= 0).map(r => r.root)).size;
+            const csKeys = new Set(f.map(r => r.ck + '#' + r.sk));
+            const wonDeals = dealsIn(base, ['won']), lostDeals = dealsIn(base, ['lost']);
+            const kpi = { customers: new Set(f.map(r => r.ck)).size, deals: new Set(f.map(r => r.root)).size, quotes: new Set(f.map(r => r.root)).size,
+                tons: sum(f), prodTons: sum(f), lines: f.length, specs: csKeys.size,                             // specs = ลูกค้า×สเปก (หน่วยเดียวกับ 🆕)
+                newSpecs: Array.from(csKeys).filter(k => (firstCS[k] || '') >= since30).length,
+                // ภาพรวมสถานะ (ไม่ขึ้นกับตัวกรองสถานะ)
+                wonTons: sum(base, ['won']), openTons: sum(base, ['open']), staleTons: sum(base, ['stale']), lostTons: sum(base, ['lost', 'cancelled']),
+                wonDeals, lostDeals, cancelledDeals: dealsIn(base, ['cancelled']), openDeals: dealsIn(base, ['open']), staleDeals: dealsIn(base, ['stale']),
+                winRate: wonDeals + lostDeals ? wonDeals / (wonDeals + lostDeals) : null, baseLines: base.length,
+                dupOpen: groups.reduce((n, g) => n + g.customers.reduce((m, c) => m + c.specs.filter(s => s.dupOpen).length, 0), 0) };
+            return { kpi, overview, groups, widths, matrices, gradeCoat, surfPack, staleDeals, today, since30, staleSince };
         }
 
         function quotationApp() {
@@ -1039,15 +1309,23 @@
                 user: null, loginForm: { code: '', pin: '' }, loginError: '', loginBusy: false,
                 savedNo: '', savedAt: '',
                 historyRows: [], historyLoading: false, historyError: '', historyFromCache: false,
-                historyFilter: { salesCode: '', month: '', q: '' },
+                historyFilter: { salesCode: '', month: '', q: '', latestOnly: true, status: 'all' },
+                // ===== v1.3 ฉบับแก้ไข (Rev.) / สถานะดีล =====
+                reviseOf: null,      // {no, root, rev, ownerCode, ownerName, customer, status, reopen} ระหว่างออก Rev. ใหม่
+                docMeta: null,       // ข้อมูลฉบับ/สถานะของเอกสารที่แสดงอยู่ในฟอร์ม {no, root, rev, replaces, cur, currentNo, status, salesCode, versions}
+                chainView: null,     // {root, rows, loading, error} หน้าต่างประวัติทุกฉบับของดีล
+                statusDialog: null,  // {no, salesCode, customer, from, to, reason, note, busy, error}
+                LOST_REASONS_LIST: LOST_REASONS,
                 usersList: [], usersBusy: false, usersMessage: '', usersError: '', newUser: { name: '', role: 'sales' },
                 installPrompt: null, isIos: /iPhone|iPad|iPod/i.test(navigator.userAgent),
                 isMobile: /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
                 // ===== หน้าสรุปสเปกลูกค้า =====
                 specRows: [], specSum: buildSpecSummary([], {}), specLoading: false, specError: '', specFromCache: false, specMeta: null, specLoadedFor: '',
-                specFilter: { preset: '12m', from: '', to: '', type: 'all', q: '', salesCode: '' }, specPrint: 'all',
+                specFilter: { preset: '12m', from: '', to: '', type: 'all', q: '', salesCode: '', status: 'active' }, specPrint: 'all',
                 customerNames: [], customerNamesTried: false,
                 sessionGen: 0,   // เปลี่ยนทุกครั้งที่ login/logout: ผลโหลดที่มาถึงหลังเปลี่ยนผู้ใช้จะถูกทิ้ง ไม่ให้ข้อมูลค้างไปถึงคนถัดไป
+                dataGen: 0,      // เปลี่ยนเมื่อบทบาท/รุ่นหลังบ้านเปลี่ยน (ไม่กระทบการบันทึกที่ค้างอยู่)
+                historySeq: 0, specSeq: 0,   // ใช้เฉพาะผลของการโหลดครั้งล่าสุด
 
                 logoBase64: null,
                 companyPrefix: 'AMC',
@@ -1116,15 +1394,18 @@
                     let data;
                     try { data = await res.json(); }
                     catch (e) { throw new Error(this.lang === 'th' ? 'เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (ตรวจการ deploy: Who has access = Anyone และ URL ลงท้ายด้วย /exec)' : 'Server did not return JSON (check deployment: Anyone / URL ends with /exec)'); }
-                    if (!data || data.ok !== true) throw new Error((data && data.error) || 'Unknown error');
+                    if (!data || data.ok !== true) { const err = new Error((data && data.error) || 'Unknown error'); err.code = data && data.code; err.data = data; throw err; }
                     return data;
                 },
+                hasFeature(f) { return !!(this.user && Array.isArray(this.user.features) && this.user.features.indexOf(f) >= 0); },
+                // แก้ไข/ออก Rev./เปลี่ยนสถานะ/ทำสำเนา ได้เฉพาะใบของลูกค้าตัวเอง — ผู้บริหารก็เช่นกัน (ผู้บริหารดู/พิมพ์ซ้ำใบของทุกคนได้)
+                canEditDeal(row) { return !!(this.user && row && row.salesCode && row.salesCode === this.user.code); },
                 async login() {
                     this.loginError = ''; this.loginBusy = true;
                     try {
                         const code = (this.loginForm.code || '').trim().toUpperCase(), pin = (this.loginForm.pin || '').trim();
                         const data = await this.api({ action: 'login', auth: { code: code, pin: pin } });
-                        this.user = { code: data.user.code, name: data.user.name, role: data.user.role, pin: pin };
+                        this.user = { code: data.user.code, name: data.user.name, role: data.user.role, pin: pin, features: data.features || [] };
                         this.sessionGen++; this.customerNames = []; this.customerNamesTried = false;
                         try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
                         this.salesName = this.user.name; this.loginForm = { code: '', pin: '' };
@@ -1137,13 +1418,22 @@
                     try {
                         const data = await this.api({ action: 'login' });
                         if (gen !== this.sessionGen || !this.user) return;
-                        if (this.user.role !== data.user.role) {   // บทบาทเปลี่ยน (เช่น ผู้บริหาร -> เซลล์): ทิ้งข้อมูลสรุป/ประวัติที่โหลดด้วยสิทธิ์เดิม
-                            try { localStorage.removeItem('amcQuoteSpec_' + this.user.code); localStorage.removeItem('amcQuoteHistory_' + this.user.code); } catch (e) {}
-                            this.specRows = []; this.specSum = buildSpecSummary([], {}); this.specLoadedFor = ''; this.historyRows = []; this.usersList = []; this.customerNames = [];
+                        const feats = data.features || [];
+                        const changed = this.user.role !== data.user.role || feats.join() !== (this.user.features || []).join();
+                        if (changed) {   // บทบาท/รุ่นหลังบ้านเปลี่ยน: ทิ้งข้อมูลที่โหลดด้วยสิทธิ์/รูปแบบเดิม (รวมผลที่กำลังโหลดค้างอยู่)
+                            this.dataGen++;
+                            this.clearLocalCaches(this.user.code);
+                            this.specRows = []; this.specSum = buildSpecSummary([], {}); this.specLoadedFor = ''; this.specMeta = null; this.historyRows = []; this.customerNames = [];
+                            this.historyLoading = false; this.specLoading = false;
+                            if (this.user.role !== data.user.role) this.usersList = [];
                         }
-                        this.user = Object.assign({}, this.user, { name: data.user.name, role: data.user.role });
+                        this.user = Object.assign({}, this.user, { name: data.user.name, role: data.user.role, features: feats });
                         try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
                         this.salesName = this.user.name;
+                        if (changed) {   // แท็บที่เปิดอยู่โหลดใหม่ด้วยสิทธิ์/รูปแบบใหม่ทันที ไม่ปล่อยว่าง
+                            if (this.activeTab === 'tracker') this.loadHistory(true);
+                            else if (this.activeTab === 'spec') this.loadSpecSummary(true);
+                        }
                     } catch (e) {
                         if (gen === this.sessionGen && /PIN|ปิดใช้งาน|เข้าสู่ระบบ/i.test(e.message)) this.logout(e.message);
                     }
@@ -1152,15 +1442,18 @@
                     const code = this.user && this.user.code;
                     this.user = null;
                     this.sessionGen++; this.specLoading = false; this.historyLoading = false;
-                    try {   // ล้างข้อมูลที่เก็บในเครื่อง กันคนถัดไปบนเครื่องเดียวกันเห็น
-                        localStorage.removeItem(USER_KEY);
-                        if (code) { localStorage.removeItem('amcQuoteSpec_' + code); localStorage.removeItem('amcQuoteHistory_' + code); }
-                    } catch (e) {}
+                    try { localStorage.removeItem(USER_KEY); } catch (e) {}   // ล้างข้อมูลที่เก็บในเครื่อง กันคนถัดไปบนเครื่องเดียวกันเห็น
+                    if (code) this.clearLocalCaches(code);
                     this.loginForm = { code: '', pin: '' }; this.loginError = msg || '';
                     this.historyRows = []; this.usersList = []; this.usersMessage = '';
+                    this.chainView = null; this.statusDialog = null; this.specFilter.status = 'active';
+                    this.historyFilter = { salesCode: '', month: '', q: '', latestOnly: true, status: 'all' };
                     this.specRows = []; this.specSum = buildSpecSummary([], {}); this.specMeta = null; this.specLoadedFor = ''; this.specError = ''; this.specFromCache = false;
                     this.specFilter.salesCode = ''; this.specFilter.q = ''; this.customerNames = []; this.customerNamesTried = false;
                     this.newQuotation(); this.salesName = ''; this.activeTab = 'form';
+                },
+                clearLocalCaches(code) {   // แคชในเครื่องทั้งรูปแบบเก่า (v1.2) และใหม่ (v1.3)
+                    try { ['amcQuoteSpec_', 'amcQuoteHistory_', SPEC_CACHE, HIST_CACHE].forEach(p => localStorage.removeItem(p + code)); } catch (e) {}
                 },
                 configureApi() {
                     let cur = ''; try { cur = localStorage.getItem('amcQuoteApiUrl') || ''; } catch (e) {}
@@ -1196,24 +1489,25 @@
                 },
                 rebuildSpec() {
                     const f = this.specFilter;
-                    this.specSum = buildSpecSummary(this.specRows, { from: f.from, to: f.to, type: f.type, q: f.q,   // เซลล์: กรองเป็นรหัสตัวเองซ้ำอีกชั้น
+                    this.specSum = buildSpecSummary(this.specRows, { from: f.from, to: f.to, type: f.type, q: f.q, status: f.status,   // เซลล์: กรองเป็นรหัสตัวเองซ้ำอีกชั้น
                         salesCode: this.user && this.user.role === 'manager' ? f.salesCode : (this.user ? this.user.code : '__none__'), today: localToday() });
                 },
                 async loadSpecSummary(force) {
                     if (!this.user) return;
                     if (this.specFilter.preset !== 'custom') this.setSpecPreset(this.specFilter.preset, true);   // เผื่อเปิดแอปค้างข้ามวัน
                     if (!force && this.specLoadedFor === this.user.code && this.specRows.length) { this.rebuildSpec(); return; }
-                    const gen = this.sessionGen, code = this.user.code, role = this.user.role;
-                    const stale = () => gen !== this.sessionGen || !this.user || this.user.code !== code;   // ระหว่างรอ มีการ logout/login
-                    const key = 'amcQuoteSpec_' + code;
+                    const gen = this.sessionGen, dg = this.dataGen, seq = ++this.specSeq, code = this.user.code, role = this.user.role;
+                    // ระหว่างรอ มีการ logout/login · รุ่นหลังบ้านเปลี่ยน · มีการโหลดใหม่ที่เริ่มทีหลัง
+                    const stale = () => gen !== this.sessionGen || dg !== this.dataGen || seq !== this.specSeq || !this.user || this.user.code !== code;
+                    const key = SPEC_CACHE + code;
                     this.specLoading = true; this.specError = ''; this.specFromCache = false;
                     try {
                         if (role === 'manager' && !this.usersList.length) { try { await this.loadUsers(); } catch (e) {} }
                         if (stale()) return;
-                        const data = await this.api({ action: 'specSummary', filter: {} });
+                        const data = await this.api({ action: 'specSummary', filter: { includeSuperseded: true } });   // ฉบับเก่าใช้แค่หา "พบครั้งแรก"
                         if (stale()) return;
                         this.specRows = data.rows || [];
-                        this.specMeta = { truncated: !!data.truncated, skipped: data.skipped || 0, badDate: data.badDate || 0 };
+                        this.specMeta = { truncated: !!data.truncated, skipped: data.skipped || 0, badDate: data.badDate || 0, legacy: !this.hasFeature('specStatus') };
                         this.specLoadedFor = code;
                         try { const s = JSON.stringify({ role: role, rows: this.specRows }); if (s.length < 1500000) localStorage.setItem(key, s); else localStorage.removeItem(key); } catch (e) {}
                     } catch (e) {
@@ -1244,9 +1538,34 @@
                     const period = (f.from ? fmtDateShort(f.from) : this.L('เริ่มต้น', 'start')) + ' – ' + (f.to ? fmtDateShort(f.to) : this.L('ปัจจุบัน', 'today'));
                     const type = f.type === 'galvanized' ? 'GI' : (f.type === 'mgalzn' ? 'Mg-Al-Zn' : this.L('ทุกประเภท', 'all types'));
                     return this.L('ขอบเขต: ', 'Scope: ') + this.specScopeName() + ' · ' + this.L('ช่วงเวลา: ', 'Period: ') + period + ' · ' + type
+                        + ' · ' + this.L('สถานะ: ', 'Status: ') + this.specStatusFilterLabel(f.status)
                         + (f.q ? ' · ' + this.L('ค้นหา: ', 'Search: ') + f.q : '') + ' · ' + this.L('พิมพ์โดย ', 'Printed by ') + (this.user ? this.user.name : '')
-                        + ' · ' + fmtDateShort(localToday()) + ' · ' + this.L('ข้อมูลภายใน · ตันที่เสนอราคา ไม่ใช่ยอดสั่งซื้อ', 'Internal · quoted tons, not orders');
+                        + ' · ' + fmtDateShort(localToday()) + ' · ' + this.L('ข้อมูลภายใน · นับเฉพาะฉบับล่าสุดของแต่ละดีล', 'Internal · latest version of each deal only');
                 },
+                specStatusFilterLabel(s) {
+                    return ({ active: this.L('ปิดการขาย + ระหว่างเสนอ', 'Won + open'), won: this.L('ปิดการขาย', 'Won'), open: this.L('ระหว่างเสนอ (≤ 45 วัน)', 'Open (≤ 45 days)'),
+                        stale: this.L('ค้าง > 45 วัน', 'Stale > 45 days'), lost: this.L('ไม่ซื้อ + ยกเลิก', 'Lost + cancelled'), all: this.L('ทุกสถานะ', 'All statuses') })[s] || s;
+                },
+                // ป้ายสถานะ: st = open|won|lost|cancelled|superseded|stale
+                statusLabel(st) {
+                    return ({ open: this.L('เสนอราคา', 'Quoted'), won: this.L('ปิดการขาย', 'Won'), lost: this.L('ไม่ซื้อ', 'Lost'), cancelled: this.L('ยกเลิก', 'Cancelled'),
+                        superseded: this.L('ถูกแทนที่', 'Superseded'), stale: this.L('ค้าง', 'Stale') })[st] || st || '-';
+                },
+                statusClass(st) {
+                    return ({ open: 'bg-blue-100 text-blue-800', won: 'bg-green-100 text-green-800', lost: 'bg-red-100 text-red-700', cancelled: 'bg-gray-200 text-gray-600',
+                        superseded: 'bg-gray-100 text-gray-500 line-through', stale: 'bg-amber-100 text-amber-800' })[st] || 'bg-gray-100 text-gray-600';
+                },
+                rowStatus(row) {   // ประวัติ: เสนอราคาเกิน 45 วัน แสดงเป็น "ค้าง"
+                    const st = row && row.status ? row.status : 'open';
+                    return dealStatus(st, row ? String(row.quoteDate || '') : '', shiftYmd(localToday(), -STALE_DAYS));
+                },
+                ageDays(ymd) { return /^\d{4}-\d{2}-\d{2}$/.test(String(ymd || '')) ? Math.round((new Date(localToday() + 'T00:00:00') - new Date(ymd + 'T00:00:00')) / 86400000) : 0; },
+                specByChips(by) {   // ตันแยกตามสถานะ สำหรับแสดงในตาราง (เฉพาะที่ไม่เป็นศูนย์)
+                    const out = [];
+                    ['won', 'open', 'stale', 'lost', 'cancelled'].forEach(k => { if (by && by[k]) out.push({ k, label: this.statusLabel(k) + ' ' + fmtTon(by[k]), cls: this.statusClass(k) }); });
+                    return out;
+                },
+                specPct(x) { return x === null || x === undefined ? '-' : Math.round(x * 100) + '%'; },
                 togglePrintLandscape(on) {   // พิมพ์หน้าสรุปเป็น A4 แนวนอน เฉพาะตอนอยู่แท็บนี้ (ใบเสนอราคายังเป็นแนวตั้งเหมือนเดิม)
                     let el = document.getElementById('specPrintPage');
                     if (on && !el) { el = document.createElement('style'); el.id = 'specPrintPage'; el.media = 'print'; el.textContent = '@page { size: A4 landscape; margin: 8mm; }'; document.head.appendChild(el); }
@@ -1271,15 +1590,17 @@
                     const type = t => (t === 'mgalzn' ? 'Mg-Al-Zn' : 'GI');
                     let head, rows = [];
                     if (kind === 'widths') {
-                        head = ['หน้ากว้าง (มม.)', 'ตัน (ใบล่าสุดต่อลูกค้า×สเปก)', 'GI (ตัน)', 'Mg-Al-Zn (ตัน)', 'จำนวนลูกค้า', 'จำนวนใบเสนอราคา', 'ความหนาต่ำสุด (มม.)', 'ความหนาสูงสุด (มม.)',
-                            'ความหนาที่ใช้บ่อย', 'เกรด', 'เคลือบ', 'Mill edge (ตัน)', 'Slit edge (ตัน)', 'รูปแบบสลิต', 'เสนอล่าสุด', 'หน้ากว้างใหม่ใน 30 วัน'];
-                        s.widths.forEach(w => rows.push([w.w, w.tons, w.gi, w.zm, w.nCustomers, w.nQuotes, w.tMin, w.tMax, w.topThick.map(fmtT).join(' / '), w.grades.join(' / '),
+                        head = ['หน้ากว้าง (มม.)', 'ตันรวม (ฉบับล่าสุดของแต่ละดีล)', 'ปิดการขาย (ตัน)', 'ระหว่างเสนอ+ค้าง (ตัน)', 'GI (ตัน)', 'Mg-Al-Zn (ตัน)', 'จำนวนลูกค้า', 'จำนวนดีล',
+                            'ความหนาต่ำสุด (มม.)', 'ความหนาสูงสุด (มม.)', 'ความหนาที่ใช้บ่อย', 'เกรด', 'เคลือบ', 'Mill edge (ตัน)', 'Slit edge (ตัน)', 'รูปแบบสลิต', 'เสนอล่าสุด', 'หน้ากว้างใหม่ใน 30 วัน'];
+                        s.widths.forEach(w => rows.push([w.w, w.tons, w.won, w.pipe, w.gi, w.zm, w.nCustomers, w.nDeals, w.tMin, w.tMax, w.topThick.map(fmtT).join(' / '), w.grades.join(' / '),
                             w.coatings.join(' / '), w.mill, w.slit, w.slitPatterns.join(' | ') + (w.moreSlits ? ' | +' + w.moreSlits : ''), w.last, w.isNew ? 'ใหม่' : '']));
                     } else {
                         head = ['รหัสพนักงานขาย', 'พนักงานขาย', 'ลูกค้า', 'ชื่อที่สะกดต่างกัน', 'กลุ่มลูกค้า', 'ประเภท', 'เกรด', 'เคลือบ', 'ความหนา (มม.)', 'TCT/BMT', 'หน้ากว้าง (มม.)',
-                            'ขอบ', 'ขนาดสลิต', 'จำนวนครั้งที่เสนอ', 'ตันรวม', 'ตันใบล่าสุด', 'เสนอครั้งแรก', 'เสนอล่าสุด', 'เลขที่ใบล่าสุด', 'สเปกใหม่ใน 30 วัน'];
+                            'ขอบ', 'ขนาดสลิต', 'ผิว', 'แพ็กเกจ', 'จำนวนดีล', 'ตันรวม', 'ปิดการขาย (ตัน)', 'ระหว่างเสนอ (ตัน)', 'ค้าง > 45 วัน (ตัน)', 'ไม่ซื้อ (ตัน)', 'ยกเลิก (ตัน)',
+                            'ดีลเปิดซ้ำ', 'กำหนดส่งล่าสุด', 'เสนอครั้งแรก', 'เสนอล่าสุด', 'เลขที่ฉบับล่าสุด', 'สเปกใหม่ใน 30 วัน'];
                         s.groups.forEach(g => g.customers.forEach(c => c.specs.forEach(x => rows.push([g.code, g.name, c.name, c.variants.join(' | '), c.segment, type(x.type),
-                            x.grade, x.coating, x.t, x.bt, x.w, x.edge, x.slits, x.nQuotes, x.tons, x.latestTons, x.first, x.last, x.lastNo, x.isNew ? 'ใหม่' : '']))));
+                            x.grade, x.coating, x.t, x.bt, x.w, x.edge, x.slits, x.surfaces.join(' | '), x.packagings.join(' | '), x.nDeals, x.tons,
+                            x.by.won, x.by.open, x.by.stale, x.by.lost, x.by.cancelled, x.dupOpen || '', x.delivery, x.first, x.last, x.lastNo, x.isNew ? 'ใหม่' : '']))));
                     }
                     const csv = '﻿' + [head].concat(rows).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
                     const name = (kind === 'widths' ? 'AMC-width-demand_' : 'AMC-customer-specs_') + this.specScopeName().replace(/\s+/g, '-') + '_' + localToday() + '.csv';
@@ -1318,53 +1639,158 @@
                 async loadHistory(force) {
                     if (!this.user) return;
                     if (!force && this.historyRows.length) return;
-                    const gen = this.sessionGen;
-                    const key = 'amcQuoteHistory_' + this.user.code;
+                    const gen = this.sessionGen, dg = this.dataGen, seq = ++this.historySeq;
+                    // ทิ้งผลที่ล้าสมัย: logout/login · รุ่นหลังบ้านเปลี่ยน · มีการโหลดใหม่ที่เริ่มทีหลัง (เช่น สลับ "ฉบับล่าสุด" เร็ว ๆ)
+                    const stale = () => gen !== this.sessionGen || dg !== this.dataGen || seq !== this.historySeq;
+                    const key = HIST_CACHE + this.user.code;
                     this.historyLoading = true; this.historyError = ''; this.historyFromCache = false;
                     try {
                         if (this.user.role === 'manager' && !this.usersList.length) { try { await this.loadUsers(); } catch (e) {} }
-                        if (gen !== this.sessionGen) return;
-                        const data = await this.api({ action: 'list', filter: { salesCode: this.historyFilter.salesCode, month: this.historyFilter.month } });
-                        if (gen !== this.sessionGen) return;   // ระหว่างรอมีการ logout/login -> ทิ้งผลนี้
+                        if (stale()) return;
+                        const filter = { salesCode: this.historyFilter.salesCode, month: this.historyFilter.month };
+                        if (this.hasFeature('listRoot')) filter.latestOnly = this.historyFilter.latestOnly !== false;   // ค่าเริ่มต้น: ดีลละ 1 แถว (ฉบับล่าสุด)
+                        const data = await this.api({ action: 'list', filter });
+                        if (stale()) return;
                         this.historyRows = data.rows || [];
                         this.refreshCustomerNames();
-                        try { localStorage.setItem(key, JSON.stringify(this.historyRows)); } catch (e) {}
+                        try { localStorage.setItem(key, JSON.stringify({ role: this.user.role, rows: this.historyRows })); } catch (e) {}
                     } catch (e) {
-                        if (gen !== this.sessionGen) return;
+                        if (stale()) return;
                         this.historyError = e.message;
-                        try { const c = JSON.parse(localStorage.getItem(key) || '[]'); if (c.length) { this.historyRows = c; this.historyFromCache = true; } } catch (e2) {}
+                        try {   // แคชใช้ได้เฉพาะเมื่อบันทึกไว้ด้วยบทบาทเดียวกับตอนนี้
+                            const c = JSON.parse(localStorage.getItem(key) || 'null');
+                            if (c && c.role === this.user.role && Array.isArray(c.rows) && c.rows.length) { this.historyRows = c.rows; this.historyFromCache = true; }
+                        } catch (e2) {}
                     }
                     this.historyLoading = false;
                 },
                 get filteredHistory() {
                     const q = (this.historyFilter.q || '').toLowerCase().trim();
-                    if (!q) return this.historyRows;
-                    return this.historyRows.filter(r => ((r.customer || '') + ' ' + (r.runningNo || '') + ' ' + (r.summary || '') + ' ' + (r.salesName || '')).toLowerCase().includes(q));
+                    const st = this.historyFilter.status || 'all';
+                    if (!q && st === 'all') return this.historyRows;
+                    return this.historyRows.filter(r => (!q || ((r.customer || '') + ' ' + (r.runningNo || '') + ' ' + (r.root || '') + ' ' + (r.summary || '') + ' ' + (r.salesName || '')).toLowerCase().includes(q))
+                        && (st === 'all' || (st === 'lost' ? ['lost', 'cancelled'].indexOf(this.rowStatus(r)) >= 0 : this.rowStatus(r) === st)));
                 },
                 get historyTotals() {
                     return this.filteredHistory.reduce((t, r) => ({ qty: t.qty + (Number(r.totalQty) || 0), amount: t.amount + (Number(r.totalAmount) || 0) }), { qty: 0, amount: 0 });
                 },
-                async openQuotation(no, duplicate) {
+                /* mode: 'view' = เปิดดู/พิมพ์ซ้ำ · 'duplicate' = ทำสำเนาเป็นดีลใหม่ (เลขใหม่) · 'revise' = ออกฉบับแก้ไขของดีลเดิม (เลขเดิม Rev.n)
+                   (true/false แบบเดิม = duplicate/view) */
+                async openQuotation(no, mode) {
+                    if (mode === true) mode = 'duplicate'; else if (!mode) mode = 'view';
+                    if (this.isSaving) { alert(this.L('กำลังบันทึกใบเสนอราคา กรุณารอสักครู่', 'Saving the quotation, please wait')); return; }   // ผลบันทึกที่ค้างอยู่จะไปทับเอกสารที่เปิดใหม่
+                    const gen = this.sessionGen;
                     try {
                         const data = await this.api({ action: 'get', runningNo: no });
+                        if (gen !== this.sessionGen || !this.user) return;     // ระหว่างรอมีการ logout/login -> ไม่แสดงเอกสารของคนก่อน
                         const q = data.quotation || {};
+                        let reopen = false;
+                        if (mode === 'revise') {
+                            if (!this.hasFeature('revise')) { alert(this.L('เซิร์ฟเวอร์ยังไม่รองรับการออกฉบับแก้ไข — ใช้ "ทำสำเนา" ไปก่อน', 'The server does not support revisions yet — use Duplicate for now')); return; }
+                            if (!this.canEditDeal(q)) { alert(this.L('แก้ไขได้เฉพาะใบเสนอราคาของลูกค้าตัวเอง', 'You can only revise your own quotations')); return; }
+                            if (q.cur === false && q.currentNo) {
+                                if (confirm(this.L('ใบ ' + q.runningNo + ' มีฉบับที่ใหม่กว่าแล้ว คือ ' + q.currentNo + '\nเปิดฉบับล่าสุดเพื่อแก้ไขแทนหรือไม่?', q.runningNo + ' has a newer version: ' + q.currentNo + '\nRevise the latest version instead?'))) return this.openQuotation(q.currentNo, 'revise');
+                                return;
+                            }
+                            if (q.status && q.status !== 'open') {
+                                if (!confirm(this.L('ดีลนี้สถานะ "' + this.statusLabel(q.status) + '" แล้ว\nต้องการเปิดดีลอีกครั้งและออกฉบับแก้ไขหรือไม่?\n\n(ถ้าเป็นงานใหม่ของลูกค้า ให้กดยกเลิก แล้วใช้ "ทำสำเนา" แทน)',
+                                    'This deal is "' + this.statusLabel(q.status) + '".\nReopen it and issue a revision?\n\n(For a new order, cancel and use Duplicate instead.)'))) return;
+                                reopen = true;
+                            }
+                        }
+                        if (mode === 'duplicate' && !this.canEditDeal(q)) { alert(this.L('ทำสำเนาได้เฉพาะใบเสนอราคาของลูกค้าตัวเอง', 'You can only duplicate your own quotations')); return; }   // ตรวจก่อนโหลดข้อมูลเข้าฟอร์ม
                         this.companyPrefix = q.prefix || this.companyPrefix;
                         this.customerInfo = Object.assign({ name: '', address: '', phone: '', delivery: '', payment: '' }, q.customer || {});
                         this.transportExtra = String(q.transport || '0');
                         this.exchangeRate = q.exchangeRate || null;
                         this.items = (q.items || []).map(it => Object.assign({}, it, { qty: Number(it.qty) || 0, price: Number(it.price) || 0, amount: Number(it.amount) || 0 }));
-                        if (duplicate) {
+                        const meta = { no: q.runningNo, root: q.root || q.runningNo, rev: Number(q.rev) || 0, replaces: q.replaces || '', cur: q.cur !== false,
+                            currentNo: q.currentNo || q.runningNo, status: q.status || 'open', salesCode: q.salesCode, versions: Number(q.versions) || 1 };
+                        if (mode === 'duplicate') {
+                            this.reviseOf = null; this.docMeta = null;
                             this.savedNo = ''; this.savedAt = '';
                             this.quoteDate = localToday();
                             this.salesName = this.user ? this.user.name : this.salesName;
                             this.updateRunningNo();
+                        } else if (mode === 'revise') {
+                            this.reviseOf = { no: meta.no, root: meta.root, rev: meta.rev, ownerCode: q.salesCode, ownerName: q.salesName,
+                                customer: (q.customer && q.customer.name) || '', status: meta.status, reopen };
+                            this.docMeta = null;
+                            this.savedNo = ''; this.savedAt = '';
+                            this.quoteDate = localToday();
+                            this.salesName = q.salesName || this.salesName;      // ดีลยังเป็นของเจ้าของเดิม
+                            this.updateRunningNo();
                         } else {
+                            this.reviseOf = null; this.docMeta = meta;
                             this.quoteDate = q.quoteDate || this.quoteDate;
                             this.runningNo = q.runningNo; this.savedNo = q.runningNo; this.savedAt = q.savedAt || '';
                             this.salesName = q.salesName || this.salesName;
                         }
+                        this.chainView = null;
                         this.calculatePrice(); this.activeTab = 'form'; window.scrollTo(0, 0);
-                    } catch (e) { alert(e.message); }
+                    } catch (e) { if (gen === this.sessionGen) alert(e.message); }
+                },
+                get docReplaces() {   // บรรทัด "Supersedes" บนเอกสาร
+                    if (this.reviseOf) return this.reviseOf.no;
+                    return this.docMeta && this.docMeta.replaces ? this.docMeta.replaces : '';
+                },
+                cancelRevise() {
+                    if (this.isSaving) return;   // กำลังบันทึกอยู่: ล้างฟอร์มตอนนี้จะทำให้พิมพ์เอกสารว่างภายใต้เลขใหม่
+                    if (!confirm(this.L('ยกเลิกการแก้ไขนี้? (ข้อมูลในฟอร์มจะถูกล้าง)', 'Discard this revision? (the form will be cleared)'))) return;
+                    this.newQuotation();
+                },
+                // ===== ประวัติทุกฉบับของดีล (ย้อนถึงใบแรก) =====
+                async openChain(row) {
+                    const gen = this.sessionGen, root = row.root || row.runningNo;
+                    this.chainView = { root, rows: [], loading: true, error: '' };
+                    try {
+                        const data = await this.api({ action: 'list', filter: { root } });
+                        if (gen !== this.sessionGen || !this.chainView || this.chainView.root !== root) return;
+                        this.chainView.rows = (data.rows || []).slice().sort((a, b) => (Number(a.rev) || 0) - (Number(b.rev) || 0));   // ใบแรกสุดอยู่บน
+                    } catch (e) { if (this.chainView && this.chainView.root === root) this.chainView.error = e.message; }
+                    if (this.chainView && this.chainView.root === root) this.chainView.loading = false;
+                },
+                // ===== เปลี่ยนสถานะดีล =====
+                openStatusDialog(row, to) {   // row: แถวประวัติ หรือดีลค้างจากหน้าสรุป {runningNo|no, salesCode, customer, status, statusNote}
+                    const no = row.runningNo || row.no;
+                    if (!no || !this.canEditDeal(row)) return;
+                    const st = row.status && row.status !== 'superseded' ? row.status : 'open';
+                    // เติมหมายเหตุ/เหตุผลเดิม (เช่น เลขที่ PO) ไม่ให้หายเมื่อกดบันทึกโดยไม่ได้แก้
+                    const prev = String(row.statusNote || '');
+                    let reason = '', note = prev;
+                    if (st === 'lost') {
+                        const i = prev.indexOf(': '), r = i >= 0 ? prev.slice(0, i) : prev;
+                        if (LOST_REASONS.indexOf(r) >= 0) { reason = r; note = i >= 0 ? prev.slice(i + 2) : ''; }
+                    }
+                    this.statusDialog = { no, salesCode: row.salesCode, customer: row.customer || '', from: st, to: to || (st === 'open' ? 'won' : st),
+                        reason, note, origNote: prev, busy: false, error: '' };
+                },
+                async saveStatus() {
+                    const d = this.statusDialog;
+                    if (!d || d.busy) return;
+                    if (d.to === 'lost' && !d.reason) { d.error = this.L('กรุณาเลือกเหตุผลที่ลูกค้าไม่ซื้อ', 'Please choose a reason'); return; }
+                    const note = (d.to === 'lost' ? d.reason + (d.note.trim() ? ': ' + d.note.trim() : '') : d.note.trim()).slice(0, 300);
+                    if (d.to === d.from && note === d.origNote) { this.statusDialog = null; return; }   // ไม่ได้เปลี่ยนอะไร
+                    d.busy = true; d.error = '';
+                    const gen = this.sessionGen;
+                    try {
+                        const r = await this.api({ action: 'setStatus', runningNo: d.no, status: d.to, note });
+                        if (gen !== this.sessionGen) return;
+                        const patch = { status: r.status, statusAt: r.statusAt || '', statusBy: r.statusBy || '', statusNote: r.statusNote !== undefined ? r.statusNote : note };
+                        this.historyRows = this.historyRows.map(x => x.runningNo === d.no ? Object.assign({}, x, patch) : x);
+                        if (this.docMeta && this.docMeta.no === d.no) this.docMeta = Object.assign({}, this.docMeta, { status: r.status });
+                        this.specLoadedFor = '';                                  // หน้าสรุปโหลดใหม่
+                        if (this.activeTab === 'spec') this.loadSpecSummary(true);
+                        this.statusDialog = null;
+                    } catch (e) {
+                        if (gen !== this.sessionGen) return;
+                        d.busy = false;
+                        if (e.code === 'NOT_CURRENT') {   // มีฉบับใหม่กว่าแล้ว: โหลดทั้งประวัติและหน้าสรุปใหม่ ไม่ให้ค้างเลขเก่า
+                            d.error = e.message; this.historyRows = []; this.loadHistory(true);
+                            this.specLoadedFor = ''; if (this.activeTab === 'spec') this.loadSpecSummary(true);
+                        }
+                        else d.error = e.message;
+                    }
                 },
 
                 // ===== พนักงานขาย (manager) =====
@@ -1415,6 +1841,7 @@
                 },
 
                 updateRunningNo() {
+                    if (this.reviseOf) { this.runningNo = this.reviseOf.root + ' Rev.' + (this.reviseOf.rev + 1); return; }   // ฉบับแก้ไข: เลขเดิม + Rev. (ไม่ขึ้นกับวันที่/บริษัท)
                     let d = new Date(this.quoteDate);
                     let day = String(d.getDate()).padStart(2, '0'); let month = String(d.getMonth() + 1).padStart(2, '0');
                     this.runningNo = `${this.companyPrefix}${day}${month}${d.getFullYear()}-(รันอัตโนมัติ/Auto)`;
@@ -1517,23 +1944,56 @@
                 async saveAndPrint() {
                     if (this.items.length === 0) { alert(this.lang === 'th' ? 'กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการครับ' : 'Please add at least 1 item.'); return; }
                     if (!this.user) { alert(this.lang === 'th' ? 'กรุณาเข้าสู่ระบบก่อน' : 'Please sign in first.'); return; }
+                    const rv = this.reviseOf;
+                    if (rv && normCustomer(this.customerInfo.name) !== normCustomer(rv.customer)
+                        && !confirm(this.L('ชื่อลูกค้าเปลี่ยนจาก "' + rv.customer + '" เป็น "' + this.customerInfo.name + '"\nถ้าเป็นลูกค้าคนละราย ควรกดยกเลิก แล้วใช้ "ทำสำเนา" (ดีลใหม่) แทน\n\nยืนยันบันทึกเป็นฉบับแก้ไขของดีลเดิม?',
+                            'Customer changed from "' + rv.customer + '" to "' + this.customerInfo.name + '".\nFor a different customer, cancel and use Duplicate (new deal).\n\nSave as a revision of the same deal?'))) return;
                     this.isSaving = true;
-                    const payload = { action: 'save', quotation: {
+                    const gen = this.sessionGen;
+                    const quotation = {
                         prefix: this.companyPrefix, quoteDate: this.quoteDate, customer: Object.assign({}, this.customerInfo),
                         transport: this.transportExtra, exchangeRate: this.exchangeRate,
                         priceTerm: (this.items.length > 0 && this.items[0].exportTerm) ? this.items[0].exportTerm : '-',
                         lang: this.lang, items: this.items, totalQty: this.grandTotalQty, totalAmount: this.grandTotalAmount
-                    } };
+                    };
                     try {
-                        const result = await this.api(payload);
+                        let result;
+                        if (rv) {   // ออกฉบับแก้ไข: ถ้ามีคนแก้ไป/เปลี่ยนสถานะไปก่อน ถามแล้วลองใหม่ (สูงสุด 3 รอบ)
+                            for (let attempt = 0; ; attempt++) {
+                                try { result = await this.api({ action: 'revise', reviseOf: rv.no, reopen: rv.reopen === true, quotation }); break; }
+                                catch (e) {
+                                    if (attempt >= 2 || gen !== this.sessionGen) throw e;
+                                    if (e.code === 'NOT_CURRENT' && e.data && e.data.currentNo) {
+                                        if (!confirm(this.L('มีการออกฉบับใหม่ของดีลนี้ไปแล้ว คือ ' + e.data.currentNo + '\nบันทึกงานนี้เป็นฉบับแก้ไขต่อจาก ' + e.data.currentNo + ' แทนหรือไม่?',
+                                            'A newer version already exists: ' + e.data.currentNo + '\nSave this as the next revision of it instead?'))) throw e;
+                                        const m = /rev\.?\s*(\d+)\s*$/i.exec(e.data.currentNo);
+                                        // เปลี่ยนเป้าหมายเป็นฉบับใหม่: การยืนยัน "เปิดดีลอีกครั้ง" เดิมไม่ใช้กับฉบับนั้น (ถ้าปิดแล้ว เซิร์ฟเวอร์จะตอบ CLOSED ให้ถามใหม่)
+                                        rv.no = e.data.currentNo; rv.rev = m ? Number(m[1]) : rv.rev + 1; rv.reopen = false; this.updateRunningNo();
+                                    } else if (e.code === 'CLOSED') {
+                                        if (!confirm(this.L('ดีลนี้ถูกเปลี่ยนสถานะเป็น "' + this.statusLabel(e.data && e.data.status) + '" แล้ว\nยืนยันเปิดดีลอีกครั้งและบันทึกฉบับแก้ไข?',
+                                            'This deal is now "' + this.statusLabel(e.data && e.data.status) + '".\nReopen it and save the revision?'))) throw e;
+                                        rv.reopen = true;
+                                    } else throw e;
+                                }
+                            }
+                        } else {
+                            result = await this.api({ action: 'save', quotation });
+                        }
+                        if (gen !== this.sessionGen) { this.isSaving = false; return; }
                         this.runningNo = result.runningNo; this.savedNo = result.runningNo; this.savedAt = result.savedAt || '';
+                        this.docMeta = { no: result.runningNo, root: result.root || result.runningNo, rev: Number(result.rev) || 0, replaces: result.replaces || '', cur: true,
+                            currentNo: result.runningNo, status: 'open', salesCode: rv ? rv.ownerCode : this.user.code, versions: (Number(result.rev) || 0) + 1 };
+                        this.reviseOf = null;
                         this.historyRows = [];          // ให้แท็บประวัติโหลดใหม่ครั้งหน้า
                         this.printDocument();
                     } catch (error) {
                         console.error(error);
-                        alert((this.lang === 'th' ? 'บันทึกไม่สำเร็จ: ' : 'Save failed: ') + error.message);
+                        if (gen === this.sessionGen) alert((this.lang === 'th' ? 'บันทึกไม่สำเร็จ: ' : 'Save failed: ') + error.message);
                     }
                     this.isSaving = false;
+                },
+                reviseCurrentDoc() {   // จากเอกสารที่บันทึก/เปิดดูอยู่ -> ออกฉบับแก้ไข
+                    if (this.docMeta) this.openQuotation(this.docMeta.cur ? this.docMeta.no : this.docMeta.currentNo, 'revise');
                 },
                 printDocument() {
                     const d = new Date(this.quoteDate);
@@ -1543,8 +2003,12 @@
                     setTimeout(() => { window.print(); document.title = originalTitle; }, 300);
                 },
                 printAgain() { if (!this.savedNo) return; this.runningNo = this.savedNo; this.printDocument(); },
+                goCreateTab() {   // แท็บ "สร้างใบเสนอราคา": ถ้าฟอร์มกำลังแสดงใบที่บันทึกแล้ว/เปิดดูอยู่ -> เริ่มใบใหม่ทันที (งานที่ยังไม่บันทึกไม่ถูกล้าง)
+                    if (this.savedNo && !this.isSaving) { this.newQuotation(); return; }
+                    this.activeTab = 'form';
+                },
                 newQuotation() {
-                    this.items = []; this.savedNo = ''; this.savedAt = '';
+                    this.items = []; this.savedNo = ''; this.savedAt = ''; this.reviseOf = null; this.docMeta = null;
                     this.customerInfo = { name: '', address: '', phone: '', delivery: '', payment: '' };
                     this.additionalDetails = ''; this.discountPerTon = 0; this.exportExtraUsd = ''; this.exchangeRate = null;
                     this.quoteDate = localToday();
