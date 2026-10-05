@@ -56,6 +56,7 @@
         <div class="flex flex-wrap gap-2">
             <button @click="activeTab = 'form'" :class="{'bg-blue-600 text-white': activeTab === 'form', 'bg-white text-gray-700': activeTab !== 'form'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📝 สร้างใบเสนอราคา' : '📝 Create Quotation'"></button>
             <button @click="activeTab = 'tracker'; loadHistory()" :class="{'bg-blue-600 text-white': activeTab === 'tracker', 'bg-white text-gray-700': activeTab !== 'tracker'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📚 ประวัติใบเสนอราคา' : '📚 Quotation History'"></button>
+            <button x-show="user" @click="activeTab = 'spec'; loadSpecSummary()" :class="{'bg-blue-600 text-white': activeTab === 'spec', 'bg-white text-gray-700': activeTab !== 'spec'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📊 สรุปสเปกลูกค้า' : '📊 Customer Specs'"></button>
             <button x-show="user && user.role === 'manager'" @click="activeTab = 'users'; loadUsersTab()" :class="{'bg-blue-600 text-white': activeTab === 'users', 'bg-white text-gray-700': activeTab !== 'users'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '👥 พนักงานขาย' : '👥 Sales Staff'"></button>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -101,7 +102,8 @@
                 </div>
 
                 <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'ชื่อลูกค้า / บริษัท' : 'Customer / Company Name'"></label>
-                <input type="text" x-model="customerInfo.name" class="w-full border p-2.5 rounded mb-3">
+                <input type="text" x-model="customerInfo.name" list="amcCustomerNames" autocomplete="off" @focus="ensureCustomerNames()" class="w-full border p-2.5 rounded mb-3">
+                <datalist id="amcCustomerNames"><template x-for="n in customerNames" :key="n"><option :value="n"></option></template></datalist>
 
                 <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'ที่อยู่ลูกค้า' : 'Customer Address'"></label>
                 <textarea x-model="customerInfo.address" class="w-full border p-2.5 rounded mb-3" rows="2"></textarea>
@@ -524,8 +526,278 @@
         </div>
     </div>
 
+    <!-- ===================== หน้าสรุปสเปกลูกค้า (เซลล์เห็นของตัวเอง · ผู้บริหารเห็นทุกคน) ===================== -->
+    <div x-show="activeTab === 'spec'" x-cloak class="max-w-7xl mx-auto bg-white p-4 md:p-6 rounded shadow text-sm print:shadow-none print:p-0 print:max-w-none print:rounded-none">
+        <div class="hidden print:block border-b pb-2 mb-3">
+            <div class="text-lg font-bold">AMC GI — สรุปสเปกลูกค้าจากใบเสนอราคา (Customer Spec Summary)</div>
+            <div class="text-xs text-gray-600" x-text="specPrintSubtitle()"></div>
+        </div>
+        <div class="no-print flex flex-wrap justify-between items-start gap-2 mb-3 border-b pb-3">
+            <div>
+                <h2 class="text-xl font-bold" x-text="user && user.role === 'manager' ? L('📊 สรุปสเปกลูกค้าของพนักงานขายทุกคน', '📊 Customer specs — all salespeople') : L('📊 สรุปสเปกลูกค้าของฉัน', '📊 My customers\' specs')"></h2>
+                <div class="text-xs text-gray-500 mt-1" x-text="L('รวมจากทุกบรรทัดสินค้าในใบเสนอราคาที่บันทึกไว้ · ไม่มีราคา จึงส่งต่อฝ่ายผลิตได้', 'Built from every saved quotation line · no prices, safe to share with production')"></div>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <button @click="loadSpecSummary(true)" :disabled="specLoading" class="text-sm bg-blue-600 text-white px-3 py-2 rounded disabled:opacity-60 flex items-center"><span x-show="specLoading" class="loader"></span><span x-text="specLoading ? L('กำลังโหลด...', 'Loading...') : L('🔄 โหลดใหม่', '🔄 Refresh')"></span></button>
+                <button @click="exportSpecCsv('customers')" :disabled="!specSum.kpi.lines" class="text-sm bg-white border border-green-600 text-green-700 px-3 py-2 rounded hover:bg-green-50 disabled:opacity-40" x-text="L('⬇️ Excel ลูกค้า×สเปก', '⬇️ Excel customer×spec')"></button>
+                <button @click="exportSpecCsv('widths')" :disabled="!specSum.kpi.lines" class="text-sm bg-white border border-green-600 text-green-700 px-3 py-2 rounded hover:bg-green-50 disabled:opacity-40" x-text="L('⬇️ Excel หน้ากว้าง', '⬇️ Excel widths')"></button>
+                <select x-model="specPrint" class="text-sm border rounded px-2 py-2 bg-white">
+                    <option value="all" x-text="L('พิมพ์ทั้งหมด', 'Print everything')"></option>
+                    <option value="customers" x-text="L('พิมพ์เฉพาะลูกค้า×สเปก', 'Print customers only')"></option>
+                    <option value="production" x-text="L('พิมพ์เฉพาะส่วนฝ่ายผลิต', 'Print production only')"></option>
+                </select>
+                <button @click="printSpec()" :disabled="!specSum.kpi.lines" class="text-sm bg-gray-800 text-white px-3 py-2 rounded disabled:opacity-40" x-text="L('🖨️ พิมพ์ / PDF', '🖨️ Print / PDF')"></button>
+            </div>
+        </div>
+
+        <div class="no-print grid grid-cols-2 md:grid-cols-6 gap-3 mb-3">
+            <template x-if="user && user.role === 'manager'">
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-xs mb-1" x-text="L('พนักงานขาย', 'Salesperson')"></label>
+                    <select x-model="specFilter.salesCode" @change="rebuildSpec()" class="w-full border p-2 rounded">
+                        <option value="" x-text="L('ทุกคน', 'Everyone')"></option>
+                        <template x-for="o in specSalesOptions()" :key="o.code"><option :value="o.code" x-text="o.name" :selected="o.code === specFilter.salesCode"></option></template>
+                    </select>
+                </div>
+            </template>
+            <div>
+                <label class="block text-xs mb-1" x-text="L('ช่วงเวลา', 'Period')"></label>
+                <select x-model="specFilter.preset" @change="setSpecPreset(specFilter.preset)" class="w-full border p-2 rounded">
+                    <option value="30d" x-text="L('30 วันล่าสุด', 'Last 30 days')"></option>
+                    <option value="3m" x-text="L('3 เดือน', '3 months')"></option>
+                    <option value="6m" x-text="L('6 เดือน', '6 months')"></option>
+                    <option value="12m" x-text="L('12 เดือน', '12 months')"></option>
+                    <option value="all" x-text="L('ทั้งหมด', 'All time')"></option>
+                    <option value="custom" x-text="L('กำหนดเอง', 'Custom')"></option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs mb-1" x-text="L('ตั้งแต่', 'From')"></label>
+                <input type="date" x-model="specFilter.from" @change="specFilter.preset = 'custom'; rebuildSpec()" class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" x-text="L('ถึง', 'To')"></label>
+                <input type="date" x-model="specFilter.to" @change="specFilter.preset = 'custom'; rebuildSpec()" class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" x-text="L('ประเภท', 'Product')"></label>
+                <select x-model="specFilter.type" @change="rebuildSpec()" class="w-full border p-2 rounded">
+                    <option value="all" x-text="L('ทั้งหมด', 'All')"></option>
+                    <option value="galvanized">Galvanized (GI)</option>
+                    <option value="mgalzn">Mg-Al-Zn</option>
+                </select>
+            </div>
+            <div class="col-span-2 md:col-span-1">
+                <label class="block text-xs mb-1" x-text="L('ค้นหา', 'Search')"></label>
+                <input type="search" x-model="specFilter.q" @input.debounce.300ms="rebuildSpec()" :placeholder="L('ลูกค้า / เกรด / หน้ากว้าง', 'Customer / grade / width')" class="w-full border p-2 rounded">
+            </div>
+        </div>
+
+        <div x-show="specError" class="no-print text-sm text-red-600 mb-2 whitespace-pre-wrap" x-text="specError"></div>
+        <div x-show="specFromCache" class="no-print text-xs text-gray-500 mb-2" x-text="L('* แสดงข้อมูลล่าสุดที่เคยโหลดไว้ในเครื่องนี้ (ออฟไลน์)', '* Showing the last data loaded on this device (offline)')"></div>
+        <div x-show="specMeta && specMeta.truncated" class="text-xs text-amber-700 mb-2" x-text="L('* ข้อมูลมาก แสดงเฉพาะ 10,000 บรรทัดสินค้าล่าสุด', '* Large data set: showing the latest 10,000 lines only')"></div>
+        <div x-show="specMeta && specMeta.badDate" class="no-print text-xs text-amber-700 mb-2" x-text="L('* มี ' + (specMeta ? specMeta.badDate : 0) + ' บรรทัดที่วันที่ใบเสนอราคาในชีตอ่านไม่ได้ จะนับเฉพาะเมื่อเลือกช่วงเวลา “ทั้งหมด” — แก้วันที่ในชีตเป็นรูปแบบ ปี-เดือน-วัน', '* ' + (specMeta ? specMeta.badDate : 0) + ' lines have an unreadable quotation date in the sheet; they only count under All time')"></div>
+        <div class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3 print:mb-2" x-text="L('⚠️ ตันในหน้านี้คือ “ตันที่เสนอราคา” ไม่ใช่ยอดสั่งซื้อ · ข้อมูลภายในบริษัท', '⚠️ Tons on this page are quoted tons, not orders · internal data')"></div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 print:mb-3">
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ลูกค้า (ราย)', 'Customers')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.customers"></div></div>
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ใบเสนอราคา (ใบ)', 'Quotations')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.quotes"></div></div>
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ตันที่เสนอรวม', 'Quoted tons')"></div><div class="text-2xl font-bold text-blue-900" x-text="specFmtTon(specSum.kpi.tons)"></div></div>
+            <div class="border rounded p-3"><div class="text-xs text-gray-500" x-text="L('ลูกค้า×สเปก (รายการ)', 'Customer × spec')"></div><div class="text-2xl font-bold text-blue-900" x-text="specSum.kpi.specs"></div></div>
+            <div class="border rounded p-3 col-span-2 md:col-span-1"><div class="text-xs text-gray-500" x-text="L('🆕 สเปกใหม่ของลูกค้าใน 30 วัน', '🆕 New customer specs (30 days)')"></div><div class="text-2xl font-bold text-green-700" x-text="specSum.kpi.newSpecs"></div></div>
+        </div>
+
+        <template x-if="user && user.role === 'manager' && !specFilter.salesCode && specSum.groups.length > 1">
+            <div class="mb-6 print:break-inside-avoid" :class="specPrint === 'production' ? 'print:hidden' : ''">
+                <h3 class="font-bold text-base mb-2" x-text="L('ภาพรวมรายพนักงานขาย', 'Overview by salesperson')"></h3>
+                <div class="overflow-x-auto print:overflow-visible">
+                    <table class="w-full text-xs border border-collapse">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr><th class="border p-1.5 text-left" x-text="L('พนักงานขาย', 'Salesperson')"></th><th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Customers')"></th><th class="border p-1.5 text-right" x-text="L('ใบเสนอราคา', 'Quotes')"></th><th class="border p-1.5 text-right" x-text="L('สเปก', 'Specs')"></th><th class="border p-1.5 text-right" x-text="L('ตันที่เสนอ', 'Quoted t')"></th><th class="border p-1.5 text-left" x-text="L('หน้ากว้างหลัก (มม.)', 'Main widths (mm)')"></th></tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="g in specSum.groups" :key="g.code">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border p-1.5 font-bold"><button type="button" class="no-print underline text-blue-700" @click="specFilter.salesCode = g.code; rebuildSpec()" x-text="g.name"></button><span class="hidden print:inline" x-text="g.name"></span></td>
+                                    <td class="border p-1.5 text-right" x-text="g.nCustomers"></td>
+                                    <td class="border p-1.5 text-right" x-text="g.nQuotes"></td>
+                                    <td class="border p-1.5 text-right" x-text="g.nSpecs"></td>
+                                    <td class="border p-1.5 text-right" x-text="specFmtTon(g.tons)"></td>
+                                    <td class="border p-1.5" x-text="g.topWidths || '-'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </template>
+
+        <section :class="specPrint === 'production' ? 'print:hidden' : ''">
+            <h3 class="font-bold text-base mb-2" x-text="L('1) ลูกค้าแต่ละรายใช้สเปกอะไร (ความหนา · เกรด · หน้ากว้าง)', '1) Specs used by each customer (thickness · grade · width)')"></h3>
+            <div x-show="!specLoading && specSum.groups.length === 0" class="text-center text-gray-400 border rounded p-6" x-text="specRows.length ? L('ไม่มีข้อมูลตามตัวกรองที่เลือก', 'No data for the selected filters') : L('ยังไม่มีใบเสนอราคาที่บันทึกไว้', 'No saved quotations yet')"></div>
+            <template x-for="g in specSum.groups" :key="g.code">
+                <div class="mb-6">
+                    <div class="flex flex-wrap items-baseline gap-x-3 mb-1">
+                        <div class="font-bold text-blue-900 text-sm" x-text="'👤 ' + g.name"></div>
+                        <div class="text-xs text-gray-500" x-text="g.nCustomers + ' ' + L('ลูกค้า', 'customers') + ' · ' + g.nQuotes + ' ' + L('ใบ', 'quotes') + ' · ' + specFmtTon(g.tons) + ' ' + L('ตันที่เสนอ', 'quoted t')"></div>
+                    </div>
+                    <div class="overflow-x-auto print:overflow-visible">
+                        <table class="w-full text-xs border border-collapse min-w-[760px] print:min-w-0">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="border p-1.5 text-left" x-text="L('ประเภท', 'Type')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('เกรด', 'Grade')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('เคลือบ', 'Coating')"></th>
+                                    <th class="border p-1.5 text-right" x-text="L('ความหนา (มม.)', 'Thick. (mm)')"></th>
+                                    <th class="border p-1.5 text-right" x-text="L('หน้ากว้าง (มม.)', 'Width (mm)')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('ขอบ / ขนาดสลิต', 'Edge / slit sizes')"></th>
+                                    <th class="border p-1.5 text-center" x-text="L('เสนอ (ครั้ง)', 'Quoted (x)')"></th>
+                                    <th class="border p-1.5 text-right" x-text="L('ตันรวม', 'Total t')"></th>
+                                    <th class="border p-1.5 text-right" x-text="L('ตันใบล่าสุด', 'Latest t')"></th>
+                                    <th class="border p-1.5 text-left" x-text="L('เสนอล่าสุด', 'Last quoted')"></th>
+                                </tr>
+                            </thead>
+                            <template x-for="c in g.customers" :key="c.key">
+                                <tbody class="break-inside-avoid">
+                                    <tr class="bg-blue-50">
+                                        <td colspan="10" class="border p-1.5">
+                                            <span class="font-bold text-blue-900" x-text="c.name"></span>
+                                            <span x-show="c.variants.length" class="ml-1 text-[10px] bg-gray-200 text-gray-700 rounded px-1 cursor-help" :title="L('ชื่อที่สะกดต่างกันซึ่งรวมไว้ด้วยกัน: ', 'Merged spellings: ') + c.variants.join(' | ')" x-text="'+' + c.variants.length + ' ' + L('แบบสะกด', 'spellings')"></span>
+                                            <span class="ml-2 text-gray-500" x-text="(c.segment ? c.segment + ' · ' : '') + c.nQuotes + ' ' + L('ใบ', 'quotes') + ' · ' + specFmtTon(c.tons) + ' ' + L('ตัน', 't') + ' · ' + L('เสนอล่าสุด ', 'last quote ') + specDate(c.lastAll)"></span>
+                                            <span x-show="c.dormant" class="ml-1 text-[10px] bg-amber-100 text-amber-800 rounded px-1" x-text="L('ไม่ได้เสนอราคา > 90 วัน', 'no quote > 90 days')"></span>
+                                        </td>
+                                    </tr>
+                                    <template x-for="s in c.specs" :key="s.key">
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="border p-1.5" x-text="s.type === 'mgalzn' ? 'Mg-Al-Zn' : 'GI'"></td>
+                                            <td class="border p-1.5" x-text="s.grade || '-'"></td>
+                                            <td class="border p-1.5" x-text="s.coating || '-'"></td>
+                                            <td class="border p-1.5 text-right whitespace-nowrap" x-text="specFmtT(s.t) + (s.bt ? ' ' + s.bt : '')"></td>
+                                            <td class="border p-1.5 text-right font-bold" x-text="specFmtW(s.w)"></td>
+                                            <td class="border p-1.5" x-text="(s.edge || '-') + (s.slits ? ' (' + s.slits + ')' : '')"></td>
+                                            <td class="border p-1.5 text-center" x-text="s.nQuotes"></td>
+                                            <td class="border p-1.5 text-right" x-text="specFmtTon(s.tons)"></td>
+                                            <td class="border p-1.5 text-right" x-text="specFmtTon(s.latestTons)"></td>
+                                            <td class="border p-1.5 whitespace-nowrap"><span x-text="specDate(s.last)"></span><span x-show="s.isNew" class="ml-1 text-[10px] bg-green-100 text-green-800 rounded px-1" x-text="L('🆕 ใหม่', '🆕 new')"></span></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </template>
+                        </table>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <section class="mt-8 print:mt-0" :class="specPrint === 'customers' ? 'print:hidden' : (specPrint === 'all' ? 'print:break-before-page' : '')">
+            <div class="hidden border-b pb-2 mb-3" :class="specPrint === 'all' ? 'print:block' : ''">
+                <div class="text-lg font-bold">AMC GI — ข้อมูลสำหรับฝ่ายผลิต (Production view)</div>
+                <div class="text-xs text-gray-600" x-text="specPrintSubtitle()"></div>
+            </div>
+            <h3 class="font-bold text-base mb-1" x-text="L('2) สำหรับฝ่ายผลิต: หน้ากว้าง × ความหนา × เกรด', '2) For production: width × thickness × grade')"></h3>
+            <p class="text-xs text-gray-500 mb-3" x-text="L('นับตันจากใบเสนอราคาล่าสุดของแต่ละ ลูกค้า×สเปก (ไม่บวกซ้ำเมื่อเสนอราคาหลายรอบ) รวม ', 'Tons from the latest quotation per customer×spec (re-quotes are not added twice), total ') + specFmtTon(specSum.kpi.prodTons) + L(' ตัน', ' t')"></p>
+
+            <h4 class="font-bold text-sm mb-1" x-text="L('2.1 หน้ากว้างที่ลูกค้าใช้ (เรียงตามตัน)', '2.1 Widths in demand (by tons)')"></h4>
+            <div class="overflow-x-auto print:overflow-visible mb-5">
+                <table class="w-full text-xs border border-collapse min-w-[900px] print:min-w-0">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr>
+                            <th class="border p-1.5 text-right" x-text="L('หน้ากว้าง (มม.)', 'Width (mm)')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th>
+                            <th class="border p-1.5 text-right">GI</th>
+                            <th class="border p-1.5 text-right">Mg-Al-Zn</th>
+                            <th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Cust.')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('ใบ', 'Quotes')"></th>
+                            <th class="border p-1.5 text-left" x-text="L('ความหนา (มม.) ต่ำสุด–สูงสุด · ที่ใช้บ่อย', 'Thickness (mm) min–max · common')"></th>
+                            <th class="border p-1.5 text-left" x-text="L('เกรด', 'Grades')"></th>
+                            <th class="border p-1.5 text-left" x-text="L('เคลือบ', 'Coatings')"></th>
+                            <th class="border p-1.5 text-right" x-text="L('Mill / Slit (ตัน)', 'Mill / Slit (t)')"></th>
+                            <th class="border p-1.5 text-left" x-text="L('รูปแบบสลิต', 'Slit patterns')"></th>
+                            <th class="border p-1.5 text-left" x-text="L('ล่าสุด', 'Last')"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="w in specSum.widths" :key="w.w">
+                            <tr class="hover:bg-gray-50 break-inside-avoid">
+                                <td class="border p-1.5 text-right font-bold whitespace-nowrap"><span x-text="specFmtW(w.w)"></span><span x-show="w.isNew" class="ml-1 text-[10px] bg-green-100 text-green-800 rounded px-1">🆕</span></td>
+                                <td class="border p-1.5 text-right font-bold" x-text="specFmtTon(w.tons)"></td>
+                                <td class="border p-1.5 text-right" x-text="w.gi ? specFmtTon(w.gi) : '-'"></td>
+                                <td class="border p-1.5 text-right" x-text="w.zm ? specFmtTon(w.zm) : '-'"></td>
+                                <td class="border p-1.5 text-right" x-text="w.nCustomers"></td>
+                                <td class="border p-1.5 text-right" x-text="w.nQuotes"></td>
+                                <td class="border p-1.5 whitespace-nowrap" x-text="(w.tMin !== null ? specFmtT(w.tMin) + '–' + specFmtT(w.tMax) : '-') + (w.topThick.length ? ' · ' + w.topThick.map(t => specFmtT(t)).join(', ') : '')"></td>
+                                <td class="border p-1.5" x-text="w.grades.join(', ') || '-'"></td>
+                                <td class="border p-1.5" x-text="w.coatings.join(', ') || '-'"></td>
+                                <td class="border p-1.5 text-right whitespace-nowrap" x-text="specFmtTon(w.mill) + ' / ' + specFmtTon(w.slit)"></td>
+                                <td class="border p-1.5" x-text="(w.slitPatterns.join(' | ') || '-') + (w.moreSlits ? ' | +' + w.moreSlits : '')"></td>
+                                <td class="border p-1.5 whitespace-nowrap" x-text="specDate(w.last)"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="specSum.widths.length === 0"><td colspan="12" class="border p-4 text-center text-gray-400">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4 class="font-bold text-sm mb-1" x-text="L('2.2 ตารางตัน: ช่วงความหนา × หน้ากว้าง (10 หน้ากว้างหลัก)', '2.2 Tons by thickness band × width (top 10 widths)')"></h4>
+            <template x-for="m in specSum.matrices" :key="m.type">
+                <div class="mb-5 break-inside-avoid">
+                    <div class="text-xs font-bold text-gray-700 mb-1" x-text="m.label + ' · ' + specFmtTon(m.total) + ' ' + L('ตัน', 't')"></div>
+                    <div class="overflow-x-auto print:overflow-visible">
+                        <table class="text-xs border border-collapse">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="border p-1.5 text-left whitespace-nowrap" x-text="L('ความหนา (มม.) \\ หน้ากว้าง (มม.)', 'Thick. (mm) \\ width (mm)')"></th>
+                                    <template x-for="c in m.cols" :key="c.key"><th class="border p-1.5 text-right" x-text="c.label"></th></template>
+                                    <th class="border p-1.5 text-right" x-text="L('รวม', 'Total')"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="b in m.bands" :key="b.label">
+                                    <tr>
+                                        <td class="border p-1.5 font-bold whitespace-nowrap bg-gray-50" x-text="b.label"></td>
+                                        <template x-for="(v, j) in b.vals" :key="j"><td class="border p-1.5 text-right min-w-[52px]" :style="specCellStyle(v, m.max)" x-text="v ? specFmtTon(v) : ''"></td></template>
+                                        <td class="border p-1.5 text-right font-bold bg-gray-50" x-text="specFmtTon(b.total)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                            <tfoot class="bg-gray-50 font-bold">
+                                <tr>
+                                    <td class="border p-1.5" x-text="L('รวม', 'Total')"></td>
+                                    <template x-for="(v, j) in m.colTotals" :key="j"><td class="border p-1.5 text-right" x-text="specFmtTon(v)"></td></template>
+                                    <td class="border p-1.5 text-right" x-text="specFmtTon(m.total)"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </template>
+            <div x-show="specSum.matrices.length === 0" class="text-center text-gray-400 border rounded p-4 mb-5">-</div>
+
+            <h4 class="font-bold text-sm mb-1" x-text="L('2.3 เกรด × เคลือบ', '2.3 Grade × coating')"></h4>
+            <div class="overflow-x-auto print:overflow-visible">
+                <table class="text-xs border border-collapse min-w-[420px] print:min-w-0">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr><th class="border p-1.5 text-left" x-text="L('ประเภท', 'Type')"></th><th class="border p-1.5 text-left" x-text="L('เกรด', 'Grade')"></th><th class="border p-1.5 text-left" x-text="L('เคลือบ', 'Coating')"></th><th class="border p-1.5 text-right" x-text="L('ตัน', 'Tons')"></th><th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Customers')"></th></tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="x in specSum.gradeCoat" :key="x.type + x.grade + x.coating">
+                            <tr class="hover:bg-gray-50">
+                                <td class="border p-1.5" x-text="x.type === 'mgalzn' ? 'Mg-Al-Zn' : 'GI'"></td>
+                                <td class="border p-1.5" x-text="x.grade"></td>
+                                <td class="border p-1.5" x-text="x.coating"></td>
+                                <td class="border p-1.5 text-right" x-text="specFmtTon(x.tons)"></td>
+                                <td class="border p-1.5 text-right" x-text="x.nCustomers"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="specSum.gradeCoat.length === 0"><td colspan="5" class="border p-4 text-center text-gray-400">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
     <script>
-        // ===== AMC Quotation App v1.1 (2026-10-02) =====
+        // ===== AMC Quotation App v1.2 (2026-10-05) =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -571,6 +843,193 @@
             }
         };
 
+        // ===================================================================================
+        //  หน้าสรุปสเปกลูกค้า — ฟังก์ชันรวมข้อมูล (อยู่นอก Alpine: ทดสอบแยกได้ และคำนวณเฉพาะตอนเปลี่ยนตัวกรอง)
+        // ===================================================================================
+        function ymdLocal(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+        function localToday() { return ymdLocal(new Date()); }                       // วันที่ตามเวลาเครื่อง (ไม่ใช่ UTC)
+        function shiftYmd(ymd, days, months) {   // เลื่อนเดือนแล้วตัดวันที่ให้ไม่เกินวันสุดท้ายของเดือน (31 พ.ค. - 3 เดือน = 28 ก.พ.)
+            const p = String(ymd).split('-').map(Number);
+            const m = p[1] - 1 + (months || 0);
+            const last = new Date(p[0], m + 1, 0).getDate();
+            return ymdLocal(new Date(p[0], m, Math.min(p[2], last) + (days || 0)));
+        }
+        function fmtT(t) { const n = Number(t) || 0; return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 }); }
+        function fmtW(w) { const n = Number(w) || 0; return n ? (Math.round(n) === n ? String(n) : n.toFixed(1)) : '-'; }
+        function fmtTon(n) { return (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+        function fmtDateShort(ymd) {
+            if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '-';
+            const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const p = ymd.split('-'); return Number(p[2]) + ' ' + m[Number(p[1]) - 1] + ' ' + p[0].slice(2);
+        }
+
+        // ชื่อลูกค้า -> คีย์สำหรับรวมชื่อที่สะกดต่างกันเล็กน้อย (บริษัท/บจก./จำกัด/Co.,Ltd./สาขา ฯลฯ)
+        const CUST_PREFIX = [/^บริษัท\s*/, /^บจก\.?\s*/, /^บมจ\.?\s*/, /^ห้างหุ้นส่วนจำกัด\s*/, /^ห้างหุ้นส่วนสามัญ(นิติบุคคล)?\s*/, /^หจก\.?\s*/, /^หสน\.?\s*/];
+        const CUST_SUFFIX = [/\(?\s*สำนักงานใหญ่\s*\)?$/, /\(?\s*head\s*office\s*\)?$/, /(?:\s|\(|จำกัด)\s*\(?\s*สาขา[^()]*\)?$/, /\(?\s*\bbranch\b[^()]*\)?$/,
+            /จำกัด\s*\(\s*มหาชน\s*\)$/, /\(\s*มหาชน\s*\)$/, /มหาชน\s*จำกัด$/, /จำกัด$/, /\bpublic\s+company\s+limited$/, /\bcompany\s+limited$/,
+            /\bltd\.?$/, /\blimited$/, /\bpcl\.?$/, /\binc\.?$/, /\bcorp(oration)?\.?$/, /\bco\.?$/];
+        function normCustomer(name) {
+            let s = String(name || '').normalize('NFC').replace(/ํา/g, 'ำ').replace(/[​-‍﻿]/g, '')
+                .toLowerCase().replace(/\s+/g, ' ').trim();
+            let prev;
+            do {
+                prev = s;
+                CUST_PREFIX.forEach(re => { s = s.replace(re, ''); });
+                CUST_SUFFIX.forEach(re => { s = s.replace(re, ''); });
+                s = s.replace(/^[\s.,\-]+|[\s.,\-]+$/g, '');
+            } while (s !== prev);
+            return s.replace(/[\s.,\-_\/()'"&+]+/g, '');
+        }
+        function customerNameList(names) {                                             // สำหรับ datalist ช่องชื่อลูกค้า
+            const m = {};
+            names.forEach(n => { n = String(n || '').trim(); if (!n) return; const k = normCustomer(n) || n; const e = m[k] || (m[k] = {}); e[n] = (e[n] || 0) + 1; });
+            return Object.keys(m).map(k => { const e = m[k]; return Object.keys(e).sort((a, b) => e[b] - e[a])[0]; }).sort((a, b) => a.localeCompare(b, 'th'));
+        }
+
+        // ช่วงความหนาสำหรับตารางฝ่ายผลิต = ช่วงเดียวกับตารางราคา
+        const SPEC_BANDS = { galvanized: pricingData.galvanized.coatingMatrix.map(r => r.range), mgalzn: pricingData.mgalzn.coatingMatrix.map(r => r.range) };
+        function bandLabels(type) {
+            const r = SPEC_BANDS[type] || SPEC_BANDS.galvanized;
+            return ['<' + r[0][0].toFixed(2)].concat(r.map(x => x[0].toFixed(2) + '–' + x[1].toFixed(2)), ['>' + r[r.length - 1][1].toFixed(2), 'อื่นๆ']);
+        }
+        function thickBand(type, t) {
+            const r = SPEC_BANDS[type] || SPEC_BANDS.galvanized;
+            const n = Number(t);
+            if (!(n > 0)) return 'อื่นๆ';                                                // ไม่ได้กรอกความหนา
+            const x = Math.round(Math.round(n * 1000) / 10) / 100;                      // ปัด 2 ตำแหน่งแบบปัดขึ้นที่ .005 (0.495 -> 0.50, 1.255 -> 1.26)
+            if (x < r[0][0]) return '<' + r[0][0].toFixed(2);
+            if (x > r[r.length - 1][1]) return '>' + r[r.length - 1][1].toFixed(2);
+            const hit = r.find(b => x >= b[0] && x <= b[1]);
+            return hit ? hit[0].toFixed(2) + '–' + hit[1].toFixed(2) : 'อื่นๆ';
+        }
+        function topKeys(map, n) { return Object.keys(map).sort((a, b) => map[b] - map[a]).slice(0, n); }
+
+        /* rows = บรรทัดสินค้าจาก specSummary (ล่าสุดก่อน) · o = {from,to,type,q,salesCode,today}
+           คืน {kpi, groups(พนักงานขาย→ลูกค้า→สเปก), widths, matrices, gradeCoat} */
+        function buildSpecSummary(rows, o) {
+            o = o || {};
+            const today = o.today || localToday();
+            const since30 = shiftYmd(today, -30), since90 = shiftYmd(today, -90);
+            const r3 = x => Math.round(x * 1000) / 1000;
+            const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+            const all = (rows || []).map((r, i) => {
+                const t = Math.round((Number(r.thickness) || 0) * 1000) / 1000;
+                const w = Math.round((Number(r.width) || 0) * 10) / 10;
+                const type = r.productType === 'mgalzn' ? 'mgalzn' : 'galvanized';
+                const bt = r.baseThickness === 'BMT' || r.baseThickness === 'TCT' ? r.baseThickness : '';
+                const edge = r.edge === 'Slit' || r.edge === 'Mill' ? r.edge : '';
+                const grade = String(r.grade || ''), coating = String(r.coating || '');
+                return { i, no: String(r.no || ''), date: String(r.date || ''), salesCode: String(r.salesCode || ''), salesName: String(r.salesName || ''),
+                    customer: String(r.customer || '').trim(), ck: normCustomer(r.customer) || '__none__', type, grade, coating, t, w, bt, edge,
+                    sk: [type, grade, coating, t, bt, w, edge].join('|'), slit: String(r.slitSize || '').trim(), segment: String(r.segment || ''), qty: Number(r.qty) || 0 };
+            });
+            // ชื่อที่แสดง = ตัวสะกดที่ใช้บ่อยสุด (เท่ากันใช้ล่าสุด) จากข้อมูลทั้งหมดที่มองเห็น
+            const spell = {};
+            all.forEach(r => { const m = spell[r.ck] || (spell[r.ck] = {}); const k = r.customer || '(ไม่ระบุลูกค้า)'; const e = m[k] || (m[k] = { n: 0, last: '' }); e.n++; if (r.date > e.last) e.last = r.date; });
+            const nameOf = {}, variantsOf = {};
+            Object.keys(spell).forEach(ck => { const m = spell[ck]; const names = Object.keys(m).sort((a, b) => (m[b].n - m[a].n) || cmp(m[b].last, m[a].last)); nameOf[ck] = names[0]; variantsOf[ck] = names.slice(1); });
+            // ครั้งแรก/ล่าสุด จากข้อมูลทั้งหมด (ไม่ขึ้นกับช่วงเวลาที่กรอง)
+            const firstCS = {}, firstW = {}, lastSC = {};
+            all.forEach(r => {
+                if (!r.date) return;
+                const k1 = r.ck + '#' + r.sk; if (!firstCS[k1] || r.date < firstCS[k1]) firstCS[k1] = r.date;
+                if (r.w) { if (!firstW[r.w] || r.date < firstW[r.w]) firstW[r.w] = r.date; }
+                const k3 = r.salesCode + '#' + r.ck; if (!lastSC[k3] || r.date > lastSC[k3]) lastSC[k3] = r.date;
+            });
+            // ตัวกรอง
+            const qn = String(o.q || '').toLowerCase().trim(), qk = normCustomer(o.q);
+            const qNum = /^\d+(\.\d+)?$/.test(qn) ? Number(qn) : null;                // ตัวเลขล้วน = หน้ากว้าง/ความหนา ไม่ค้นในเลขที่ใบ (AMC05102026-1 มี 1020 อยู่)
+            const hit = r => qNum !== null
+                ? (r.w === qNum || r.t === qNum || (r.grade + ' ' + r.coating).toLowerCase().includes(qn))
+                : ((r.customer + ' ' + nameOf[r.ck] + ' ' + r.no + ' ' + r.grade + ' ' + r.coating).toLowerCase().includes(qn) || (qk && r.ck.includes(qk)));
+            const f = all.filter(r => (!o.salesCode || r.salesCode === o.salesCode)
+                && (!o.type || o.type === 'all' || r.type === o.type)
+                && (!o.from || (r.date && r.date >= o.from)) && (!o.to || (r.date && r.date <= o.to))
+                && (!qn || hit(r)));
+            // ใบล่าสุด = วันที่ล่าสุด เท่ากันใช้แถวที่ใหม่กว่า (ข้อมูลเรียงล่าสุดก่อน)
+            const takeLatest = (s, r) => { if (r.date > s.last || (r.date === s.last && r.i < s.lastI)) { s.last = r.date; s.lastI = r.i; s.lastNo = r.no; } };
+
+            // ---- ส่วนที่ 1: พนักงานขาย → ลูกค้า → สเปก ----
+            const gmap = {};
+            f.forEach(r => {
+                const g = gmap[r.salesCode] || (gmap[r.salesCode] = { name: r.salesName, cmap: {}, quotes: new Set(), tons: 0, wt: {} });
+                g.quotes.add(r.no); g.tons += r.qty; if (r.w) g.wt[r.w] = (g.wt[r.w] || 0) + r.qty;
+                const c = g.cmap[r.ck] || (g.cmap[r.ck] = { smap: {}, quotes: new Set(), tons: 0, segs: {}, last: '', lastI: Infinity, lastNo: '' });
+                c.quotes.add(r.no); c.tons += r.qty; if (r.segment) c.segs[r.segment] = (c.segs[r.segment] || 0) + 1; takeLatest(c, r);
+                const s = c.smap[r.sk] || (c.smap[r.sk] = { r, slits: {}, quotes: new Set(), tons: 0, perQuote: {}, last: '', lastI: Infinity, lastNo: '' });
+                s.quotes.add(r.no); s.tons += r.qty; s.perQuote[r.no] = (s.perQuote[r.no] || 0) + r.qty; if (r.slit) s.slits[r.slit] = 1; takeLatest(s, r);
+            });
+            const groups = Object.keys(gmap).map(code => {
+                const g = gmap[code];
+                const customers = Object.keys(g.cmap).map(ck => {
+                    const c = g.cmap[ck];
+                    const specs = Object.keys(c.smap).map(sk => {
+                        const s = c.smap[sk], r = s.r, first = firstCS[ck + '#' + sk] || '';
+                        return { key: sk, type: r.type, grade: r.grade, coating: r.coating, t: r.t, bt: r.bt, w: r.w, edge: r.edge,
+                            slits: Object.keys(s.slits).join(', '), nQuotes: s.quotes.size, tons: r3(s.tons), latestTons: r3(s.perQuote[s.lastNo] || 0),
+                            first, last: s.last, lastNo: s.lastNo, isNew: !!first && first >= since30 };
+                    }).sort((a, b) => cmp(a.type, b.type) || cmp(a.grade, b.grade) || (a.t - b.t) || (a.w - b.w) || cmp(a.coating, b.coating));
+                    const lastAll = lastSC[code + '#' + ck] || c.last;
+                    return { key: ck, name: nameOf[ck], variants: variantsOf[ck] || [], segment: topKeys(c.segs, 1)[0] || '',
+                        nQuotes: c.quotes.size, tons: r3(c.tons), nSpecs: specs.length, last: c.last, lastNo: c.lastNo,
+                        lastAll, dormant: !!lastAll && lastAll < since90, specs };
+                }).sort((a, b) => (b.tons - a.tons) || cmp(a.name, b.name));
+                return { code, name: g.name || code, nQuotes: g.quotes.size, tons: r3(g.tons), nCustomers: customers.length,
+                    nSpecs: customers.reduce((n, c) => n + c.nSpecs, 0), topWidths: topKeys(g.wt, 3).map(w => fmtW(Number(w))).join(', '), customers };
+            }).sort((a, b) => cmp(a.name, b.name));
+
+            // ---- ส่วนที่ 2: ฝ่ายผลิต — ตันของใบล่าสุดต่อ ลูกค้า×สเปก (ไม่บวกซ้ำเมื่อเสนอราคาหลายรอบ) ----
+            const cs = {};
+            f.forEach(r => {
+                const k = r.ck + '#' + r.sk;
+                const x = cs[k] || (cs[k] = { r, slits: {}, perQuote: {}, quotes: new Set(), last: '', lastI: Infinity, lastNo: '' });
+                x.perQuote[r.no] = (x.perQuote[r.no] || 0) + r.qty; x.quotes.add(r.no); if (r.slit) x.slits[r.slit] = 1; takeLatest(x, r);
+            });
+            const csList = Object.keys(cs).map(k => { const x = cs[k]; return Object.assign({ key: k, tons: x.perQuote[x.lastNo] || 0, slits: x.slits, quotes: x.quotes, last: x.last }, { ck: x.r.ck, type: x.r.type, grade: x.r.grade, coating: x.r.coating, t: x.r.t, w: x.r.w, edge: x.r.edge }); });
+            const wmap = {};
+            csList.forEach(x => {
+                if (!x.w) return;
+                const e = wmap[x.w] || (wmap[x.w] = { w: x.w, tons: 0, gi: 0, zm: 0, cust: {}, quotes: new Set(), tMin: Infinity, tMax: -Infinity, thick: {}, grades: {}, coats: {}, mill: 0, slit: 0, slits: {}, last: '' });
+                e.tons += x.tons; if (x.type === 'mgalzn') e.zm += x.tons; else e.gi += x.tons;
+                e.cust[x.ck] = 1; x.quotes.forEach(q => e.quotes.add(q));
+                if (x.t) { e.tMin = Math.min(e.tMin, x.t); e.tMax = Math.max(e.tMax, x.t); e.thick[x.t] = (e.thick[x.t] || 0) + x.tons; }
+                if (x.grade) e.grades[x.grade] = (e.grades[x.grade] || 0) + x.tons;
+                if (x.coating) e.coats[x.coating] = (e.coats[x.coating] || 0) + x.tons;
+                if (x.edge === 'Slit') e.slit += x.tons; else e.mill += x.tons;
+                Object.keys(x.slits).forEach(s => { e.slits[s] = 1; });
+                if (x.last > e.last) e.last = x.last;
+            });
+            const widths = Object.keys(wmap).map(k => {
+                const e = wmap[k], first = firstW[e.w] || '', pats = Object.keys(e.slits);
+                return { w: e.w, tons: r3(e.tons), gi: r3(e.gi), zm: r3(e.zm), nCustomers: Object.keys(e.cust).length, nQuotes: e.quotes.size,
+                    tMin: isFinite(e.tMin) ? e.tMin : null, tMax: isFinite(e.tMax) ? e.tMax : null, topThick: topKeys(e.thick, 3).map(Number),
+                    grades: topKeys(e.grades, 4), coatings: topKeys(e.coats, 4), mill: r3(e.mill), slit: r3(e.slit),
+                    slitPatterns: pats.slice(0, 6), moreSlits: Math.max(0, pats.length - 6), last: e.last, first, isNew: !!first && first >= since30 };
+            }).sort((a, b) => (b.tons - a.tons) || (a.w - b.w));
+            const matrices = ['galvanized', 'mgalzn'].map(type => {
+                const items = csList.filter(x => x.type === type && x.w);
+                if (!items.length) return null;
+                const wt = {}; items.forEach(x => { wt[x.w] = (wt[x.w] || 0) + x.tons; });
+                const top = topKeys(wt, 10).map(Number).sort((a, b) => a - b);
+                const cols = top.map(w => ({ key: String(w), label: fmtW(w) })).concat(Object.keys(wt).length > top.length ? [{ key: 'other', label: 'อื่นๆ' }] : []);
+                const cells = {};
+                items.forEach(x => { const k = thickBand(type, x.t) + '#' + (top.indexOf(x.w) >= 0 ? String(x.w) : 'other'); cells[k] = (cells[k] || 0) + x.tons; });
+                let max = 0;
+                const bands = bandLabels(type).map(b => { const vals = cols.map(c => r3(cells[b + '#' + c.key] || 0)); vals.forEach(v => { if (v > max) max = v; }); return { label: b, vals, total: r3(vals.reduce((s, v) => s + v, 0)) }; }).filter(b => b.total > 0);
+                const colTotals = cols.map((c, j) => r3(bands.reduce((s, b) => s + b.vals[j], 0)));
+                return { type, label: type === 'mgalzn' ? 'Mg-Al-Zn' : 'Galvanized (GI)', cols, bands, colTotals, total: r3(colTotals.reduce((s, v) => s + v, 0)), max };
+            }).filter(Boolean);
+            const gc = {};
+            csList.forEach(x => { const k = x.type + '|' + x.grade + '|' + x.coating; const e = gc[k] || (gc[k] = { type: x.type, grade: x.grade || '-', coating: x.coating || '-', tons: 0, cust: {} }); e.tons += x.tons; e.cust[x.ck] = 1; });
+            const gradeCoat = Object.keys(gc).map(k => { const e = gc[k]; return { type: e.type, grade: e.grade, coating: e.coating, tons: r3(e.tons), nCustomers: Object.keys(e.cust).length }; })
+                .sort((a, b) => (b.tons - a.tons) || cmp(a.grade, b.grade));
+
+            const kpi = { customers: new Set(f.map(r => r.ck)).size, quotes: new Set(f.map(r => r.no)).size, tons: r3(f.reduce((s, r) => s + r.qty, 0)),
+                specs: csList.length, lines: f.length, prodTons: r3(csList.reduce((s, x) => s + x.tons, 0)),   // specs = ลูกค้า×สเปก (หน่วยเดียวกับ 🆕)
+                newSpecs: csList.filter(x => (firstCS[x.key] || '') >= since30).length };
+            return { kpi, groups, widths, matrices, gradeCoat, today, since30 };
+        }
+
         function quotationApp() {
             return {
                 lang: 'th',
@@ -584,10 +1043,15 @@
                 usersList: [], usersBusy: false, usersMessage: '', usersError: '', newUser: { name: '', role: 'sales' },
                 installPrompt: null, isIos: /iPhone|iPad|iPod/i.test(navigator.userAgent),
                 isMobile: /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
-                
+                // ===== หน้าสรุปสเปกลูกค้า =====
+                specRows: [], specSum: buildSpecSummary([], {}), specLoading: false, specError: '', specFromCache: false, specMeta: null, specLoadedFor: '',
+                specFilter: { preset: '12m', from: '', to: '', type: 'all', q: '', salesCode: '' }, specPrint: 'all',
+                customerNames: [], customerNamesTried: false,
+                sessionGen: 0,   // เปลี่ยนทุกครั้งที่ login/logout: ผลโหลดที่มาถึงหลังเปลี่ยนผู้ใช้จะถูกทิ้ง ไม่ให้ข้อมูลค้างไปถึงคนถัดไป
+
                 logoBase64: null,
                 companyPrefix: 'AMC',
-                quoteDate: new Date().toISOString().split('T')[0],
+                quoteDate: localToday(),
                 runningNo: '',
 
                 customerInfo: { name: '', address: '', phone: '', delivery: '', payment: '' },
@@ -633,6 +1097,14 @@
                     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this.installPrompt = e; });
                     window.addEventListener('appinstalled', () => { this.installPrompt = null; });
                     if ('serviceWorker' in navigator && location.protocol !== 'file:') { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+                    this.setSpecPreset(this.specFilter.preset, true);
+                    this.$watch('activeTab', (v) => this.togglePrintLandscape(v === 'spec'));
+                    this.$watch('savedNo', (v) => { if (v) this.specLoadedFor = ''; });   // บันทึก/เปิดใบใหม่ -> หน้าสรุปโหลดใหม่ครั้งถัดไป
+                    window.addEventListener('hashchange', () => this.openSpecFromHash());
+                    this.openSpecFromHash();
+                },
+                openSpecFromHash() {   // ลิงก์ตรง .../quotation/#spec
+                    if (location.hash === '#spec' && this.user) { this.activeTab = 'spec'; this.loadSpecSummary(); }
                 },
 
                 // ===== เรียกเซิร์ฟเวอร์ (Apps Script) =====
@@ -653,25 +1125,41 @@
                         const code = (this.loginForm.code || '').trim().toUpperCase(), pin = (this.loginForm.pin || '').trim();
                         const data = await this.api({ action: 'login', auth: { code: code, pin: pin } });
                         this.user = { code: data.user.code, name: data.user.name, role: data.user.role, pin: pin };
+                        this.sessionGen++; this.customerNames = []; this.customerNamesTried = false;
                         try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
                         this.salesName = this.user.name; this.loginForm = { code: '', pin: '' };
+                        this.openSpecFromHash();
                     } catch (e) { this.loginError = e.message; }
                     this.loginBusy = false;
                 },
                 async verifyUser() {   // ตรวจซ้ำเบื้องหลังตอนเปิดแอป: ถูกปิดใช้งาน/เปลี่ยน PIN -> ออกจากระบบ
+                    const gen = this.sessionGen;
                     try {
                         const data = await this.api({ action: 'login' });
+                        if (gen !== this.sessionGen || !this.user) return;
+                        if (this.user.role !== data.user.role) {   // บทบาทเปลี่ยน (เช่น ผู้บริหาร -> เซลล์): ทิ้งข้อมูลสรุป/ประวัติที่โหลดด้วยสิทธิ์เดิม
+                            try { localStorage.removeItem('amcQuoteSpec_' + this.user.code); localStorage.removeItem('amcQuoteHistory_' + this.user.code); } catch (e) {}
+                            this.specRows = []; this.specSum = buildSpecSummary([], {}); this.specLoadedFor = ''; this.historyRows = []; this.usersList = []; this.customerNames = [];
+                        }
                         this.user = Object.assign({}, this.user, { name: data.user.name, role: data.user.role });
                         try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
                         this.salesName = this.user.name;
                     } catch (e) {
-                        if (/PIN|ปิดใช้งาน|เข้าสู่ระบบ/i.test(e.message)) this.logout(e.message);
+                        if (gen === this.sessionGen && /PIN|ปิดใช้งาน|เข้าสู่ระบบ/i.test(e.message)) this.logout(e.message);
                     }
                 },
                 logout(msg) {
-                    this.user = null; try { localStorage.removeItem(USER_KEY); } catch (e) {}
+                    const code = this.user && this.user.code;
+                    this.user = null;
+                    this.sessionGen++; this.specLoading = false; this.historyLoading = false;
+                    try {   // ล้างข้อมูลที่เก็บในเครื่อง กันคนถัดไปบนเครื่องเดียวกันเห็น
+                        localStorage.removeItem(USER_KEY);
+                        if (code) { localStorage.removeItem('amcQuoteSpec_' + code); localStorage.removeItem('amcQuoteHistory_' + code); }
+                    } catch (e) {}
                     this.loginForm = { code: '', pin: '' }; this.loginError = msg || '';
                     this.historyRows = []; this.usersList = []; this.usersMessage = '';
+                    this.specRows = []; this.specSum = buildSpecSummary([], {}); this.specMeta = null; this.specLoadedFor = ''; this.specError = ''; this.specFromCache = false;
+                    this.specFilter.salesCode = ''; this.specFilter.q = ''; this.customerNames = []; this.customerNamesTried = false;
                     this.newQuotation(); this.salesName = ''; this.activeTab = 'form';
                 },
                 configureApi() {
@@ -680,6 +1168,140 @@
                     if (v === null) return;
                     try { if (v.trim()) localStorage.setItem('amcQuoteApiUrl', v.trim()); else localStorage.removeItem('amcQuoteApiUrl'); } catch (e) {}
                     location.reload();
+                },
+                // ===== หน้าสรุปสเปกลูกค้า =====
+                L(th, en) { return this.lang === 'th' ? th : en; },
+                specFmtT(t) { return fmtT(t); },
+                specFmtW(w) { return fmtW(w); },
+                specFmtTon(n) { return fmtTon(n); },
+                specDate(d) { return fmtDateShort(d); },
+                specCellStyle(v, max) {
+                    if (!v || !max) return '';
+                    const a = 0.08 + 0.72 * (v / max);
+                    return 'background-color: rgba(30,58,138,' + a.toFixed(2) + ');' + (a > 0.45 ? 'color:#fff;' : '');
+                },
+                specSalesOptions() {   // รายชื่อสำหรับตัวกรองของผู้บริหาร: จากผู้ใช้ + คนที่มีข้อมูล (รวมคนที่ลาออกแล้ว)
+                    const m = {};
+                    this.usersList.forEach(u => { m[u.code] = u.name + (u.active ? '' : (this.lang === 'th' ? ' (ปิดใช้งาน)' : ' (disabled)')); });
+                    this.specRows.forEach(r => { if (r.salesCode && !m[r.salesCode]) m[r.salesCode] = r.salesName || r.salesCode; });
+                    return Object.keys(m).map(code => ({ code, name: m[code] })).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+                },
+                setSpecPreset(p, silent) {
+                    const today = localToday();
+                    const from = { '30d': shiftYmd(today, -30), '3m': shiftYmd(today, 0, -3), '6m': shiftYmd(today, 0, -6), '12m': shiftYmd(today, 0, -12) }[p];
+                    if (p === 'all') { this.specFilter.from = ''; this.specFilter.to = ''; }
+                    else if (from) { this.specFilter.from = from; this.specFilter.to = ''; }   // ปลายเปิด: ใบที่ลงวันที่ล่วงหน้าก็นับ
+                    this.specFilter.preset = p;
+                    if (!silent) this.rebuildSpec();
+                },
+                rebuildSpec() {
+                    const f = this.specFilter;
+                    this.specSum = buildSpecSummary(this.specRows, { from: f.from, to: f.to, type: f.type, q: f.q,   // เซลล์: กรองเป็นรหัสตัวเองซ้ำอีกชั้น
+                        salesCode: this.user && this.user.role === 'manager' ? f.salesCode : (this.user ? this.user.code : '__none__'), today: localToday() });
+                },
+                async loadSpecSummary(force) {
+                    if (!this.user) return;
+                    if (this.specFilter.preset !== 'custom') this.setSpecPreset(this.specFilter.preset, true);   // เผื่อเปิดแอปค้างข้ามวัน
+                    if (!force && this.specLoadedFor === this.user.code && this.specRows.length) { this.rebuildSpec(); return; }
+                    const gen = this.sessionGen, code = this.user.code, role = this.user.role;
+                    const stale = () => gen !== this.sessionGen || !this.user || this.user.code !== code;   // ระหว่างรอ มีการ logout/login
+                    const key = 'amcQuoteSpec_' + code;
+                    this.specLoading = true; this.specError = ''; this.specFromCache = false;
+                    try {
+                        if (role === 'manager' && !this.usersList.length) { try { await this.loadUsers(); } catch (e) {} }
+                        if (stale()) return;
+                        const data = await this.api({ action: 'specSummary', filter: {} });
+                        if (stale()) return;
+                        this.specRows = data.rows || [];
+                        this.specMeta = { truncated: !!data.truncated, skipped: data.skipped || 0, badDate: data.badDate || 0 };
+                        this.specLoadedFor = code;
+                        try { const s = JSON.stringify({ role: role, rows: this.specRows }); if (s.length < 1500000) localStorage.setItem(key, s); else localStorage.removeItem(key); } catch (e) {}
+                    } catch (e) {
+                        if (stale()) return;
+                        const msg = (e && e.message) || String(e);
+                        this.specError = /ไม่รู้จัก action/.test(msg)
+                            ? this.L('เซิร์ฟเวอร์ยังไม่อัปเดตเป็นเวอร์ชันที่มีหน้าสรุปนี้ — ผู้ดูแลต้องวางโค้ด AMC-Quotation-Sync.gs ใหม่ แล้วกด การทำให้ใช้งานได้ → จัดการการทำให้ใช้งานได้ → ✏️ แก้ไข → เวอร์ชัน: ใหม่',
+                                'The server has not been updated for this summary yet — the admin must paste the new AMC-Quotation-Sync.gs and deploy a new version (Manage deployments → Edit → New version).')
+                            : msg;
+                        try {   // แคชใช้ได้เฉพาะเมื่อบันทึกไว้ด้วยบทบาทเดียวกับตอนนี้
+                            const c = JSON.parse(localStorage.getItem(key) || 'null');
+                            if (c && c.role === role && Array.isArray(c.rows) && c.rows.length) { this.specRows = c.rows; this.specFromCache = true; this.specLoadedFor = code; }
+                        } catch (e2) {}
+                    }
+                    this.specLoading = false;
+                    this.rebuildSpec();
+                    this.refreshCustomerNames();
+                },
+                specScopeName() {
+                    if (!this.user) return '';
+                    if (this.user.role !== 'manager') return this.user.name;
+                    if (!this.specFilter.salesCode) return this.L('พนักงานขายทุกคน', 'All salespeople');
+                    const o = this.specSalesOptions().find(x => x.code === this.specFilter.salesCode);
+                    return o ? o.name : this.specFilter.salesCode;
+                },
+                specPrintSubtitle() {
+                    const f = this.specFilter;
+                    const period = (f.from ? fmtDateShort(f.from) : this.L('เริ่มต้น', 'start')) + ' – ' + (f.to ? fmtDateShort(f.to) : this.L('ปัจจุบัน', 'today'));
+                    const type = f.type === 'galvanized' ? 'GI' : (f.type === 'mgalzn' ? 'Mg-Al-Zn' : this.L('ทุกประเภท', 'all types'));
+                    return this.L('ขอบเขต: ', 'Scope: ') + this.specScopeName() + ' · ' + this.L('ช่วงเวลา: ', 'Period: ') + period + ' · ' + type
+                        + (f.q ? ' · ' + this.L('ค้นหา: ', 'Search: ') + f.q : '') + ' · ' + this.L('พิมพ์โดย ', 'Printed by ') + (this.user ? this.user.name : '')
+                        + ' · ' + fmtDateShort(localToday()) + ' · ' + this.L('ข้อมูลภายใน · ตันที่เสนอราคา ไม่ใช่ยอดสั่งซื้อ', 'Internal · quoted tons, not orders');
+                },
+                togglePrintLandscape(on) {   // พิมพ์หน้าสรุปเป็น A4 แนวนอน เฉพาะตอนอยู่แท็บนี้ (ใบเสนอราคายังเป็นแนวตั้งเหมือนเดิม)
+                    let el = document.getElementById('specPrintPage');
+                    if (on && !el) { el = document.createElement('style'); el.id = 'specPrintPage'; el.media = 'print'; el.textContent = '@page { size: A4 landscape; margin: 8mm; }'; document.head.appendChild(el); }
+                    if (!on && el) el.remove();
+                },
+                printSpec() {
+                    const orig = document.title;
+                    document.title = 'AMC-Customer-Specs_' + this.specScopeName().replace(/\s+/g, '-') + '_' + localToday();
+                    const restore = () => { document.title = orig; window.removeEventListener('afterprint', restore); };
+                    window.addEventListener('afterprint', restore);
+                    this.togglePrintLandscape(true);
+                    window.print();
+                },
+                exportSpecCsv(kind) {
+                    const s = this.specSum;
+                    const esc = (v) => {   // ทุกช่องใส่เครื่องหมายคำพูด · ข้อความที่ขึ้นต้นด้วย = + - @ ใส่ ' นำหน้า กันสูตร Excel
+                        if (v === null || v === undefined) v = '';
+                        let x = String(v);
+                        if (typeof v === 'string' && /^[=+\-@\t\r]/.test(x)) x = "'" + x;
+                        return '"' + x.replace(/"/g, '""') + '"';
+                    };
+                    const type = t => (t === 'mgalzn' ? 'Mg-Al-Zn' : 'GI');
+                    let head, rows = [];
+                    if (kind === 'widths') {
+                        head = ['หน้ากว้าง (มม.)', 'ตัน (ใบล่าสุดต่อลูกค้า×สเปก)', 'GI (ตัน)', 'Mg-Al-Zn (ตัน)', 'จำนวนลูกค้า', 'จำนวนใบเสนอราคา', 'ความหนาต่ำสุด (มม.)', 'ความหนาสูงสุด (มม.)',
+                            'ความหนาที่ใช้บ่อย', 'เกรด', 'เคลือบ', 'Mill edge (ตัน)', 'Slit edge (ตัน)', 'รูปแบบสลิต', 'เสนอล่าสุด', 'หน้ากว้างใหม่ใน 30 วัน'];
+                        s.widths.forEach(w => rows.push([w.w, w.tons, w.gi, w.zm, w.nCustomers, w.nQuotes, w.tMin, w.tMax, w.topThick.map(fmtT).join(' / '), w.grades.join(' / '),
+                            w.coatings.join(' / '), w.mill, w.slit, w.slitPatterns.join(' | ') + (w.moreSlits ? ' | +' + w.moreSlits : ''), w.last, w.isNew ? 'ใหม่' : '']));
+                    } else {
+                        head = ['รหัสพนักงานขาย', 'พนักงานขาย', 'ลูกค้า', 'ชื่อที่สะกดต่างกัน', 'กลุ่มลูกค้า', 'ประเภท', 'เกรด', 'เคลือบ', 'ความหนา (มม.)', 'TCT/BMT', 'หน้ากว้าง (มม.)',
+                            'ขอบ', 'ขนาดสลิต', 'จำนวนครั้งที่เสนอ', 'ตันรวม', 'ตันใบล่าสุด', 'เสนอครั้งแรก', 'เสนอล่าสุด', 'เลขที่ใบล่าสุด', 'สเปกใหม่ใน 30 วัน'];
+                        s.groups.forEach(g => g.customers.forEach(c => c.specs.forEach(x => rows.push([g.code, g.name, c.name, c.variants.join(' | '), c.segment, type(x.type),
+                            x.grade, x.coating, x.t, x.bt, x.w, x.edge, x.slits, x.nQuotes, x.tons, x.latestTons, x.first, x.last, x.lastNo, x.isNew ? 'ใหม่' : '']))));
+                    }
+                    const csv = '﻿' + [head].concat(rows).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
+                    const name = (kind === 'widths' ? 'AMC-width-demand_' : 'AMC-customer-specs_') + this.specScopeName().replace(/\s+/g, '-') + '_' + localToday() + '.csv';
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                    try {   // iPhone ที่ติดตั้งเป็นแอปดาวน์โหลดไฟล์ตรง ๆ ไม่ได้ -> ใช้เมนูแชร์
+                        const file = new File([blob], name, { type: 'text/csv' });
+                        if (this.isIos && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: name }).catch(() => {}); return; }
+                    } catch (e) {}
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+                    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+                },
+                async ensureCustomerNames() {   // datalist ช่องชื่อลูกค้า: โหลดประวัติเบื้องหลังครั้งเดียวต่อการเข้าใช้
+                    if (!this.user || this.customerNames.length || this.customerNamesTried) return;
+                    this.customerNamesTried = true;
+                    const gen = this.sessionGen;
+                    if (!this.historyRows.length && !this.specRows.length) { try { await this.loadHistory(); } catch (e) {} }
+                    if (gen !== this.sessionGen) return;
+                    this.refreshCustomerNames();
+                },
+                refreshCustomerNames() {
+                    this.customerNames = customerNameList(this.specRows.map(r => r.customer).concat(this.historyRows.map(r => r.customer)));
                 },
                 installLabel(short) {   // มือถือ = หน้าจอโฮม · คอม = ไอคอนบน Desktop
                     if (this.isMobile) return this.lang === 'th' ? (short ? '📲 ติดตั้งแอป' : '📲 ติดตั้งลงหน้าจอโฮม') : (short ? '📲 Install app' : '📲 Install to home screen');
@@ -696,14 +1318,19 @@
                 async loadHistory(force) {
                     if (!this.user) return;
                     if (!force && this.historyRows.length) return;
+                    const gen = this.sessionGen;
                     const key = 'amcQuoteHistory_' + this.user.code;
                     this.historyLoading = true; this.historyError = ''; this.historyFromCache = false;
                     try {
                         if (this.user.role === 'manager' && !this.usersList.length) { try { await this.loadUsers(); } catch (e) {} }
+                        if (gen !== this.sessionGen) return;
                         const data = await this.api({ action: 'list', filter: { salesCode: this.historyFilter.salesCode, month: this.historyFilter.month } });
+                        if (gen !== this.sessionGen) return;   // ระหว่างรอมีการ logout/login -> ทิ้งผลนี้
                         this.historyRows = data.rows || [];
+                        this.refreshCustomerNames();
                         try { localStorage.setItem(key, JSON.stringify(this.historyRows)); } catch (e) {}
                     } catch (e) {
+                        if (gen !== this.sessionGen) return;
                         this.historyError = e.message;
                         try { const c = JSON.parse(localStorage.getItem(key) || '[]'); if (c.length) { this.historyRows = c; this.historyFromCache = true; } } catch (e2) {}
                     }
@@ -728,7 +1355,7 @@
                         this.items = (q.items || []).map(it => Object.assign({}, it, { qty: Number(it.qty) || 0, price: Number(it.price) || 0, amount: Number(it.amount) || 0 }));
                         if (duplicate) {
                             this.savedNo = ''; this.savedAt = '';
-                            this.quoteDate = new Date().toISOString().split('T')[0];
+                            this.quoteDate = localToday();
                             this.salesName = this.user ? this.user.name : this.salesName;
                             this.updateRunningNo();
                         } else {
@@ -741,7 +1368,7 @@
                 },
 
                 // ===== พนักงานขาย (manager) =====
-                async loadUsers() { const data = await this.api({ action: 'listUsers' }); this.usersList = data.users || []; },
+                async loadUsers() { const gen = this.sessionGen; const data = await this.api({ action: 'listUsers' }); if (gen === this.sessionGen) this.usersList = data.users || []; },
                 async loadUsersTab() { this.usersError = ''; try { await this.loadUsers(); } catch (e) { this.usersError = e.message; } },
                 async addUser() {
                     this.usersError = ''; this.usersMessage = ''; this.usersBusy = true;
@@ -920,7 +1547,7 @@
                     this.items = []; this.savedNo = ''; this.savedAt = '';
                     this.customerInfo = { name: '', address: '', phone: '', delivery: '', payment: '' };
                     this.additionalDetails = ''; this.discountPerTon = 0; this.exportExtraUsd = ''; this.exchangeRate = null;
-                    this.quoteDate = new Date().toISOString().split('T')[0];
+                    this.quoteDate = localToday();
                     this.salesName = this.user ? this.user.name : this.salesName;
                     this.updateRunningNo(); this.calculatePrice(); this.activeTab = 'form';
                 }
