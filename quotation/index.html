@@ -672,10 +672,12 @@
                 <button @click="loadSpecSummary(true)" :disabled="specLoading" class="text-sm bg-blue-600 text-white px-3 py-2 rounded disabled:opacity-60 flex items-center"><span x-show="specLoading" class="loader"></span><span x-text="specLoading ? L('กำลังโหลด...', 'Loading...') : L('🔄 โหลดใหม่', '🔄 Refresh')"></span></button>
                 <button @click="exportSpecCsv('customers')" :disabled="!specSum.kpi.lines" class="text-sm bg-white border border-green-600 text-green-700 px-3 py-2 rounded hover:bg-green-50 disabled:opacity-40" x-text="L('⬇️ Excel ลูกค้า×สเปก', '⬇️ Excel customer×spec')"></button>
                 <button @click="exportSpecCsv('widths')" :disabled="!specSum.kpi.lines" class="text-sm bg-white border border-green-600 text-green-700 px-3 py-2 rounded hover:bg-green-50 disabled:opacity-40" x-text="L('⬇️ Excel หน้ากว้าง', '⬇️ Excel widths')"></button>
+                <button @click="exportSpecCsv('overview')" :disabled="!specSum.kpi.lines" class="text-sm bg-white border border-green-600 text-green-700 px-3 py-2 rounded hover:bg-green-50 disabled:opacity-40" x-text="L('⬇️ Excel ภาพรวม', '⬇️ Excel overview')"></button>
                 <select x-model="specPrint" class="text-sm border rounded px-2 py-2 bg-white">
                     <option value="all" x-text="L('พิมพ์ทั้งหมด', 'Print everything')"></option>
                     <option value="customers" x-text="L('พิมพ์เฉพาะลูกค้า×สเปก', 'Print customers only')"></option>
                     <option value="production" x-text="L('พิมพ์เฉพาะส่วนฝ่ายผลิต', 'Print production only')"></option>
+                    <option value="overview" x-text="L('พิมพ์เฉพาะภาพรวม (เกรด·Coating·ความหนา)', 'Print overview only')"></option>
                 </select>
                 <button @click="printSpec()" :disabled="!specSum.kpi.lines" class="text-sm bg-gray-800 text-white px-3 py-2 rounded disabled:opacity-40" x-text="L('🖨️ พิมพ์ / PDF', '🖨️ Print / PDF')"></button>
             </div>
@@ -753,7 +755,7 @@
         </div>
 
         <template x-if="user && user.role === 'manager' && !specFilter.salesCode && specSum.overview.length > 1">
-            <div class="mb-6 print:break-inside-avoid" :class="specPrint === 'production' ? 'print:hidden' : ''">
+            <div class="mb-6 print:break-inside-avoid" :class="specPrint === 'production' || specPrint === 'overview' ? 'print:hidden' : ''">
                 <h3 class="font-bold text-base mb-2" x-text="L('ภาพรวมรายพนักงานขาย (ทุกสถานะ)', 'Overview by salesperson (all statuses)')"></h3>
                 <div class="overflow-x-auto print:overflow-visible">
                     <table class="w-full text-xs border border-collapse">
@@ -779,8 +781,92 @@
             </div>
         </template>
 
+        <!-- ===== ภาพรวมการใช้เหล็กของลูกค้า (v1.4): เกรด · Coating · ความหนา · กลุ่มลูกค้า + ตารางไขว้ ===== -->
+        <section x-show="specSum.kpi.lines" class="mb-6" :class="specPrint === 'customers' ? 'print:hidden' : ''">
+            <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
+                <h3 class="font-bold text-base" x-text="L('📈 ภาพรวมการใช้เหล็กของลูกค้า — เกรด · Coating mass · ความหนา · กลุ่มลูกค้า', '📈 Steel usage overview — grade · coating mass · thickness · segment')"></h3>
+                <div class="text-xs text-gray-500" x-text="specFmtTon(specSum.bigPicture.total) + L(' ตัน · ', ' t · ') + specSum.bigPicture.nCustomers + L(' ลูกค้า · สถานะ: ', ' customers · status: ') + specStatusFilterLabel(specFilter.status)"></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-4 mb-4">
+                <template x-for="blk in specBpBlocks()" :key="blk.key">
+                    <div class="border rounded p-3 break-inside-avoid overflow-x-auto">
+                        <div class="font-bold text-sm text-blue-900 mb-2" x-text="blk.title"></div>
+                        <table class="w-full text-xs">
+                            <thead class="text-gray-500">
+                                <tr>
+                                    <th class="text-left font-normal pb-1" x-text="blk.col"></th>
+                                    <th class="font-normal pb-1 w-[34%]"></th>
+                                    <th class="text-right font-normal pb-1 pl-2" x-text="L('ตัน', 'Tons')"></th>
+                                    <th class="text-right font-normal pb-1 pl-2">%</th>
+                                    <th class="text-right font-normal pb-1 pl-2" x-text="L('ลูกค้า', 'Cust.')"></th>
+                                    <th class="hidden sm:table-cell text-right font-normal pb-1 pl-2" x-text="L('ดีล', 'Deals')"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="r in blk.rows" :key="r.key">
+                                    <tr class="border-t border-gray-100 align-middle" :title="specBpRowTitle(r)">
+                                        <td class="py-1 pr-2 break-words">
+                                            <span x-show="r.type" class="text-[10px] rounded px-1 mr-1 bg-gray-100 text-gray-600" x-text="r.type === 'mgalzn' ? 'ZM' : 'GI'"></span><span :class="r.isOther ? 'text-gray-500 italic' : 'font-bold text-gray-800'" x-text="specTr(r.label)"></span>
+                                            <div x-show="blk.key === 'band' && r.topThick.length" class="text-[10px] text-gray-500" x-text="L('ใช้บ่อย ', 'common ') + r.topThick.map(t => specFmtT(t)).join(' · ')"></div>
+                                        </td>
+                                        <td class="py-1">
+                                            <div class="h-2.5 bg-gray-100 rounded-sm"><div class="h-2.5 rounded-sm" :style="'background:#1e3a8a;width:' + specBarWidth(r.tons, blk.max) + '%'"></div></div>
+                                            <div class="text-[10px] text-gray-500 mt-0.5 whitespace-nowrap" x-text="'✅ ' + specFmtTon(r.won) + ' · ⏳ ' + specFmtTon(r.pipe)"></div>
+                                        </td>
+                                        <td class="py-1 pl-2 text-right font-bold whitespace-nowrap" x-text="specFmtTon(r.tons)"></td>
+                                        <td class="py-1 pl-2 text-right text-gray-600" x-text="Number(r.pct).toFixed(1) + '%'"></td>
+                                        <td class="py-1 pl-2 text-right" x-text="r.nCustomers"></td>
+                                        <td class="hidden sm:table-cell py-1 pl-2 text-right text-gray-600" x-text="r.nDeals"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="!blk.rows.length"><td colspan="6" class="py-3 text-center text-gray-400">-</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+            <div class="text-[11px] text-gray-500 mb-3 -mt-2" x-text="L('แท่ง = ตัน (ฉบับล่าสุดของแต่ละดีล) · ✅ ปิดการขาย · ⏳ ระหว่างเสนอ+ค้าง · ลูกค้าที่ชื่อสะกดต่างกันนับเป็นรายเดียว · ชี้ที่แถวเพื่อดูรายละเอียด', 'Bar = tons (latest version of each deal) · ✅ won · ⏳ open + stale · merged customer spellings count once · hover a row for details')"></div>
+
+            <h4 class="font-bold text-sm mb-1" x-text="L('🔀 ตารางไขว้: เกรด · Coating × ความหนา (ตัน)', '🔀 Cross table: grade · coating × thickness (tons)')"></h4>
+            <template x-for="m in specSum.bigPicture.cross" :key="m.type">
+                <div class="mb-4 break-inside-avoid">
+                    <div class="text-xs font-bold text-gray-700 mb-1" x-text="m.label + ' · ' + specFmtTon(m.total) + ' ' + L('ตัน', 't')"></div>
+                    <div class="overflow-x-auto print:overflow-visible">
+                        <table class="text-xs border border-collapse">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="border p-1.5 text-left whitespace-nowrap" x-text="L('เกรด · Coating \\ ความหนา (มม.)', 'Grade · coating \\ thickness (mm)')"></th>
+                                    <template x-for="c in m.cols" :key="c"><th class="border p-1.5 text-right whitespace-nowrap" x-text="specTr(c)"></th></template>
+                                    <th class="border p-1.5 text-right" x-text="L('รวม', 'Total')"></th>
+                                    <th class="border p-1.5 text-right" x-text="L('ลูกค้า', 'Cust.')"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="row in m.rows" :key="row.label">
+                                    <tr>
+                                        <td class="border p-1.5 whitespace-nowrap bg-gray-50" :class="row.isOther ? 'italic text-gray-500' : 'font-bold'" x-text="specTr(row.label)"></td>
+                                        <template x-for="(v, j) in row.vals" :key="j"><td class="border p-1.5 text-right min-w-[52px]" :style="specCellStyle(v, m.max)" :title="v ? specCrossTitle(m, row, j) : ''" x-text="v ? specFmtTon(v) : ''"></td></template>
+                                        <td class="border p-1.5 text-right font-bold bg-gray-50" x-text="specFmtTon(row.total)"></td>
+                                        <td class="border p-1.5 text-right bg-gray-50" x-text="row.nCustomers"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                            <tfoot class="bg-gray-50 font-bold">
+                                <tr>
+                                    <td class="border p-1.5" x-text="L('รวม', 'Total')"></td>
+                                    <template x-for="(v, j) in m.colTotals" :key="j"><td class="border p-1.5 text-right" x-text="specFmtTon(v)"></td></template>
+                                    <td class="border p-1.5 text-right" x-text="specFmtTon(m.total)"></td>
+                                    <td class="border p-1.5"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </template>
+        </section>
+
         <template x-if="specSum.staleDeals.length">
-            <div class="mb-6 border border-amber-300 rounded p-3 bg-amber-50/40 print:break-inside-avoid" :class="specPrint === 'production' ? 'print:hidden' : ''">
+            <div class="mb-6 border border-amber-300 rounded p-3 bg-amber-50/40 print:break-inside-avoid" :class="specPrint === 'production' || specPrint === 'overview' ? 'print:hidden' : ''">
                 <h3 class="font-bold text-sm mb-1 text-amber-900" x-text="L('⏰ ดีลที่เสนอราคาค้างเกิน 45 วัน — กรุณาอัปเดตสถานะ (ปิดการขาย / ไม่ซื้อ / ยกเลิก)', '⏰ Quotes open for more than 45 days — please update their status')"></h3>
                 <div class="text-[11px] text-amber-800 mb-2" x-text="L('ดีลเหล่านี้ไม่ถูกนับในตัน “ระหว่างเสนอ” จนกว่าจะอัปเดต', 'These are not counted in open tons until updated')"></div>
                 <div class="overflow-x-auto print:overflow-visible">
@@ -808,7 +894,7 @@
             </div>
         </template>
 
-        <section :class="specPrint === 'production' ? 'print:hidden' : ''">
+        <section :class="specPrint === 'production' || specPrint === 'overview' ? 'print:hidden' : ''">
             <h3 class="font-bold text-base mb-2" x-text="L('1) ลูกค้าแต่ละรายใช้สเปกอะไร (ความหนา · เกรด · หน้ากว้าง)', '1) Specs used by each customer (thickness · grade · width)')"></h3>
             <div x-show="!specLoading && specSum.groups.length === 0" class="text-center text-gray-400 border rounded p-6" x-text="specRows.length ? L('ไม่มีข้อมูลตามตัวกรองที่เลือก', 'No data for the selected filters') : L('ยังไม่มีใบเสนอราคาที่บันทึกไว้', 'No saved quotations yet')"></div>
             <template x-for="g in specSum.groups" :key="g.code">
@@ -871,7 +957,7 @@
             </template>
         </section>
 
-        <section class="mt-8 print:mt-0" :class="specPrint === 'customers' ? 'print:hidden' : (specPrint === 'all' ? 'print:break-before-page' : '')">
+        <section class="mt-8 print:mt-0" :class="specPrint === 'customers' || specPrint === 'overview' ? 'print:hidden' : (specPrint === 'all' ? 'print:break-before-page' : '')">
             <div class="hidden border-b pb-2 mb-3" :class="specPrint === 'all' ? 'print:block' : ''">
                 <div class="text-lg font-bold">AMC GI — ข้อมูลสำหรับฝ่ายผลิต (Production view)</div>
                 <div class="text-xs text-gray-600" x-text="specPrintSubtitle()"></div>
@@ -933,14 +1019,14 @@
                             <thead class="bg-gray-100 text-gray-700">
                                 <tr>
                                     <th class="border p-1.5 text-left whitespace-nowrap" x-text="L('ความหนา (มม.) \\ หน้ากว้าง (มม.)', 'Thick. (mm) \\ width (mm)')"></th>
-                                    <template x-for="c in m.cols" :key="c.key"><th class="border p-1.5 text-right" x-text="c.label"></th></template>
+                                    <template x-for="c in m.cols" :key="c.key"><th class="border p-1.5 text-right" x-text="specTr(c.label)"></th></template>
                                     <th class="border p-1.5 text-right" x-text="L('รวม', 'Total')"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <template x-for="b in m.bands" :key="b.label">
                                     <tr>
-                                        <td class="border p-1.5 font-bold whitespace-nowrap bg-gray-50" x-text="b.label"></td>
+                                        <td class="border p-1.5 font-bold whitespace-nowrap bg-gray-50" x-text="specTr(b.label)"></td>
                                         <template x-for="(v, j) in b.vals" :key="j"><td class="border p-1.5 text-right min-w-[52px]" :style="specCellStyle(v, m.max)" x-text="v ? specFmtTon(v) : ''"></td></template>
                                         <td class="border p-1.5 text-right font-bold bg-gray-50" x-text="specFmtTon(b.total)"></td>
                                     </tr>
@@ -1004,7 +1090,7 @@
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.3 (2026-10-05) — ฉบับแก้ไข (Rev.) + สถานะดีล =====
+        // ===== AMC Quotation App v1.4 (2026-10-07) — ภาพรวมการใช้เหล็ก (เกรด · Coating · ความหนา · กลุ่มลูกค้า) · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -1274,6 +1360,68 @@
             const surfPack = Object.keys(sp).map(k => { const e = sp[k]; return { type: e.type, surface: e.surface, packaging: e.packaging, tons: r3(e.tons), nCustomers: Object.keys(e.cust).length }; })
                 .sort((a, b) => (b.tons - a.tons) || cmp(a.surface, b.surface));
 
+            // ---- ภาพรวมการใช้เหล็ก (v1.4): เกรด · Coating · ช่วงความหนา · กลุ่มลูกค้า + ตารางไขว้ เกรด·Coating × ความหนา ----
+            // ชุดข้อมูลเดียวกับตารางฝ่ายผลิต (f = ฉบับล่าสุดของดีล ตามตัวกรองทั้งหมดรวมสถานะ)
+            const bpTotal = f.reduce((s, r) => s + r.qty, 0);
+            const pct = x => (bpTotal ? Math.round(x / bpTotal * 1000) / 10 : 0);
+            const bandOrder = bandLabels('galvanized').concat(bandLabels('mgalzn').filter(b => bandLabels('galvanized').indexOf(b) < 0));   // ช่วงความหนาตามตารางราคา (รวมทั้งสองประเภท)
+            const NA = '(ไม่ระบุ)';
+            const bpList = (keyOf, make, opt) => {
+                const m = {};
+                f.forEach(r => {
+                    const k = keyOf(r);
+                    const e = m[k] || (m[k] = Object.assign({ key: k, tons: 0, won: 0, pipe: 0, cust: {}, deals: {}, thick: {} }, make(r)));
+                    e.tons += r.qty;
+                    if (r.st === 'won') e.won += r.qty; else if (r.st === 'open' || r.st === 'stale') e.pipe += r.qty;
+                    e.cust[r.ck] = 1; e.deals[r.root] = 1; if (r.t) e.thick[r.t] = (e.thick[r.t] || 0) + r.qty;
+                });
+                const sorted = Object.keys(m).map(k => m[k]).sort(opt.order || ((a, b) => (b.tons - a.tons) || cmp(a.label, b.label)));
+                const out = e => ({ key: e.key, label: e.label, type: e.type || '', isOther: !!e.isOther, tons: r3(e.tons), pct: pct(e.tons),
+                    nCustomers: Object.keys(e.cust).length, nDeals: Object.keys(e.deals).length, won: r3(e.won), pipe: r3(e.pipe), topThick: topKeys(e.thick, 3).map(Number) });
+                const all = sorted.map(out);
+                let shown = sorted;
+                if (opt.top && sorted.length > opt.top) {                                       // เกินจำนวนแถว: เก็บส่วนหางไว้ในแถว "อื่นๆ" ตัวเลขไม่ตกหล่น
+                    const tail = sorted.slice(opt.top), o = { key: '__other__', label: 'อื่นๆ (' + tail.length + ' รายการ)', isOther: true, tons: 0, won: 0, pipe: 0, cust: {}, deals: {}, thick: {} };
+                    tail.forEach(e => { o.tons += e.tons; o.won += e.won; o.pipe += e.pipe; Object.assign(o.cust, e.cust); Object.assign(o.deals, e.deals);
+                        Object.keys(e.thick).forEach(t => { o.thick[t] = (o.thick[t] || 0) + e.thick[t]; }); });
+                    shown = sorted.slice(0, opt.top).concat([o]);
+                }
+                const rows = shown.map(out);
+                return { rows, all, max: rows.reduce((mx, r) => Math.max(mx, r.tons), 0) };
+            };
+            const byGrade = bpList(r => r.type + '|' + (r.grade || NA), r => ({ label: r.grade || NA, type: r.type }), { top: 10 });
+            const byCoating = bpList(r => r.type + '|' + (r.coating || NA), r => ({ label: r.coating || NA, type: r.type }), { top: 10 });
+            const bySegment = bpList(r => r.segment || NA, r => ({ label: r.segment || NA }), { top: 10 });
+            const byBand = bpList(r => thickBand(r.type, r.t), r => ({ label: thickBand(r.type, r.t) }),
+                { order: (a, b) => bandOrder.indexOf(a.key) - bandOrder.indexOf(b.key) });     // ช่วงความหนาเรียงตามลำดับ ไม่ตัดแถว
+            const crossCells = [];
+            const cross = ['galvanized', 'mgalzn'].map(type => {
+                const items = f.filter(x => x.type === type);
+                if (!items.length) return null;
+                const rm = {}, used = {};
+                items.forEach(x => {
+                    const band = thickBand(type, x.t), g = x.grade || NA, c = x.coating || NA, k = g + ' · ' + c;
+                    used[band] = 1;
+                    const e = rm[k] || (rm[k] = { label: k, grade: g, coating: c, cells: {}, cust: {}, allCust: {}, total: 0 });
+                    e.cells[band] = (e.cells[band] || 0) + x.qty; (e.cust[band] || (e.cust[band] = {}))[x.ck] = 1; e.allCust[x.ck] = 1; e.total += x.qty;
+                });
+                const cols = bandLabels(type).filter(b => used[b]);
+                let list = Object.keys(rm).map(k => rm[k]).sort((a, b) => (b.total - a.total) || cmp(a.label, b.label));
+                list.forEach(e => cols.forEach(b => { if (e.cells[b]) crossCells.push({ type, grade: e.grade, coating: e.coating, band: b, tons: r3(e.cells[b]), nCustomers: Object.keys(e.cust[b]).length }); }));
+                if (list.length > 15) {
+                    const tail = list.slice(15), o = { label: 'อื่นๆ (' + tail.length + ' คู่)', grade: '', coating: '', isOther: true, cells: {}, cust: {}, allCust: {}, total: 0 };
+                    tail.forEach(e => { o.total += e.total; Object.assign(o.allCust, e.allCust);
+                        Object.keys(e.cells).forEach(b => { o.cells[b] = (o.cells[b] || 0) + e.cells[b]; Object.assign(o.cust[b] || (o.cust[b] = {}), e.cust[b]); }); });
+                    list = list.slice(0, 15).concat([o]);
+                }
+                const rows = list.map(e => ({ label: e.label, grade: e.grade, coating: e.coating, isOther: !!e.isOther, total: r3(e.total), nCustomers: Object.keys(e.allCust).length,
+                    vals: cols.map(b => r3(e.cells[b] || 0)), cust: cols.map(b => (e.cust[b] ? Object.keys(e.cust[b]).length : 0)) }));
+                let max = 0; rows.forEach(r => r.vals.forEach(v => { if (v > max) max = v; }));
+                const colTotals = cols.map((b, j) => r3(rows.reduce((s, r) => s + r.vals[j], 0)));
+                return { type, label: type === 'mgalzn' ? 'Mg-Al-Zn' : 'Galvanized (GI)', cols, rows, colTotals, total: r3(rows.reduce((s, r) => s + r.total, 0)), max };
+            }).filter(Boolean);
+            const bigPicture = { total: r3(bpTotal), nCustomers: new Set(f.map(r => r.ck)).size, byGrade, byCoating, byBand, bySegment, cross, crossCells };
+
             // ---- ดีลค้าง > 45 วัน ให้เซลล์ไล่อัปเดตสถานะ (เก่าสุดก่อน) ----
             const sd = {};
             base.forEach(r => {
@@ -1297,7 +1445,7 @@
                 wonDeals, lostDeals, cancelledDeals: dealsIn(base, ['cancelled']), openDeals: dealsIn(base, ['open']), staleDeals: dealsIn(base, ['stale']),
                 winRate: wonDeals + lostDeals ? wonDeals / (wonDeals + lostDeals) : null, baseLines: base.length,
                 dupOpen: groups.reduce((n, g) => n + g.customers.reduce((m, c) => m + c.specs.filter(s => s.dupOpen).length, 0), 0) };
-            return { kpi, overview, groups, widths, matrices, gradeCoat, surfPack, staleDeals, today, since30, staleSince };
+            return { kpi, overview, groups, widths, matrices, gradeCoat, surfPack, bigPicture, staleDeals, today, since30, staleSince };
         }
 
         function quotationApp() {
@@ -1566,6 +1714,31 @@
                     return out;
                 },
                 specPct(x) { return x === null || x === undefined ? '-' : Math.round(x * 100) + '%'; },
+                // ภาพรวมการใช้เหล็ก: 4 ตารางแท่ง (เกรด · Coating · ความหนา · กลุ่มลูกค้า)
+                specBpBlocks() {
+                    const bp = this.specSum.bigPicture || {};
+                    const blk = (key, th, en, col, d) => ({ key, title: this.L(th, en), col, rows: (d && d.rows) || [], max: (d && d.max) || 0 });
+                    return [
+                        blk('grade', '🔩 เกรดเหล็ก', '🔩 Steel grade', this.L('เกรด', 'Grade'), bp.byGrade),
+                        blk('coating', '🛡️ Coating mass', '🛡️ Coating mass', this.L('เคลือบ', 'Coating'), bp.byCoating),
+                        blk('band', '📏 ความหนา (มม.)', '📏 Thickness (mm)', this.L('ช่วงความหนา', 'Thickness band'), bp.byBand),
+                        blk('segment', '👥 กลุ่มลูกค้า', '👥 Customer segment', this.L('กลุ่ม', 'Segment'), bp.bySegment)
+                    ];
+                },
+                specTr(x) {   // ป้ายที่สร้างในข้อมูล (อื่นๆ / ไม่ระบุ) แปลตอนแสดงผล โหมดภาษาอังกฤษ
+                    const t = String(x == null ? '' : x);
+                    if (this.lang === 'th') return t;
+                    return t.replace(/^อื่นๆ \((\d+) รายการ\)$/, 'Other ($1 items)').replace(/^อื่นๆ \((\d+) คู่\)$/, 'Other ($1 pairs)')
+                        .replace(/\(ไม่ระบุ\)/g, '(unspecified)').replace(/^อื่นๆ$/, 'Other');
+                },
+                specBarWidth(v, max) { return max ? Math.max(1.5, Math.round(v / max * 1000) / 10) : 0; },
+                specBpRowTitle(r) {
+                    return this.specTr(r.label) + ' · ' + fmtTon(r.tons) + this.L(' ตัน (', ' t (') + r.pct + '%) · ' + r.nCustomers + this.L(' ลูกค้า · ', ' customers · ') + r.nDeals + this.L(' ดีล', ' deals')
+                        + ' · ✅ ' + fmtTon(r.won) + ' · ⏳ ' + fmtTon(r.pipe) + (r.topThick && r.topThick.length ? this.L(' · ความหนาที่ใช้บ่อย ', ' · common thickness ') + r.topThick.map(fmtT).join(', ') : '');
+                },
+                specCrossTitle(m, row, j) {
+                    return this.specTr(row.label) + ' · ' + this.specTr(m.cols[j]) + this.L(' มม. · ', ' mm · ') + fmtTon(row.vals[j]) + this.L(' ตัน · ', ' t · ') + row.cust[j] + this.L(' ลูกค้า', ' customers');
+                },
                 togglePrintLandscape(on) {   // พิมพ์หน้าสรุปเป็น A4 แนวนอน เฉพาะตอนอยู่แท็บนี้ (ใบเสนอราคายังเป็นแนวตั้งเหมือนเดิม)
                     let el = document.getElementById('specPrintPage');
                     if (on && !el) { el = document.createElement('style'); el.id = 'specPrintPage'; el.media = 'print'; el.textContent = '@page { size: A4 landscape; margin: 8mm; }'; document.head.appendChild(el); }
@@ -1589,7 +1762,15 @@
                     };
                     const type = t => (t === 'mgalzn' ? 'Mg-Al-Zn' : 'GI');
                     let head, rows = [];
-                    if (kind === 'widths') {
+                    if (kind === 'overview') {   // ตารางยาว ทำ Pivot ใน Excel ได้ทันที (ไม่ตัดแถว "อื่นๆ")
+                        const bp = s.bigPicture;
+                        head = ['มิติ', 'ประเภท', 'ค่า', 'ช่วงความหนา (มม.)', 'ตัน', '% ของตันทั้งหมด', 'จำนวนลูกค้า', 'จำนวนดีล', 'ปิดการขาย (ตัน)', 'ระหว่างเสนอ+ค้าง (ตัน)', 'ความหนาที่ใช้บ่อย'];
+                        const dims = [['เกรดเหล็ก', bp.byGrade], ['Coating mass', bp.byCoating], ['ความหนา', bp.byBand], ['กลุ่มลูกค้า', bp.bySegment]];
+                        dims.forEach(([name, d]) => d.all.forEach(r => rows.push([name, r.type ? type(r.type) : '', name === 'ความหนา' ? '' : r.label, name === 'ความหนา' ? r.label : '',
+                            r.tons, r.pct, r.nCustomers, r.nDeals, r.won, r.pipe, r.topThick.map(fmtT).join(' / ')])));
+                        bp.crossCells.forEach(c => rows.push(['เกรด·Coating×ความหนา', type(c.type), c.grade + ' · ' + c.coating, c.band, c.tons,
+                            bp.total ? Math.round(c.tons / bp.total * 1000) / 10 : 0, c.nCustomers, '', '', '', '']));
+                    } else if (kind === 'widths') {
                         head = ['หน้ากว้าง (มม.)', 'ตันรวม (ฉบับล่าสุดของแต่ละดีล)', 'ปิดการขาย (ตัน)', 'ระหว่างเสนอ+ค้าง (ตัน)', 'GI (ตัน)', 'Mg-Al-Zn (ตัน)', 'จำนวนลูกค้า', 'จำนวนดีล',
                             'ความหนาต่ำสุด (มม.)', 'ความหนาสูงสุด (มม.)', 'ความหนาที่ใช้บ่อย', 'เกรด', 'เคลือบ', 'Mill edge (ตัน)', 'Slit edge (ตัน)', 'รูปแบบสลิต', 'เสนอล่าสุด', 'หน้ากว้างใหม่ใน 30 วัน'];
                         s.widths.forEach(w => rows.push([w.w, w.tons, w.won, w.pipe, w.gi, w.zm, w.nCustomers, w.nDeals, w.tMin, w.tMax, w.topThick.map(fmtT).join(' / '), w.grades.join(' / '),
@@ -1603,7 +1784,7 @@
                             x.by.won, x.by.open, x.by.stale, x.by.lost, x.by.cancelled, x.dupOpen || '', x.delivery, x.first, x.last, x.lastNo, x.isNew ? 'ใหม่' : '']))));
                     }
                     const csv = '﻿' + [head].concat(rows).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
-                    const name = (kind === 'widths' ? 'AMC-width-demand_' : 'AMC-customer-specs_') + this.specScopeName().replace(/\s+/g, '-') + '_' + localToday() + '.csv';
+                    const name = (kind === 'overview' ? 'AMC-steel-overview_' : (kind === 'widths' ? 'AMC-width-demand_' : 'AMC-customer-specs_')) + this.specScopeName().replace(/\s+/g, '-') + '_' + localToday() + '.csv';
                     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
                     try {   // iPhone ที่ติดตั้งเป็นแอปดาวน์โหลดไฟล์ตรง ๆ ไม่ได้ -> ใช้เมนูแชร์
                         const file = new File([blob], name, { type: 'text/csv' });

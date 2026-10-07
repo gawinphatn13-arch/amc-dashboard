@@ -6,7 +6,7 @@
  *
  *  เปลี่ยน CACHE_VERSION ทุกครั้งที่แก้ไฟล์ในโฟลเดอร์นี้ เพื่อล้างแคชเก่าในมือถือ
  * ============================================================ */
-const CACHE_VERSION = 'amc-quote-v6';
+const CACHE_VERSION = 'amc-quote-v7';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
