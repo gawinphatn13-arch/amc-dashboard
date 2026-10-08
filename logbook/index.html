@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Log Book การผลิต GI</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Log Book">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Sarabun', 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        [x-cloak] { display: none !important; }
+        .loader { border: 3px solid #e5e7eb; border-top: 3px solid #1e3a8a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .safe-bottom { padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
+        .page { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+        .chip { border: 1px solid #d1d5db; border-radius: 9999px; padding: 0.45rem 0.9rem; font-size: 0.9rem; background: #fff; color: #374151; }
+        .chip-on { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
+        .line-PK { background: #d97706; } .line-CRL { background: #2563eb; } .line-GI { background: #16a34a; } .line-GD { background: #7c3aed; }
+        .field { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.7rem 0.8rem; font-size: 1rem; background: #fff; }
+        .field:focus { outline: 2px solid #1e3a8a; border-color: #1e3a8a; }
+        .btn { border-radius: 0.6rem; padding: 0.75rem 1rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
+        .btn:disabled { opacity: 0.5; }
+        .card { background: #fff; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .pin-box { letter-spacing: 1.2rem; font-size: 1.8rem; text-align: center; padding-left: 1.6rem; }
+        .thumb { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: #e5e7eb; border-radius: 0.5rem; }
+        .timeline::before { content: ''; position: absolute; left: 0.6rem; top: 0.5rem; bottom: 0.5rem; width: 2px; background: #e5e7eb; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        img.lazy { background: #e5e7eb; }
+        .langbar button { padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800" x-data="logbookApp()" x-cloak>
+
+<!-- ============ ล็อกอิน / 登录 ============ -->
+<div x-show="!user" class="fixed inset-0 z-40 bg-gray-100 overflow-y-auto">
+    <div class="max-w-sm mx-auto p-4 pt-6">
+        <div class="flex justify-end mb-2 langbar">
+            <div class="bg-white rounded-full shadow p-0.5 flex">
+                <button type="button" @click="setLang('th')" :class="lang === 'th' ? 'bg-blue-800 text-white' : 'text-gray-600'">ไทย</button>
+                <button type="button" @click="setLang('zh')" :class="lang === 'zh' ? 'bg-blue-800 text-white' : 'text-gray-600'">中文</button>
+            </div>
+        </div>
+        <div class="flex items-center justify-center gap-3 mb-4">
+            <img src="./icon-192.png" alt="" class="w-12 h-12 rounded-xl">
+            <div><div class="font-bold text-lg leading-tight" x-text="t('appName')"></div><div class="text-xs text-gray-500">AMC Galvanizing · PK / CRL / GI / GD</div></div>
+        </div>
+        <div class="card p-5">
+            <template x-if="loginStep === 'site'">
+                <div>
+                    <h2 class="font-bold text-base mb-1" x-text="t('siteKeyTitle')"></h2>
+                    <p class="text-xs text-gray-500 mb-3" x-text="t('siteKeyHint')"></p>
+                    <input type="text" x-model="siteKeyInput" @keydown.enter="submitSiteKey" x-init="$nextTick(() => $el.focus())" autocapitalize="characters" autocomplete="off" :placeholder="t('siteKeyPh')" class="field uppercase mb-3">
+                    <div x-show="loginError" class="text-sm text-red-600 mb-3" x-text="loginError"></div>
+                    <button @click="submitSiteKey" :disabled="loginBusy" class="btn w-full bg-blue-800 text-white"><span x-show="loginBusy" class="loader"></span><span x-text="loginBusy ? t('checking') : t('next')"></span></button>
+                </div>
+            </template>
+            <template x-if="loginStep === 'pick'">
+                <div>
+                    <h2 class="font-bold text-base mb-1" x-text="t('pickName')"></h2>
+                    <input type="search" x-model="userSearch" :placeholder="t('searchName')" class="field mb-2">
+                    <div x-show="usersLoading" class="text-xs text-gray-500 mb-2"><span class="loader"></span> <span x-text="t('loadingNames')"></span></div>
+                    <div x-show="loginError" class="text-sm text-red-600 mb-2" x-text="loginError"></div>
+                    <div class="max-h-72 overflow-y-auto divide-y border rounded-lg">
+                        <template x-for="u in filteredUsers()" :key="u.code">
+                            <button type="button" @click="pickUser(u)" class="w-full text-left px-3 py-3 hover:bg-blue-50 flex items-center justify-between">
+                                <span><span class="font-medium" x-text="u.name"></span><span class="text-xs text-gray-400 ml-2" x-text="u.code"></span></span>
+                                <span class="text-gray-300">›</span>
+                            </button>
+                        </template>
+                        <div x-show="!usersLoading && !filteredUsers().length" class="px-3 py-4 text-sm text-gray-500 text-center" x-text="t('noName')"></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
+                        <button type="button" @click="manualMode = true; loginStep = 'pin'; pick = null; pin = ''" class="underline" x-text="t('typeCode')"></button>
+                        <button type="button" @click="changeSiteKey" class="underline" x-text="t('changeSite')"></button>
+                    </div>
+                </div>
+            </template>
+            <template x-if="loginStep === 'pin'">
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <button type="button" @click="loginStep = 'pick'; loginError = ''; manualMode = false" class="text-gray-500 text-xl px-1">‹</button>
+                        <div>
+                            <div class="font-bold text-base" x-text="pick ? pick.name : t('typeCodeTitle')"></div>
+                            <div class="text-xs text-gray-500" x-text="pick ? (t('codeLabel') + ' ' + pick.code) : t('typeCodeSub')"></div>
+                        </div>
+                    </div>
+                    <input x-show="manualMode" type="text" x-model="manualCode" autocapitalize="characters" autocomplete="username" :placeholder="t('codePh')" class="field uppercase mb-2">
+                    <label class="block text-sm mb-1" x-text="t('pinLabel')"></label>
+                    <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" x-model="pin" @input="onPinInput" @keydown.enter="login" autocomplete="current-password" x-init="$nextTick(() => $el.focus())" class="field pin-box mb-3" placeholder="••••">
+                    <div x-show="loginError" class="text-sm text-red-600 mb-3" x-text="loginError"></div>
+                    <button @click="login" :disabled="loginBusy || pin.length < 4" class="btn w-full bg-blue-800 text-white"><span x-show="loginBusy" class="loader"></span><span x-text="loginBusy ? t('checking') : t('login')"></span></button>
+                </div>
+            </template>
+            <div class="flex justify-between items-center mt-4 text-xs text-gray-500">
+                <button type="button" @click="configureApi" class="underline" x-text="t('serverSettings')"></button>
+                <span x-text="'v' + APP_VERSION"></span>
+            </div>
+            <div x-show="installPrompt" class="mt-4 border-t pt-3">
+                <button type="button" @click="installApp" class="btn w-full border border-blue-700 text-blue-800 bg-white" x-text="installLabel()"></button>
+            </div>
+            <p x-show="isIos && !installPrompt" class="mt-3 text-xs text-gray-500 text-center" x-text="t('iosHint')"></p>
+        </div>
+    </div>
+</div>
+
+<!-- ============ แถบบน ============ -->
+<header x-show="user" class="bg-[#1e3a8a] text-white sticky top-0 z-30 shadow">
+    <div class="max-w-3xl mx-auto px-4 py-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-2 min-w-0">
+            <img src="./icon-192.png" alt="" class="w-8 h-8 rounded-lg">
+            <div class="min-w-0"><div class="font-bold leading-tight truncate" x-text="tabTitle()"></div><div class="text-[11px] text-blue-200 truncate" x-text="user ? (user.name + ' · ' + roleName(user.role)) : ''"></div></div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button @click="setLang(lang === 'th' ? 'zh' : 'th')" class="text-xs bg-white/15 rounded px-2 py-1.5" x-text="lang === 'th' ? '中文' : 'ไทย'"></button>
+            <button x-show="installPrompt" @click="installApp" class="text-xs bg-white/15 rounded px-2 py-1.5">📲</button>
+            <button @click="logout()" class="text-xs bg-white/15 rounded px-2.5 py-1.5" x-text="t('logout')"></button>
+        </div>
+    </div>
+    <div x-show="!online" class="bg-amber-400 text-amber-900 text-xs text-center py-1" x-text="t('offline')"></div>
+</header>
+
+<main x-show="user" class="max-w-3xl mx-auto px-3 pt-3 page">
+
+    <!-- ============ บันทึกใหม่ / 新记录 ============ -->
+    <section x-show="tab === 'new'">
+        <template x-if="saved && !sending.active">
+            <div class="card p-4 mb-3 border-l-4" :class="saved.pending ? 'border-amber-500' : 'border-green-600'">
+                <div class="font-bold" x-text="(saved.pending ? t('savedPending', { n: saved.pending }) : t('savedOk')) + ' — ' + t('entryNoLabel') + ' ' + saved.entryNo"></div>
+                <div x-show="saveError" class="text-sm text-red-600 mt-1" x-text="saveError"></div>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <button x-show="saved.pending" @click="retryPhotos" class="btn bg-amber-500 text-white text-sm" x-text="t('retryPhotos')"></button>
+                    <button x-show="saved.canView" @click="openEntry(saved.entryNo)" class="btn bg-white border text-sm" x-text="t('viewEntry')"></button>
+                    <button @click="startNew()" class="btn bg-blue-800 text-white text-sm" x-text="t('newEntry')"></button>
+                </div>
+            </div>
+        </template>
+        <div x-show="!saved || sending.active">
+            <div class="card p-4 mb-3">
+                <div class="font-bold mb-2"><span x-text="t('line')"></span> <span class="text-red-500">*</span></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <template x-for="l in (config ? config.lines : [])" :key="l.code">
+                        <button type="button" @click="draft.line = l.code; draft.machine = ''" class="rounded-xl p-3 text-left border-2 transition" :class="draft.line === l.code ? ('line-' + l.code + ' text-white border-transparent') : 'bg-white border-gray-200'">
+                            <div class="font-bold text-lg" x-text="l.code"></div>
+                            <div class="text-xs opacity-90" x-text="cn(l)"></div>
+                        </button>
+                    </template>
+                </div>
+                <div class="mt-3" x-show="draft.line">
+                    <label class="block text-sm font-medium mb-1" x-text="t('machine')"></label>
+                    <select x-model="draft.machine" class="field">
+                        <option value="" x-text="t('machineNone')"></option>
+                        <template x-for="m in machinesFor(draft.line)" :key="m.code"><option :value="m.code" x-text="m.code + ' ' + cn(m)"></option></template>
+                        <option value="__other" x-text="t('machineOther')"></option>
+                    </select>
+                    <input x-show="draft.machine === '__other'" type="text" x-model="draft.machineOther" :placeholder="t('machineOtherPh')" class="field mt-2">
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="font-bold mb-2"><span x-text="t('category')"></span> <span class="text-red-500">*</span></div>
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="c in (config ? config.categories : [])" :key="c.code">
+                        <button type="button" @click="draft.category = c.code" class="chip" :class="draft.category === c.code ? 'chip-on' : ''" x-text="catIcon(c.code) + ' ' + cn(c)"></button>
+                    </template>
+                </div>
+                <p x-show="draft.category === 'people'" class="text-xs text-amber-700 mt-2" x-text="t('peopleHint')"></p>
+                <div class="font-bold mt-4 mb-2" x-text="t('type')"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" @click="draft.type = 'issue'" class="chip text-center" :class="draft.type === 'issue' ? 'chip-on' : ''" x-text="t('typeIssue')"></button>
+                    <button type="button" @click="draft.type = 'note'" class="chip text-center" :class="draft.type === 'note' ? 'chip-on' : ''" x-text="t('typeNote')"></button>
+                </div>
+                <div x-show="draft.type === 'issue'" class="mt-3">
+                    <div class="text-sm font-medium mb-1" x-text="t('severity')"></div>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="s in ['normal', 'medium', 'urgent']" :key="s">
+                            <button type="button" @click="draft.severity = s" class="chip" :class="draft.severity === s ? sevChip(s) : ''" x-text="sevLabel(s)"></button>
+                        </template>
+                    </div>
+                    <label class="flex items-center gap-2 mt-3 text-sm"><input type="checkbox" x-model="draft.lineStopped" class="w-5 h-5"> <span x-text="t('lineStopped')"></span></label>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="font-bold mb-2" x-text="t('foundAt')"></div>
+                <div class="flex gap-2">
+                    <input type="datetime-local" x-model="draft.foundAt" @change="onFoundAtChange" step="60" class="field">
+                    <button type="button" @click="setNow" class="btn bg-white border text-sm shrink-0" x-text="t('now')"></button>
+                </div>
+                <div class="flex items-center gap-2 mt-2 text-sm flex-wrap">
+                    <span class="text-gray-600" x-text="t('shift')"></span>
+                    <template x-for="s in (config ? config.shifts : [])" :key="s.code">
+                        <button type="button" @click="draft.shift = s.code; shiftAuto = false" class="chip text-sm" :class="draft.shift === s.code ? 'chip-on' : ''" x-text="cn(s)"></button>
+                    </template>
+                    <span x-show="shiftAuto" class="text-xs text-gray-400" x-text="t('auto')"></span>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <label class="block font-bold mb-1" x-text="t('title')"></label>
+                <input type="text" x-model="draft.title" maxlength="200" :placeholder="t('titlePh')" class="field mb-3">
+                <label class="block font-bold mb-1" x-text="t('detail')"></label>
+                <textarea x-model="draft.detail" rows="4" maxlength="5000" :placeholder="t('detailPh')" class="field"></textarea>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="font-bold"><span x-text="t('photos')"></span> <span class="text-xs text-gray-500 font-normal" x-text="photos.length + '/' + maxPhotos()"></span></div>
+                    <div x-show="photoBusy" class="text-xs text-gray-500"><span class="loader"></span> <span x-text="t('resizing')"></span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <label class="btn bg-blue-800 text-white cursor-pointer" :class="photos.length >= maxPhotos() ? 'opacity-50 pointer-events-none' : ''"><span x-text="t('takePhoto')"></span><input type="file" accept="image/*" capture="environment" class="hidden" @change="addFiles($event, photos)"></label>
+                    <label class="btn bg-white border cursor-pointer" :class="photos.length >= maxPhotos() ? 'opacity-50 pointer-events-none' : ''"><span x-text="t('pickPhoto')"></span><input type="file" accept="image/*" multiple class="hidden" @change="addFiles($event, photos)"></label>
+                </div>
+                <div x-show="photos.length" class="grid grid-cols-3 gap-2">
+                    <template x-for="(p, i) in photos" :key="i">
+                        <div class="relative">
+                            <img :src="p.dataUrl" class="thumb" alt="">
+                            <button type="button" x-show="!sending.active" @click="photos.splice(i, 1)" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-6 h-6 text-xs leading-6 text-center shadow">✕</button>
+                            <div class="absolute bottom-1 left-1 text-[10px] bg-black/50 text-white rounded px-1" x-text="(p.status === 'sent' ? '✓ ' : p.status === 'error' ? '✕ ' : '') + Math.round(p.bytes / 1024) + ' KB'"></div>
+                        </div>
+                    </template>
+                </div>
+                <p class="text-xs text-gray-400 mt-2" x-text="t('photoNote')"></p>
+            </div>
+            <div x-show="saveError && !saved" class="text-sm text-red-600 mb-3 px-1" x-text="saveError"></div>
+        </div>
+        <div x-show="!saved || sending.active" class="fixed left-0 right-0 z-20 px-3 pointer-events-none" style="bottom: calc(4rem + env(safe-area-inset-bottom));">
+            <div class="max-w-3xl mx-auto">
+                <button @click="submitEntry" :disabled="sending.active || !online" class="btn w-full bg-green-600 text-white shadow-lg pointer-events-auto text-lg">
+                    <span x-show="sending.active" class="loader"></span>
+                    <span x-text="sending.active ? sending.step : (online ? t('save') : t('offlineSave'))"></span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ รายการ / 列表 ============ -->
+    <section x-show="tab === 'list'">
+        <div class="card p-3 mb-3">
+            <div class="flex gap-1.5 overflow-x-auto pb-1">
+                <button type="button" @click="filter.line = ''; loadList(true)" class="chip text-sm shrink-0" :class="!filter.line ? 'chip-on' : ''" x-text="t('allLines')"></button>
+                <template x-for="l in (config ? config.lines : [])" :key="l.code">
+                    <button type="button" @click="filter.line = l.code; loadList(true)" class="chip text-sm shrink-0" :class="filter.line === l.code ? ('line-' + l.code + ' text-white border-transparent') : ''" x-text="l.code"></button>
+                </template>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <select x-model="filter.status" @change="loadList(true)" class="field text-sm py-2">
+                    <option value="active" x-text="t('fActive')"></option>
+                    <option value="all" x-text="t('fAll')"></option>
+                    <option value="open" x-text="statusLabel('open')"></option>
+                    <option value="in_progress" x-text="statusLabel('in_progress')"></option>
+                    <option value="closed" x-text="statusLabel('closed')"></option>
+                    <option value="cancelled" x-text="statusLabel('cancelled')"></option>
+                </select>
+                <select x-model="filter.category" @change="loadList(true)" class="field text-sm py-2">
+                    <option value="" x-text="t('allCats')"></option>
+                    <template x-for="c in (config ? config.categories : [])" :key="c.code"><option :value="c.code" x-text="cn(c)"></option></template>
+                </select>
+                <select x-model="filter.range" @change="loadList(true)" class="field text-sm py-2">
+                    <option value="today" x-text="t('rToday')"></option>
+                    <option value="7" x-text="t('r7')"></option>
+                    <option value="30" x-text="t('r30')"></option>
+                    <option value="all" x-text="t('rAll')"></option>
+                    <option value="custom" x-text="t('rCustom')"></option>
+                </select>
+                <select x-model="filter.type" @change="loadList(true)" class="field text-sm py-2">
+                    <option value="" x-text="t('tBoth')"></option>
+                    <option value="issue" x-text="t('tIssue')"></option>
+                    <option value="note" x-text="t('tNote')"></option>
+                </select>
+            </div>
+            <div x-show="filter.range === 'custom'" class="grid grid-cols-2 gap-2 mt-2">
+                <input type="date" x-model="filter.dateFrom" @change="loadList(true)" class="field text-sm py-2">
+                <input type="date" x-model="filter.dateTo" @change="loadList(true)" class="field text-sm py-2">
+            </div>
+            <div class="flex gap-2 mt-2">
+                <input type="search" x-model="filter.q" @keydown.enter="loadList(true)" @search="loadList(true)" :placeholder="t('searchPh')" class="field text-sm py-2">
+                <button type="button" @click="filter.mine = !filter.mine; loadList(true)" class="chip text-sm shrink-0" :class="filter.mine ? 'chip-on' : ''" x-text="t('mine')"></button>
+                <button type="button" @click="loadList(true)" class="chip text-sm shrink-0">🔄</button>
+            </div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-gray-500 px-1 mb-2">
+            <span x-text="list.loading ? t('loading') : (t('nRows', { n: list.total }) + (list.truncated ? ' ' + t('truncated', { n: list.rows.length }) : '') + (list.loadedAt ? ' · ' + t('dataAt', { t: list.loadedAt }) : ''))"></span>
+            <button type="button" @click="exportCsv" class="underline" x-show="list.rows.length" x-text="t('exportCsv')"></button>
+        </div>
+        <div x-show="list.error" class="text-sm text-red-600 mb-2 px-1" x-text="list.error"></div>
+        <div x-show="!list.loading && !list.rows.length && !list.error" class="card p-6 text-center text-gray-500 text-sm" x-text="t('noRows')"></div>
+        <template x-for="r in list.rows" :key="r.entryNo">
+            <button type="button" @click="openEntry(r.entryNo)" class="card w-full text-left p-3 mb-2 flex gap-3">
+                <div class="w-20 shrink-0">
+                    <img x-show="r.thumb" :src="r.thumb" class="thumb" alt="">
+                    <div x-show="!r.thumb" class="thumb flex items-center justify-center text-2xl text-gray-400" x-text="catIcon(r.category)"></div>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+                        <span class="px-1.5 py-0.5 rounded font-bold text-white" :class="'line-' + r.line" x-text="r.line"></span>
+                        <span class="text-gray-500" x-text="r.entryNo"></span>
+                        <span x-show="r.type === 'issue'" class="px-1.5 py-0.5 rounded" :class="statusClass(r.status)" x-text="statusLabel(r.status)"></span>
+                        <span x-show="r.type === 'note'" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600" x-text="t('noteBadge')"></span>
+                        <span x-show="r.severity === 'urgent'" class="px-1.5 py-0.5 rounded bg-red-100 text-red-700" x-text="sevLabel('urgent')"></span>
+                        <span x-show="r.lineStopped" class="px-1.5 py-0.5 rounded bg-red-600 text-white" x-text="t('lineStoppedBadge')"></span>
+                    </div>
+                    <div class="font-bold mt-1 line-clamp-2" x-text="r.title || r.detail || t('noTitle')"></div>
+                    <div class="text-xs text-gray-500 mt-0.5 truncate" x-text="[catName(r), machineLabel(r.machine)].filter(Boolean).join(' · ')"></div>
+                    <div class="text-xs text-gray-500 mt-0.5" x-text="fmtDT(r.foundAt) + ' · ' + fmtRel(r.foundAt) + ' · ' + r.byName + (r.updateCount ? ' · 💬 ' + r.updateCount : '') + (r.photoCount ? ' · 📷 ' + r.photoCount : '')"></div>
+                </div>
+            </button>
+        </template>
+    </section>
+
+    <!-- ============ สรุป / 汇总 ============ -->
+    <section x-show="tab === 'summary'">
+        <div class="card p-3 mb-3 flex items-center gap-2">
+            <select x-model="sum.range" @change="loadSummary()" class="field text-sm py-2">
+                <option value="today" x-text="t('rToday')"></option>
+                <option value="7" x-text="t('r7')"></option>
+                <option value="30" x-text="t('r30')"></option>
+                <option value="month" x-text="t('rMonth')"></option>
+            </select>
+            <button type="button" @click="loadSummary()" class="chip text-sm shrink-0">🔄</button>
+        </div>
+        <div x-show="sum.loading" class="text-sm text-gray-500 px-1 mb-2"><span class="loader"></span> <span x-text="t('loading')"></span></div>
+        <div x-show="sum.error" class="text-sm text-red-600 mb-2 px-1" x-text="sum.error"></div>
+        <template x-if="sum.data">
+            <div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('tileOpen')"></div><div class="text-3xl font-bold text-blue-800" x-text="sum.data.openCount"></div></div>
+                    <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('tileUrgent')"></div><div class="text-3xl font-bold text-red-600" x-text="sum.data.bySeverity.urgent || 0"></div></div>
+                    <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('tileStopped')"></div><div class="text-3xl font-bold text-amber-600" x-text="sum.data.lineStopped"></div></div>
+                    <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('tileTotal')"></div><div class="text-3xl font-bold" x-text="sum.data.total"></div></div>
+                </div>
+                <div class="card p-3 mb-3 overflow-x-auto">
+                    <div class="font-bold mb-2" x-text="t('byLine') + ' · ' + fmtD(sum.data.dateFrom) + ' – ' + fmtD(sum.data.dateTo)"></div>
+                    <table class="w-full text-sm">
+                        <thead><tr class="text-xs text-gray-500"><th class="text-left py-1" x-text="t('hLine')"></th><th class="text-right" x-text="statusLabel('open')"></th><th class="text-right" x-text="t('hInProg')"></th><th class="text-right" x-text="statusLabel('closed')"></th><th class="text-right" x-text="statusLabel('cancelled')"></th><th class="text-right" x-text="t('noteBadge')"></th><th class="text-right" x-text="t('hTotal')"></th></tr></thead>
+                        <tbody>
+                            <template x-for="l in (config ? config.lines : [])" :key="l.code">
+                                <tr class="border-t">
+                                    <td class="py-1.5"><span class="px-1.5 py-0.5 rounded text-white text-xs font-bold" :class="'line-' + l.code" x-text="l.code"></span></td>
+                                    <td class="text-right font-bold" :class="(sum.data.byLine[l.code] || {}).open ? 'text-blue-800' : 'text-gray-300'" x-text="(sum.data.byLine[l.code] || {}).open || 0"></td>
+                                    <td class="text-right" x-text="(sum.data.byLine[l.code] || {}).in_progress || 0"></td>
+                                    <td class="text-right" x-text="(sum.data.byLine[l.code] || {}).closed || 0"></td>
+                                    <td class="text-right" x-text="(sum.data.byLine[l.code] || {}).cancelled || 0"></td>
+                                    <td class="text-right" x-text="(sum.data.byLine[l.code] || {}).note || 0"></td>
+                                    <td class="text-right font-bold" x-text="(sum.data.byLine[l.code] || {}).total || 0"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card p-3 mb-3">
+                    <div class="font-bold mb-2" x-text="t('byCat')"></div>
+                    <div class="space-y-1.5">
+                        <template x-for="c in (config ? config.categories : [])" :key="c.code">
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-40 truncate" x-text="catIcon(c.code) + ' ' + cn(c)"></div>
+                                <div class="flex-1 bg-gray-100 rounded h-3"><div class="bg-blue-700 h-3 rounded" :style="'width:' + barPct(sum.data.byCategory[c.code] || 0) + '%'"></div></div>
+                                <div class="w-8 text-right font-bold" x-text="sum.data.byCategory[c.code] || 0"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="card p-3 mb-3">
+                    <div class="font-bold mb-2" x-text="t('aging')"></div>
+                    <div x-show="!sum.data.aging.length" class="text-sm text-gray-500" x-text="t('noAging')"></div>
+                    <template x-for="a in sum.data.aging.slice(0, 15)" :key="a.entryNo">
+                        <button type="button" @click="openEntry(a.entryNo)" class="w-full text-left py-2 border-t flex items-center gap-2 text-sm">
+                            <span class="px-1.5 py-0.5 rounded text-white text-xs font-bold shrink-0" :class="'line-' + a.line" x-text="a.line"></span>
+                            <span class="flex-1 truncate" x-text="a.title"></span>
+                            <span x-show="a.severity === 'urgent'" class="text-red-600 text-xs shrink-0">🔥</span>
+                            <span class="text-xs shrink-0 font-bold" :class="a.days >= 7 ? 'text-red-600' : a.days >= 3 ? 'text-amber-600' : 'text-gray-500'" x-text="t('days', { n: a.days })"></span>
+                        </button>
+                    </template>
+                </div>
+                <button type="button" @click="exportCsv" class="btn w-full bg-white border text-sm" x-text="t('exportCsvLong')"></button>
+            </div>
+        </template>
+    </section>
+
+    <!-- ============ ผู้ใช้ (manager) / 用户 ============ -->
+    <section x-show="tab === 'users' && user && user.role === 'manager'">
+        <div class="card p-4 mb-3">
+            <div class="font-bold mb-2" x-text="t('addUser')"></div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" x-model="um.form.code" :placeholder="t('codePhAuto')" autocapitalize="characters" class="field text-sm uppercase">
+                <select x-model="um.form.role" class="field text-sm"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
+                <input type="text" x-model="um.form.name" :placeholder="t('namePh')" class="field text-sm col-span-2">
+                <select x-model="um.form.line" class="field text-sm"><option value="" x-text="t('defaultLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code + ' ' + cn(l)"></option></template></select>
+                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm" x-text="t('add')"></button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2" x-text="t('lineHint')"></p>
+            <div x-show="um.msg" class="text-sm text-green-700 mt-2 whitespace-pre-line" x-text="um.msg"></div>
+            <div x-show="um.error" class="text-sm text-red-600 mt-2" x-text="um.error"></div>
+        </div>
+        <div class="card p-3 mb-3">
+            <div class="flex items-center justify-between mb-2"><div class="font-bold" x-text="t('userList')"></div><button type="button" @click="loadUsersTab" class="chip text-sm">🔄</button></div>
+            <template x-for="u in um.list" :key="u.code">
+                <div class="border-t py-2.5 text-sm" :class="u.active ? '' : 'opacity-50'">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="min-w-0"><span class="font-bold" x-text="u.name"></span> <span class="text-xs text-gray-500" x-text="u.code"></span></div>
+                        <div class="text-xs shrink-0">PIN <span class="font-mono" x-text="u.showPin ? u.pin : '••••'"></span> <button type="button" @click="u.showPin = !u.showPin" class="ml-1">👁</button></div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <select :value="u.role" @change="setUser(u, { role: $event.target.value })" class="field text-xs py-1 w-auto"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
+                        <select :value="u.line" @change="setUser(u, { line: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code"></option></template></select>
+                        <button type="button" @click="toggleUser(u)" class="chip text-xs" x-text="u.active ? t('deactivate') : t('activate')"></button>
+                        <button type="button" @click="resetPin(u)" class="chip text-xs" x-text="t('resetPin')"></button>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <p class="text-xs text-gray-500 px-1" x-text="t('configHint')"></p>
+    </section>
+</main>
+
+<!-- ============ รายละเอียด / 详情 (overlay) ============ -->
+<div x-show="tab === 'detail'" class="fixed inset-0 z-30 bg-gray-100 overflow-y-auto">
+    <header class="bg-[#1e3a8a] text-white sticky top-0 z-10 shadow">
+        <div class="max-w-3xl mx-auto px-3 py-2.5 flex items-center gap-2">
+            <button @click="closeDetail()" class="text-2xl px-2 leading-none">‹</button>
+            <div class="min-w-0 flex-1"><div class="font-bold truncate" x-text="detail.entry ? detail.entry.entryNo : detail.no"></div><div class="text-[11px] text-blue-200" x-text="detail.entry ? (catName(detail.entry) + ' · ' + detail.entry.byName) : ''"></div></div>
+            <button @click="loadDetail(detail.no)" class="text-xs bg-white/15 rounded px-2 py-1.5">🔄</button>
+        </div>
+    </header>
+    <div class="max-w-3xl mx-auto px-3 pt-3 pb-24">
+        <div x-show="detail.loading" class="text-sm text-gray-500 p-3"><span class="loader"></span> <span x-text="t('loading')"></span></div>
+        <div x-show="detail.error" class="text-sm text-red-600 p-3" x-text="detail.error"></div>
+        <template x-if="detail.entry">
+            <div>
+                <div class="card p-4 mb-3">
+                    <div class="flex items-center gap-1.5 flex-wrap text-xs mb-2">
+                        <span class="px-2 py-0.5 rounded font-bold text-white" :class="'line-' + detail.entry.line" x-text="detail.entry.line + ' ' + lineName(detail.entry.line)"></span>
+                        <span x-show="detail.entry.type === 'issue'" class="px-2 py-0.5 rounded font-bold" :class="statusClass(detail.entry.status)" x-text="statusLabel(detail.entry.status)"></span>
+                        <span x-show="detail.entry.type === 'note'" class="px-2 py-0.5 rounded bg-gray-100 text-gray-600" x-text="t('typeNoteShort')"></span>
+                        <span x-show="detail.entry.severity" class="px-2 py-0.5 rounded" :class="sevChip(detail.entry.severity)" x-text="sevLabel(detail.entry.severity)"></span>
+                        <span x-show="detail.entry.lineStopped" class="px-2 py-0.5 rounded bg-red-600 text-white font-bold" x-text="t('lineStoppedBadge')"></span>
+                    </div>
+                    <h2 class="font-bold text-lg" x-text="detail.entry.title || t('noTitle')"></h2>
+                    <p class="whitespace-pre-line text-sm mt-1" x-text="detail.entry.detail"></p>
+                    <div x-show="detail.entry.photos.length" class="grid grid-cols-3 gap-2 mt-3">
+                        <template x-for="p in detail.entry.photos" :key="p.fileId">
+                            <button type="button" @click="openViewer(p, detail.entry.entryNo)"><img :src="imgSrc(p, 400, detail.entry.entryNo)" @error="imgErr(p, detail.entry.entryNo)" loading="lazy" class="thumb lazy" alt=""></button>
+                        </template>
+                    </div>
+                    <dl class="text-sm mt-3 grid grid-cols-[6.5rem_1fr] gap-y-1">
+                        <dt class="text-gray-500" x-text="t('foundAt')"></dt><dd x-text="fmtDT(detail.entry.foundAt) + ' (' + shiftName(detail.entry.shift) + ')'"></dd>
+                        <dt class="text-gray-500" x-text="t('machineLabel')"></dt><dd x-text="machineLabel(detail.entry.machine) || '-'"></dd>
+                        <dt class="text-gray-500" x-text="t('reporter')"></dt><dd x-text="detail.entry.byName + ' · ' + t('savedAt') + ' ' + fmtDT(detail.entry.savedAt)"></dd>
+                        <template x-if="detail.entry.closedAt"><dt class="text-gray-500" x-text="detail.entry.status === 'cancelled' ? t('cancelledAt') : t('closedAt')"></dt></template>
+                        <template x-if="detail.entry.closedAt"><dd x-text="fmtDT(detail.entry.closedAt) + ' · ' + detail.entry.closedBy"></dd></template>
+                        <template x-if="detail.entry.resolution"><dt class="text-gray-500" x-text="detail.entry.status === 'cancelled' ? t('reason') : t('resolution')"></dt></template>
+                        <template x-if="detail.entry.resolution"><dd class="whitespace-pre-line" x-text="detail.entry.resolution"></dd></template>
+                    </dl>
+                </div>
+
+                <div class="font-bold px-1 mb-2" x-text="t('progress') + ' (' + detail.updates.length + ')'"></div>
+                <div x-show="!detail.updates.length" class="text-sm text-gray-500 px-1 mb-3" x-text="t('noProgress')"></div>
+                <div class="relative timeline pl-6 mb-3">
+                    <template x-for="u in detail.updates" :key="u.seq">
+                        <div class="card p-3 mb-2 relative">
+                            <span class="absolute top-4 w-3 h-3 rounded-full border-2 border-white" :class="u.to ? 'bg-blue-700' : 'bg-gray-400'" style="left:-1.2rem"></span>
+                            <div class="text-xs text-gray-500" x-text="fmtDT(u.at) + ' · ' + u.byName"></div>
+                            <div x-show="u.to" class="text-xs mt-1"><span class="px-1.5 py-0.5 rounded bg-gray-100" x-text="statusLabel(u.from)"></span> → <span class="px-1.5 py-0.5 rounded font-bold" :class="statusClass(u.to)" x-text="statusLabel(u.to)"></span></div>
+                            <div class="text-sm mt-1 whitespace-pre-line" x-text="u.text"></div>
+                            <div x-show="u.photos.length" class="grid grid-cols-3 gap-2 mt-2">
+                                <template x-for="p in u.photos" :key="p.fileId">
+                                    <button type="button" @click="openViewer(p, detail.entry.entryNo)"><img :src="imgSrc(p, 400, detail.entry.entryNo)" @error="imgErr(p, detail.entry.entryNo)" loading="lazy" class="thumb lazy" alt=""></button>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="card p-4" x-show="canUpdate()">
+                    <div class="font-bold mb-2" x-text="t('addProgress')"></div>
+                    <textarea x-model="upd.text" rows="3" maxlength="5000" :placeholder="updPlaceholder()" class="field mb-2"></textarea>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <label class="btn bg-white border text-sm cursor-pointer" :class="upd.photos.length >= maxPhotos() ? 'opacity-50 pointer-events-none' : ''"><span x-text="t('takePhoto')"></span><input type="file" accept="image/*" capture="environment" class="hidden" @change="addFiles($event, upd.photos)"></label>
+                        <label class="btn bg-white border text-sm cursor-pointer" :class="upd.photos.length >= maxPhotos() ? 'opacity-50 pointer-events-none' : ''"><span x-text="t('pickPhoto')"></span><input type="file" accept="image/*" multiple class="hidden" @change="addFiles($event, upd.photos)"></label>
+                    </div>
+                    <div x-show="upd.photos.length" class="grid grid-cols-4 gap-2 mb-2">
+                        <template x-for="(p, i) in upd.photos" :key="i">
+                            <div class="relative"><img :src="p.dataUrl" class="thumb" alt=""><button type="button" x-show="!upd.busy" @click="upd.photos.splice(i, 1)" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-6 h-6 text-xs leading-6 text-center shadow">✕</button></div>
+                        </template>
+                    </div>
+                    <div x-show="upd.error" class="text-sm text-red-600 mb-2" x-text="upd.error"></div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" @click="submitUpdate('')" :disabled="upd.busy || !online" class="btn bg-blue-800 text-white text-sm flex-1"><span x-show="upd.busy" class="loader"></span><span x-text="upd.busy ? upd.step : t('saveProgress')"></span></button>
+                        <template x-for="b in statusButtons()" :key="b.status">
+                            <button type="button" @click="submitUpdate(b.status)" :disabled="upd.busy || !online" class="btn text-sm" :class="b.cls" x-text="b.label"></button>
+                        </template>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2" x-text="updHint()"></p>
+                </div>
+                <div class="card p-4 text-sm text-gray-500" x-show="!canUpdate()" x-text="readOnlyNote()"></div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<!-- ============ ดูรูปเต็มจอ ============ -->
+<div x-show="viewer.open" @click="viewer.open = false" class="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-2">
+    <img :src="viewer.src" class="max-h-[85vh] max-w-full object-contain" alt="">
+    <div class="mt-3 flex gap-3 text-sm">
+        <a x-show="viewer.link" :href="viewer.link" target="_blank" rel="noopener" @click.stop class="text-white underline" x-text="t('openDrive')"></a>
+        <button type="button" class="text-white underline" x-text="t('close')"></button>
+    </div>
+</div>
+
+<!-- ============ bottom nav ============ -->
+<nav x-show="user && tab !== 'detail'" class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t safe-bottom">
+    <div class="max-w-3xl mx-auto grid" :class="user && user.role === 'manager' ? 'grid-cols-4' : 'grid-cols-3'">
+        <button @click="go('new')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'new' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">📝</span><span x-text="t('navNew')"></span></button>
+        <button @click="go('list')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'list' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">📋</span><span x-text="t('navList')"></span></button>
+        <button @click="go('summary')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'summary' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">📊</span><span x-text="t('navSummary')"></span></button>
+        <button x-show="user && user.role === 'manager'" @click="go('users')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'users' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">👥</span><span x-text="t('navUsers')"></span></button>
+    </div>
+</nav>
+
+<!-- toast -->
+<div x-show="toastMsg" x-transition class="fixed left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center" style="top: calc(4.2rem + env(safe-area-inset-top));" x-text="toastMsg"></div>
+
+<script>
+    // ===== AMC Production Log Book v1.1 (2026-10-08) — ไทย / 中文 =====
+    // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
+    const APP_VERSION = '1.1';
+    const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
+    window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
+    const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
+    const K = { user: 'amcLogUser', site: 'amcLogSiteKey', users: 'amcLogUsers', config: 'amcLogConfig', draft: 'amcLogDraft', list: 'amcLogList_', filter: 'amcLogFilter', lang: 'amcLogLang' };
+    const TH_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const CAT_ICON = { machine: '⚙️', quality: '🔍', people: '👷', safety: '🦺', material: '🧪', other: '📌' };
+    const PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==';
+
+    // ===== ข้อความสองภาษา (ไทย / 中文) =====
+    const I18N = {
+        th: {
+            appName: 'Log Book การผลิต', siteKeyTitle: 'รหัสโรงงาน', siteKeyHint: 'ใส่ครั้งเดียวต่อเครื่อง เพื่อเปิดรายชื่อพนักงาน (ขอจากหัวหน้า/ผู้ดูแล)', siteKeyPh: 'เช่น ABC123', siteKeyEmpty: 'กรุณาใส่รหัสโรงงาน',
+            checking: 'กำลังตรวจสอบ...', next: 'ถัดไป', pickName: 'เลือกชื่อของคุณ', searchName: 'ค้นหาชื่อ...', loadingNames: 'กำลังโหลดรายชื่อ...', noName: 'ไม่พบชื่อ',
+            typeCode: 'พิมพ์รหัสพนักงานเอง', changeSite: 'เปลี่ยนรหัสโรงงาน', typeCodeTitle: 'พิมพ์รหัสพนักงาน', typeCodeSub: 'สำหรับคนที่ไม่อยู่ในรายชื่อ', codeLabel: 'รหัส', codePh: 'รหัสพนักงาน เช่น EMP01',
+            pinLabel: 'PIN 4 หลัก', login: 'เข้าสู่ระบบ', pickOrType: 'กรุณาเลือกชื่อหรือพิมพ์รหัสพนักงาน', serverSettings: 'ตั้งค่าเซิร์ฟเวอร์',
+            installMobile: '📲 ติดตั้งลงหน้าจอโฮม', installDesktop: '💻 ติดตั้งลงเครื่องนี้ (ไอคอนบน Desktop)', iosHint: 'iPhone: กดปุ่มแชร์ แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"',
+            hello: 'สวัสดี', logout: 'ออก', offline: 'ออฟไลน์อยู่ — บันทึกไม่ได้จนกว่าจะมีสัญญาณ ร่างที่พิมพ์ไว้ยังอยู่',
+            titleNew: 'บันทึกใหม่', titleList: 'รายการ Log Book', titleSummary: 'สรุป', titleUsers: 'จัดการผู้ใช้', titleDetail: 'รายละเอียด',
+            navNew: 'บันทึก', navList: 'รายการ', navSummary: 'สรุป', navUsers: 'ผู้ใช้',
+            savedOk: '✅ บันทึกแล้ว', savedPending: '⚠️ บันทึกข้อความแล้ว แต่ส่งรูปไม่สำเร็จ {n} รูป', entryNoLabel: 'เลขที่', retryPhotos: '🔁 ส่งรูปที่เหลืออีกครั้ง', viewEntry: 'ดูรายการ', newEntry: 'บันทึกรายการใหม่',
+            line: 'ไลน์การผลิต', machine: 'เครื่อง / จุดที่พบ', machineNone: '— ไม่ระบุ —', machineOther: 'อื่นๆ (พิมพ์เอง)', machineOtherPh: 'ระบุเครื่อง/จุด',
+            category: 'หมวด', peopleHint: 'หมวดพนักงาน/การปฏิบัติงาน: เห็นเฉพาะผู้บริหารเท่านั้น — หลังบันทึก คุณจะไม่เห็นรายการนี้ในรายการ รูปเก็บแบบส่วนตัว',
+            type: 'ประเภท', typeIssue: '⚠️ ปัญหา (ติดตามสถานะ)', typeNote: '📝 บันทึกทั่วไป', typeNoteShort: 'บันทึกทั่วไป', severity: 'ความเร่งด่วน', lineStopped: 'ไลน์หยุดเดินเครื่องจากปัญหานี้',
+            foundAt: 'เวลาที่พบ', now: 'ตอนนี้', shift: 'กะ:', auto: '(อัตโนมัติ)', title: 'หัวข้อ', titlePh: 'สั้นๆ ว่าพบอะไร เช่น Zinc pot อุณหภูมิสูง', detail: 'รายละเอียด', detailPh: 'สภาพที่พบ ค่าที่วัดได้ ผลกระทบ สิ่งที่ทำไปแล้ว...',
+            photos: 'รูปภาพ', resizing: 'กำลังย่อรูป...', takePhoto: '📷 ถ่ายรูป', pickPhoto: '🖼 เลือกรูป', photoNote: 'รูปถูกย่อให้ด้านยาวสุด 1280 px ก่อนส่ง · รูปยังไม่ถูกเก็บจนกว่าจะกดบันทึก (ปิดแอปแล้วรูปจะหาย ข้อความยังอยู่)', maxPhotos: 'ใส่รูปได้สูงสุด {n} รูป',
+            save: '💾 บันทึกรายการ', offlineSave: 'ออฟไลน์ — บันทึกไม่ได้', saving: 'กำลังบันทึก...', sendingPhoto: 'ส่งรูป {i}/{n}', savedToast: 'บันทึกแล้ว', photoFail: 'ส่งรูปไม่สำเร็จ',
+            needLine: 'กรุณาเลือกไลน์การผลิต', needCat: 'กรุณาเลือกหมวด', needText: 'กรุณากรอกหัวข้อหรือรายละเอียด', imgConvertFail: 'แปลงรูปไม่สำเร็จ', imgReadFail: 'อ่านไฟล์รูปไม่ได้',
+            allLines: 'ทุกไลน์', fActive: 'ปัญหาที่ยังเปิด', fAll: 'ทั้งหมด', allCats: 'ทุกหมวด', rToday: 'วันนี้', r7: '7 วันล่าสุด', r30: '30 วันล่าสุด', rAll: 'ทุกช่วงเวลา', rCustom: 'กำหนดเอง', rMonth: 'เดือนนี้',
+            tBoth: 'ปัญหา + บันทึก', tIssue: 'เฉพาะปัญหา', tNote: 'เฉพาะบันทึกทั่วไป', searchPh: 'ค้นหา เลขที่ / หัวข้อ / เครื่อง / ชื่อ', mine: 'ของฉัน',
+            nRows: '{n} รายการ', truncated: '(แสดง {n} รายการล่าสุด)', dataAt: 'ข้อมูลเมื่อ {t}', loading: 'กำลังโหลด...', exportCsv: 'ส่งออก CSV', noRows: 'ไม่มีรายการตามตัวกรองนี้', noTitle: '(ไม่มีหัวข้อ)', noteBadge: 'บันทึก', lineStoppedBadge: 'ไลน์หยุด',
+            csvNoRows: 'ไม่มีรายการให้ส่งออก (โหลดหน้า "รายการ" ก่อน)',
+            tileOpen: 'ปัญหาที่ยังเปิด (ทั้งหมด)', tileUrgent: 'เร่งด่วนมาก (ในช่วง)', tileStopped: 'ไลน์หยุด (ในช่วง)', tileTotal: 'รายการทั้งหมด (ในช่วง)', byLine: 'ตามไลน์', hLine: 'ไลน์', hInProg: 'กำลังแก้', hTotal: 'รวม',
+            byCat: 'ตามหมวด (ในช่วง)', aging: 'ปัญหาเปิดค้างนานสุด', noAging: 'ไม่มีปัญหาค้าง 🎉', days: '{n} วัน', exportCsvLong: '⬇️ ส่งออก CSV (รายการตามตัวกรองในหน้า "รายการ")',
+            addUser: 'เพิ่มพนักงาน', codePhAuto: 'รหัส (เว้นว่าง = อัตโนมัติ)', namePh: 'ชื่อ-นามสกุล', defaultLine: 'ไลน์เริ่มต้น (ไม่บังคับ)', add: '➕ เพิ่ม',
+            lineHint: 'ไลน์เริ่มต้นใช้แค่เลือกไลน์ให้ล่วงหน้าตอนบันทึก พนักงานเปลี่ยนไลน์ได้ทุกครั้ง (มีการหมุนเวียนงานระหว่างไลน์)', userList: 'รายชื่อผู้ใช้', noLine: 'ไม่มีไลน์เริ่มต้น',
+            deactivate: 'ปิดใช้งาน', activate: 'เปิดใช้งาน', resetPin: 'รีเซ็ต PIN', addedMsg: 'เพิ่มแล้ว: {name}\nรหัส {code}   PIN {pin}\n(แจ้งรหัสโรงงาน {site} ด้วย)', newPinMsg: '{name} → PIN ใหม่: {pin}',
+            confirmDeactivate: 'ปิดใช้งาน {name} ?', confirmReset: 'รีเซ็ต PIN ของ {name} ?', configHint: 'แก้รายการไลน์/เครื่อง/หมวด ชื่อภาษาจีน และรหัสโรงงาน ได้ที่แท็บ Config ใน Google Sheet',
+            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร',
+            stOpen: 'เปิด', stInProgress: 'กำลังแก้ไข', stClosed: 'ปิดงาน', stCancelled: 'ยกเลิก', sevNormal: 'ปกติ', sevMedium: 'ปานกลาง', sevUrgent: 'เร่งด่วนมาก',
+            progress: 'ความคืบหน้า', noProgress: 'ยังไม่มีความคืบหน้า', addProgress: 'เพิ่มความคืบหน้า', progressPh: 'ความคืบหน้า สิ่งที่ทำ ผลที่ได้...', progressPhSup: 'ความคืบหน้า / สรุปการแก้ไข (จำเป็นเมื่อปิดงานหรือยกเลิก)',
+            saveProgress: '💬 บันทึกความคืบหน้า', btnTake: '🔧 รับเรื่อง', btnClose: '✅ ปิดงาน', btnCancel: '🚫 ยกเลิก', btnReopen: '↩️ เปิดใหม่',
+            hintNote: 'เพิ่มได้เฉพาะข้อความและรูป', hintSup: 'ปิดงาน/ยกเลิก ต้องกรอกข้อความเป็นสรุปการแก้ไขหรือเหตุผล', hintStaff: 'พนักงานรับเรื่องและเพิ่มความคืบหน้าได้เฉพาะรายการที่ตัวเองแจ้ง · การปิดงานเป็นของหัวหน้า',
+            notOwner: 'ดูได้อย่างเดียว — เพิ่มความคืบหน้าได้เฉพาะรายการที่ตัวเองแจ้ง (หัวหน้าขึ้นไปแก้ได้ทุกรายการ)', closedNote: 'รายการนี้ปิดงานแล้ว (หัวหน้าเปิดใหม่ได้)', cancelledNote: 'รายการนี้ถูกยกเลิกแล้ว (หัวหน้าเปิดใหม่ได้)',
+            machineLabel: 'เครื่อง/จุด', reporter: 'ผู้รายงาน', savedAt: 'บันทึกเมื่อ', closedAt: 'ปิดงานเมื่อ', cancelledAt: 'ยกเลิกเมื่อ', resolution: 'สรุปการแก้ไข', reason: 'เหตุผล',
+            needProgressText: 'กรุณากรอกข้อความ', needResolution: 'กรุณากรอกสรุปการแก้ไขก่อนปิดงาน', needReason: 'กรุณากรอกเหตุผลที่ยกเลิก', confirmCancel: 'ยืนยันยกเลิกรายการ {no} ?',
+            statusChangedTo: 'เปลี่ยนสถานะเป็น {s}', statusChangedToast: 'เปลี่ยนสถานะเป็น {s} แล้ว', progressSaved: 'บันทึกความคืบหน้าแล้ว', updPhotoFail: 'บันทึกข้อความแล้ว แต่ส่งรูปไม่สำเร็จ {n} รูป',
+            openDrive: 'เปิดใน Google Drive', close: 'ปิด',
+            noServer: 'ยังไม่ได้ตั้งค่าลิงก์เซิร์ฟเวอร์ (กด "ตั้งค่าเซิร์ฟเวอร์")', netFail: 'ติดต่อเซิร์ฟเวอร์ไม่ได้ (ตรวจสัญญาณอินเทอร์เน็ต)', notJson: 'เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (ตรวจการ deploy: Who has access = Anyone และ URL ลงท้ายด้วย /exec)',
+            configPrompt: 'ลิงก์ Apps Script Web App (เว้นว่าง = ใช้ค่าเริ่มต้นในแอป):', notSet: '(ยังไม่ได้ตั้งค่า)',
+            justNow: 'เมื่อสักครู่', minsAgo: '{n} นาทีที่แล้ว', hoursAgo: '{n} ชม. ที่แล้ว', daysAgo: '{n} วันที่แล้ว', future: 'ล่วงหน้า',
+            csvHead: 'เลขที่,เวลาที่พบ,กะ,ไลน์,เครื่อง/จุด,หมวด,ประเภท,ความเร่งด่วน,ไลน์หยุด,หัวข้อ,รายละเอียด,ผู้รายงาน,สถานะ,อัปเดตล่าสุด,ปิดงานเมื่อ,สรุปการแก้ไข,จำนวนรูป', yes: 'ใช่'
+        },
+        zh: {
+            appName: '生产记录簿', siteKeyTitle: '工厂代码', siteKeyHint: '每台设备只需输入一次，用于显示员工名单（向主管/管理员索取）', siteKeyPh: '例如 ABC123', siteKeyEmpty: '请输入工厂代码',
+            checking: '正在验证...', next: '下一步', pickName: '选择你的姓名', searchName: '搜索姓名...', loadingNames: '正在加载名单...', noName: '未找到',
+            typeCode: '手动输入员工编号', changeSite: '更改工厂代码', typeCodeTitle: '输入员工编号', typeCodeSub: '名单中没有的人员使用', codeLabel: '编号', codePh: '员工编号，例如 EMP01',
+            pinLabel: '4位PIN码', login: '登录', pickOrType: '请选择姓名或输入员工编号', serverSettings: '服务器设置',
+            installMobile: '📲 添加到主屏幕', installDesktop: '💻 安装到此电脑（桌面图标）', iosHint: 'iPhone：点击分享，选择"添加到主屏幕"',
+            hello: '你好', logout: '退出', offline: '当前离线 — 恢复网络后才能保存，已填写的草稿会保留',
+            titleNew: '新记录', titleList: '记录列表', titleSummary: '汇总', titleUsers: '用户管理', titleDetail: '详情',
+            navNew: '记录', navList: '列表', navSummary: '汇总', navUsers: '用户',
+            savedOk: '✅ 已保存', savedPending: '⚠️ 文字已保存，但有 {n} 张照片上传失败', entryNoLabel: '编号', retryPhotos: '🔁 重新上传剩余照片', viewEntry: '查看记录', newEntry: '新建记录',
+            line: '生产线', machine: '设备 / 位置', machineNone: '— 未指定 —', machineOther: '其他（手动输入）', machineOtherPh: '填写设备/位置',
+            category: '类别', peopleHint: '人员/操作类别：仅管理层可见 — 保存后您将无法在列表中看到此记录，照片以私密方式保存',
+            type: '类型', typeIssue: '⚠️ 问题（跟踪状态）', typeNote: '📝 一般记录', typeNoteShort: '一般记录', severity: '紧急程度', lineStopped: '此问题导致停线',
+            foundAt: '发现时间', now: '现在', shift: '班次:', auto: '（自动）', title: '标题', titlePh: '简述发现了什么，例如 锌锅温度过高', detail: '详情', detailPh: '现场情况、测量值、影响、已采取的措施...',
+            photos: '照片', resizing: '正在压缩照片...', takePhoto: '📷 拍照', pickPhoto: '🖼 选择照片', photoNote: '照片上传前会压缩到最长边 1280 px · 按保存前照片不会被保留（关闭应用后照片会丢失，文字会保留）', maxPhotos: '最多 {n} 张照片',
+            save: '💾 保存记录', offlineSave: '离线 — 无法保存', saving: '正在保存...', sendingPhoto: '上传照片 {i}/{n}', savedToast: '已保存', photoFail: '照片上传失败',
+            needLine: '请选择生产线', needCat: '请选择类别', needText: '请填写标题或详情', imgConvertFail: '照片转换失败', imgReadFail: '无法读取图片文件',
+            allLines: '全部产线', fActive: '未关闭的问题', fAll: '全部', allCats: '全部类别', rToday: '今天', r7: '最近7天', r30: '最近30天', rAll: '全部时间', rCustom: '自定义', rMonth: '本月',
+            tBoth: '问题 + 记录', tIssue: '仅问题', tNote: '仅一般记录', searchPh: '搜索 编号 / 标题 / 设备 / 姓名', mine: '我的',
+            nRows: '{n} 条', truncated: '（显示最新 {n} 条）', dataAt: '数据时间 {t}', loading: '加载中...', exportCsv: '导出CSV', noRows: '没有符合筛选条件的记录', noTitle: '（无标题）', noteBadge: '记录', lineStoppedBadge: '停线',
+            csvNoRows: '没有可导出的记录（请先打开"列表"页）',
+            tileOpen: '未关闭问题（全部）', tileUrgent: '紧急（期间内）', tileStopped: '停线（期间内）', tileTotal: '全部记录（期间内）', byLine: '按产线', hLine: '产线', hInProg: '处理中', hTotal: '合计',
+            byCat: '按类别（期间内）', aging: '未关闭最久的问题', noAging: '没有未关闭的问题 🎉', days: '{n} 天', exportCsvLong: '⬇️ 导出CSV（按"列表"页的筛选）',
+            addUser: '添加员工', codePhAuto: '编号（留空 = 自动）', namePh: '姓名', defaultLine: '默认产线（可选）', add: '➕ 添加',
+            lineHint: '默认产线只用于记录时预先选择，员工每次都可以更改（岗位轮换）', userList: '用户名单', noLine: '无默认产线',
+            deactivate: '停用', activate: '启用', resetPin: '重置PIN', addedMsg: '已添加：{name}\n编号 {code}   PIN {pin}\n（同时告知工厂代码 {site}）', newPinMsg: '{name} → 新PIN：{pin}',
+            confirmDeactivate: '停用 {name}？', confirmReset: '重置 {name} 的PIN？', configHint: '产线/设备/类别、中文名称和工厂代码可在 Google Sheet 的 Config 页修改',
+            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层',
+            stOpen: '待处理', stInProgress: '处理中', stClosed: '已关闭', stCancelled: '已取消', sevNormal: '一般', sevMedium: '中等', sevUrgent: '紧急',
+            progress: '进展', noProgress: '暂无进展', addProgress: '添加进展', progressPh: '进展、采取的措施、结果...', progressPhSup: '进展 / 处理总结（关闭或取消时必填）',
+            saveProgress: '💬 保存进展', btnTake: '🔧 接单', btnClose: '✅ 关闭', btnCancel: '🚫 取消', btnReopen: '↩️ 重新打开',
+            hintNote: '只能添加文字和照片', hintSup: '关闭/取消时需填写处理总结或原因', hintStaff: '员工只能对自己报告的记录接单和添加进展 · 关闭由主管负责',
+            notOwner: '仅可查看 — 只能为自己报告的记录添加进展（主管及以上可处理所有记录）', closedNote: '此记录已关闭（主管可重新打开）', cancelledNote: '此记录已取消（主管可重新打开）',
+            machineLabel: '设备/位置', reporter: '报告人', savedAt: '记录于', closedAt: '关闭于', cancelledAt: '取消于', resolution: '处理总结', reason: '原因',
+            needProgressText: '请填写内容', needResolution: '关闭前请填写处理总结', needReason: '请填写取消原因', confirmCancel: '确认取消记录 {no}？',
+            statusChangedTo: '状态改为 {s}', statusChangedToast: '状态已改为 {s}', progressSaved: '进展已保存', updPhotoFail: '文字已保存，但有 {n} 张照片上传失败',
+            openDrive: '在 Google Drive 中打开', close: '关闭',
+            noServer: '尚未设置服务器链接（点击"服务器设置"）', netFail: '无法连接服务器（请检查网络）', notJson: '服务器返回的不是 JSON（检查部署：Who has access = Anyone，URL 以 /exec 结尾）',
+            configPrompt: 'Apps Script Web App 链接（留空 = 使用应用默认值）:', notSet: '（尚未设置）',
+            justNow: '刚刚', minsAgo: '{n} 分钟前', hoursAgo: '{n} 小时前', daysAgo: '{n} 天前', future: '未来',
+            csvHead: '编号,发现时间,班次,产线,设备/位置,类别,类型,紧急程度,停线,标题,详情,报告人,状态,最后更新,关闭时间,处理总结,照片数', yes: '是'
+        }
+    };
+    let LANG = (function () { try { return localStorage.getItem('amcLogLang') === 'zh' ? 'zh' : 'th'; } catch (e) { return 'th'; } })();
+    function tr(key, p) {
+        let s = (I18N[LANG] && I18N[LANG][key] !== undefined) ? I18N[LANG][key] : (I18N.th[key] !== undefined ? I18N.th[key] : key);
+        if (p) for (const k in p) s = s.split('{' + k + '}').join(String(p[k]));
+        return s;
+    }
+
+    function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+    function lsJson(k) { try { return JSON.parse(ls(k) || 'null'); } catch (e) { return null; } }
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function localNowInput() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    function ymdLocal(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    function parseLocal(iso) {   // 'yyyy-MM-ddTHH:mm(:ss)' -> Date ตามเวลาเครื่อง
+        const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(String(iso || ''));
+        if (!m) return null;
+        return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+    }
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+    /* ย่อรูปด้วย canvas: ด้านยาวสุด max px, JPEG คุณภาพ q (รูปมือถือ 4MB -> ~200KB) · เบราว์เซอร์หมุนตาม EXIF ให้เอง */
+    function resizeImage(file, max, q) {
+        max = max || 1280; q = q || 0.75;
+        return new Promise((res, rej) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+                    const sc = Math.min(1, max / Math.max(w, h));
+                    w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
+                    const c = document.createElement('canvas'); c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    URL.revokeObjectURL(url);
+                    const dataUrl = c.toDataURL('image/jpeg', q);
+                    res({ dataUrl, w, h, bytes: Math.round((dataUrl.length - 23) * 3 / 4) });
+                } catch (e) { URL.revokeObjectURL(url); rej(new Error(tr('imgConvertFail'))); }
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); rej(new Error(tr('imgReadFail'))); };
+            img.src = url;
+        });
+    }
+    /* รูปเล็กมากสำหรับการ์ดในรายการ (เก็บในแถวของชีต) */
+    function makeThumb(dataUrl, size, q) {
+        size = size || 64; q = q || 0.5;
+        return new Promise((res) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, size / Math.max(w, h));
+                    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    const t = c.toDataURL('image/jpeg', q);
+                    res(t.length <= 2500 ? t : '');
+                } catch (e) { res(''); }
+            };
+            img.onerror = () => res('');
+            img.src = dataUrl;
+        });
+    }
+
+    function logbookApp() {
+        return {
+            APP_VERSION, lang: LANG, user: null, config: null, tab: 'new', online: navigator.onLine, installPrompt: null,
+            isIos: /iPhone|iPad|iPod/i.test(navigator.userAgent), isMobile: /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
+            sessionGen: 0, toastMsg: '', _toastTimer: null,
+            loginStep: 'site', siteKey: '', siteKeyInput: '', users: [], usersLoading: false, userSearch: '', pick: null, pin: '', manualCode: '', manualMode: false, loginBusy: false, loginError: '',
+            draft: null, shiftAuto: true, photos: [], photoBusy: false, sending: { active: false, step: '' }, saved: null, saveError: '',
+            list: { rows: [], loading: false, error: '', loadedAt: '', total: 0, truncated: false },
+            filter: { line: '', status: 'active', category: '', type: '', range: '7', dateFrom: '', dateTo: '', q: '', mine: false },
+            detail: { no: '', entry: null, updates: [], loading: false, error: '' }, prevTab: 'list',
+            upd: { text: '', photos: [], busy: false, step: '', error: '' }, viewer: { open: false, src: '', link: '' }, photoCache: {},
+            sum: { range: '7', data: null, loading: false, error: '' },
+            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '' } },
+
+            init() {
+                this.applyLang();
+                this.draft = this.blankDraft();
+                this.config = lsJson(K.config);
+                this.siteKey = ls(K.site) || '';
+                this.users = lsJson(K.users) || [];
+                const f = lsJson(K.filter); if (f) Object.assign(this.filter, f);
+                if (this.siteKey) { this.loginStep = 'pick'; this.loadLoginUsers(true); }
+                const u = lsJson(K.user);
+                if (u && u.code && u.pin) { this.user = u; this.restoreDraft(); this.restoreListCache(); this.verifyUser(); }
+                this.$watch('draft', () => this.saveDraft());
+                this.$watch('filter', () => ls(K.filter, JSON.stringify(this.filter)));
+                window.addEventListener('online', () => { this.online = true; });
+                window.addEventListener('offline', () => { this.online = false; });
+                window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this.installPrompt = e; });
+                window.addEventListener('appinstalled', () => { this.installPrompt = null; });
+                if ('serviceWorker' in navigator && location.protocol !== 'file:') { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+            },
+            // ===== ภาษา =====
+            t(key, p) { void this.lang; return tr(key, p); },   // อ้าง this.lang เพื่อให้หน้า re-render เมื่อสลับภาษา
+            setLang(l) { l = l === 'zh' ? 'zh' : 'th'; LANG = l; this.lang = l; ls(K.lang, l); this.applyLang(); },
+            applyLang() { document.documentElement.lang = this.lang === 'zh' ? 'zh-CN' : 'th'; document.title = this.lang === 'zh' ? '生产记录簿 GI' : 'Log Book การผลิต GI'; },
+            cn(item) { if (!item) return ''; return (this.lang === 'zh' && item.nameZh) ? item.nameZh : (item.name || ''); },
+            toast(msg, ms) { this.toastMsg = msg; clearTimeout(this._toastTimer); this._toastTimer = setTimeout(() => { this.toastMsg = ''; }, ms || 2500); },
+            tabTitle() { return this.t({ new: 'titleNew', list: 'titleList', summary: 'titleSummary', users: 'titleUsers', detail: 'titleDetail' }[this.tab] || 'appName'); },
+            go(t) {
+                this.tab = t;
+                if (t === 'list') this.loadList(false);
+                if (t === 'summary' && !this.sum.data) this.loadSummary();
+                if (t === 'users') this.loadUsersTab();
+                window.scrollTo(0, 0);
+            },
+
+            // ===== เรียกเซิร์ฟเวอร์ (Apps Script) =====
+            async api(payload) {
+                if (!API_URL || API_URL.indexOf('http') !== 0) throw new Error(this.t('noServer'));
+                const body = Object.assign({ lang: this.lang }, payload);
+                if (this.user && !body.auth) body.auth = { code: this.user.code, pin: this.user.pin };
+                let res;
+                try { res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }); }
+                catch (e) { throw new Error(this.t('netFail')); }
+                let data;
+                try { data = await res.json(); }
+                catch (e) { throw new Error(this.t('notJson')); }
+                if (!data || data.ok !== true) { const err = new Error((data && data.error) || 'Unknown error'); err.data = data; throw err; }
+                return data;
+            },
+            configureApi() {
+                const cur = ls('amcLogApiUrl') || '';
+                const v = prompt(this.t('configPrompt') + '\n' + (API_URL_DEFAULT || this.t('notSet')), cur);
+                if (v === null) return;
+                ls('amcLogApiUrl', v.trim() ? v.trim() : null);
+                location.reload();
+            },
+            installLabel() { return this.isMobile ? this.t('installMobile') : this.t('installDesktop'); },
+            async installApp() { if (!this.installPrompt) return; this.installPrompt.prompt(); try { await this.installPrompt.userChoice; } catch (e) {} this.installPrompt = null; },
+
+            // ===== ล็อกอิน =====
+            async submitSiteKey() {
+                const k = (this.siteKeyInput || '').trim().toUpperCase();
+                if (!k) { this.loginError = this.t('siteKeyEmpty'); return; }
+                this.loginBusy = true; this.loginError = '';
+                try {
+                    const data = await this.api({ action: 'users', siteKey: k });
+                    this.siteKey = k; ls(K.site, k); this.users = data.users || []; ls(K.users, JSON.stringify(this.users));
+                    this.loginStep = 'pick';
+                } catch (e) { this.loginError = e.message; }
+                this.loginBusy = false;
+            },
+            async loadLoginUsers(silent) {
+                if (!this.siteKey) return;
+                this.usersLoading = !this.users.length;
+                try {
+                    const data = await this.api({ action: 'users', siteKey: this.siteKey });
+                    this.users = data.users || []; ls(K.users, JSON.stringify(this.users));
+                } catch (e) {
+                    if (/รหัสโรงงาน|工厂代码/.test(e.message)) { this.siteKey = ''; ls(K.site, null); this.users = []; ls(K.users, null); this.loginStep = 'site'; this.loginError = e.message; }
+                    else if (!silent || !this.users.length) this.loginError = e.message;
+                }
+                this.usersLoading = false;
+            },
+            filteredUsers() { const q = (this.userSearch || '').toLowerCase(); return this.users.filter(u => !q || (u.name + ' ' + u.code).toLowerCase().indexOf(q) >= 0); },
+            pickUser(u) { this.pick = u; this.manualMode = false; this.pin = ''; this.loginError = ''; this.loginStep = 'pin'; },
+            changeSiteKey() { this.siteKeyInput = this.siteKey; this.loginStep = 'site'; this.loginError = ''; },
+            onPinInput() { this.pin = (this.pin || '').replace(/\D/g, '').slice(0, 4); if (this.pin.length === 4 && !this.loginBusy) this.login(); },
+            async login() {
+                const code = this.manualMode ? (this.manualCode || '').trim().toUpperCase() : (this.pick ? this.pick.code : '');
+                const pin = (this.pin || '').trim();
+                if (!code) { this.loginError = this.t('pickOrType'); return; }
+                if (pin.length < 4) return;
+                this.loginError = ''; this.loginBusy = true;
+                try {
+                    const data = await this.api({ action: 'login', auth: { code, pin } });
+                    this.applyLogin(data, pin);
+                    this.pin = ''; this.pick = null; this.manualCode = '';
+                    this.restoreDraft(); this.restoreListCache();
+                    this.toast(this.t('hello') + ' ' + this.user.name);
+                } catch (e) { this.loginError = e.message; this.pin = ''; }
+                this.loginBusy = false;
+            },
+            applyLogin(data, pin) {
+                this.user = { code: data.user.code, name: data.user.name, role: data.user.role, line: data.user.line, pin: pin, features: data.features || [] };
+                this.sessionGen++;
+                ls(K.user, JSON.stringify(this.user));
+                if (data.config) { this.config = data.config; ls(K.config, JSON.stringify(data.config)); }
+                if (!this.draft.line && this.user.line) this.draft.line = this.user.line;   // ไลน์เริ่มต้น (เปลี่ยนได้ทุกครั้ง)
+            },
+            async verifyUser() {
+                const gen = this.sessionGen;
+                try {
+                    const data = await this.api({ action: 'login' });
+                    if (gen !== this.sessionGen || !this.user) return;
+                    this.applyLogin(data, this.user.pin);
+                } catch (e) {
+                    if (gen === this.sessionGen && /PIN|ปิดใช้งาน|เข้าสู่ระบบ|ล็อก|停用|登录|锁定/.test(e.message)) this.logout(e.message);
+                }
+            },
+            logout(msg) {
+                const code = this.user && this.user.code;
+                this.user = null; this.sessionGen++;
+                ls(K.user, null); if (code) ls(K.list + code, null);
+                this.loginError = msg || ''; this.pin = ''; this.pick = null; this.manualMode = false;
+                this.loginStep = this.siteKey ? 'pick' : 'site';
+                this.list = { rows: [], loading: false, error: '', loadedAt: '', total: 0, truncated: false };
+                this.sum.data = null; this.um.list = []; this.detail.entry = null; this.photoCache = {}; this.tab = 'new';
+                this.photos = []; this.saved = null; this.saveError = '';
+                this.draft = this.blankDraft(); this.shiftAuto = true; ls(K.draft, null);   // เครื่องใช้ร่วมกัน: ไม่ส่งต่อร่างให้คนถัดไป
+            },
+
+            // ===== บันทึกใหม่ =====
+            blankDraft() { return { clientId: '', line: '', machine: '', machineOther: '', category: '', type: 'issue', severity: 'normal', lineStopped: false, foundAt: localNowInput(), shift: '', title: '', detail: '' }; },
+            startNew() { const line = this.draft.line; this.draft = this.blankDraft(); this.draft.line = line; this.shiftAuto = true; this.onFoundAtChange(); this.photos = []; this.saved = null; this.saveError = ''; window.scrollTo(0, 0); },
+            saveDraft() { if (!this.user) return; ls(K.draft, JSON.stringify({ draft: this.draft, shiftAuto: this.shiftAuto })); },
+            restoreDraft() {
+                const d = lsJson(K.draft);
+                if (d && d.draft) { this.draft = Object.assign(this.blankDraft(), d.draft); this.shiftAuto = d.shiftAuto !== false; }
+                if (!this.draft.line && this.user && this.user.line) this.draft.line = this.user.line;
+                if (!this.draft.foundAt) this.draft.foundAt = localNowInput();
+                this.onFoundAtChange();
+            },
+            setNow() { this.draft.foundAt = localNowInput(); this.onFoundAtChange(); },
+            onFoundAtChange() { if (this.shiftAuto) this.draft.shift = this.shiftOf(this.draft.foundAt); },
+            shiftOf(foundAt) {
+                const hm = String(foundAt || '').slice(11, 16);
+                const shifts = (this.config && this.config.shifts) || [];
+                for (const s of shifts) {
+                    const m = /^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/.exec(s.range || '');
+                    if (!m) continue;
+                    if (m[1] < m[2] ? (hm >= m[1] && hm < m[2]) : (hm >= m[1] || hm < m[2])) return s.code;
+                }
+                return shifts.length ? shifts[0].code : ((hm >= '08:00' && hm < '20:00') ? 'day' : 'night');
+            },
+            machinesFor(line) { return ((this.config && this.config.machines) || []).filter(m => m.line === line); },
+            maxPhotos() { return (this.config && this.config.limits && this.config.limits.maxPhotos) || 5; },
+            async addFiles(ev, target) {
+                const files = Array.from(ev.target.files || []);
+                ev.target.value = '';   // iOS: ถ่ายรูปใหม่จะแทนที่ไฟล์เดิมใน input จึงเก็บไว้ในอาร์เรย์ของเราเอง
+                if (!files.length) return;
+                this.photoBusy = true;
+                for (const f of files) {
+                    if (target.length >= this.maxPhotos()) { this.toast(this.t('maxPhotos', { n: this.maxPhotos() })); break; }
+                    try { const r = await resizeImage(f, (this.config && this.config.limits && this.config.limits.maxPx) || 1280, 0.75); target.push({ dataUrl: r.dataUrl, w: r.w, h: r.h, bytes: r.bytes, status: 'pending', fileId: '', error: '' }); }
+                    catch (e) { this.toast(e.message); }
+                }
+                this.photoBusy = false;
+            },
+            async submitEntry() {
+                if (this.sending.active) return;
+                this.saveError = '';
+                if (!this.draft.line) { this.saveError = this.t('needLine'); return; }
+                if (!this.draft.category) { this.saveError = this.t('needCat'); return; }
+                if (!this.draft.title.trim() && !this.draft.detail.trim()) { this.saveError = this.t('needText'); return; }
+                if (!this.draft.clientId) this.draft.clientId = uid();
+                this.sending = { active: true, step: this.t('saving') };
+                try {
+                    const thumb = this.photos.length ? await makeThumb(this.photos[0].dataUrl) : '';
+                    const entry = Object.assign({}, this.draft, { machine: this.draft.machine === '__other' ? this.draft.machineOther : this.draft.machine, thumb });
+                    delete entry.machineOther;
+                    const r = await this.api({ action: 'addEntry', entry });
+                    // หมวดพนักงาน: หลังบันทึก ผู้ที่ไม่ใช่ผู้บริหารจะเปิดดูไม่ได้ จึงไม่แสดงปุ่ม "ดูรายการ"
+                    this.saved = { entryNo: r.entryNo, pending: 0, canView: !(this.draft.category === 'people' && this.user.role !== 'manager') };
+                    await this.sendPhotos(r.entryNo, 0, this.photos);
+                    this.finishSave();
+                } catch (e) { this.saveError = e.message; }
+                this.sending.active = false;
+            },
+            async sendPhotos(entryNo, seq, photos) {
+                for (let i = 0; i < photos.length; i++) {
+                    const p = photos[i];
+                    if (p.status === 'sent') continue;
+                    this.sending.step = this.t('sendingPhoto', { i: i + 1, n: photos.length }); this.upd.step = this.sending.step;
+                    try {
+                        const r = await this.api({ action: 'addPhoto', entryNo, updateSeq: seq, idx: i + 1, data: p.dataUrl, w: p.w, h: p.h });
+                        p.status = 'sent'; p.fileId = r.fileId; p.error = '';
+                    } catch (e) { p.status = 'error'; p.error = e.message; }
+                }
+            },
+            finishSave() {
+                const failed = this.photos.filter(p => p.status !== 'sent');
+                this.saved.pending = failed.length;
+                if (failed.length) { this.saveError = failed[0].error || this.t('photoFail'); }
+                else {
+                    const line = this.draft.line;
+                    this.draft = this.blankDraft(); this.draft.line = line; this.shiftAuto = true; this.onFoundAtChange(); ls(K.draft, null);
+                    this.photos = []; this.saveError = '';
+                    this.toast(this.t('savedToast') + ' ' + this.saved.entryNo);
+                }
+                this.list.loadedAt = '';
+            },
+            async retryPhotos() {
+                if (!this.saved || this.sending.active) return;
+                this.sending = { active: true, step: this.t('sendingPhoto', { i: 1, n: this.photos.length }) }; this.saveError = '';
+                try { await this.sendPhotos(this.saved.entryNo, 0, this.photos); this.finishSave(); } catch (e) { this.saveError = e.message; }
+                this.sending.active = false;
+            },
+
+            // ===== รายการ =====
+            rangeDates(range, from, to) {
+                const now = new Date();
+                if (range === 'today') return { dateFrom: ymdLocal(now), dateTo: ymdLocal(now) };
+                if (range === '7' || range === '30') { const d = new Date(now); d.setDate(d.getDate() - (Number(range) - 1)); return { dateFrom: ymdLocal(d), dateTo: ymdLocal(now) }; }
+                if (range === 'month') return { dateFrom: ymdLocal(now).slice(0, 8) + '01', dateTo: ymdLocal(now) };
+                if (range === 'custom') return { dateFrom: from || '', dateTo: to || '' };
+                return { dateFrom: '', dateTo: '' };
+            },
+            restoreListCache() { const c = lsJson(K.list + this.user.code); if (c && c.rows) { this.list.rows = c.rows; this.list.total = c.total || c.rows.length; this.list.loadedAt = c.loadedAt || ''; this.list.truncated = !!c.truncated; } },
+            async loadList(force) {
+                if (!this.user) return;
+                if (!force && this.list.loadedAt && this.list._stamp && Date.now() - this.list._stamp < 120000) return;
+                const gen = this.sessionGen;
+                this.list.loading = true; this.list.error = '';
+                try {
+                    const f = Object.assign({ line: this.filter.line, status: this.filter.status, category: this.filter.category, type: this.filter.type, q: this.filter.q, mine: this.filter.mine }, this.rangeDates(this.filter.range, this.filter.dateFrom, this.filter.dateTo));
+                    const data = await this.api({ action: 'list', filter: f });
+                    if (gen !== this.sessionGen) return;
+                    this.list.rows = data.rows || []; this.list.total = data.total || 0; this.list.truncated = !!data.truncated;
+                    const d = new Date(); this.list.loadedAt = pad(d.getHours()) + ':' + pad(d.getMinutes()); this.list._stamp = Date.now();
+                    ls(K.list + this.user.code, JSON.stringify({ rows: this.list.rows.slice(0, 100), total: this.list.total, truncated: this.list.truncated, loadedAt: this.list.loadedAt }));
+                } catch (e) { if (gen === this.sessionGen) this.list.error = e.message; }
+                this.list.loading = false;
+            },
+            exportCsv() {
+                const rows = this.list.rows;
+                if (!rows.length) { this.toast(this.t('csvNoRows')); return; }
+                const esc = v => { const s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                const head = this.t('csvHead').split(',');
+                const lines = rows.map(r => [r.entryNo, r.foundAt.replace('T', ' '), this.shiftName(r.shift), r.line, this.machineLabel(r.machine), this.catName(r), r.type === 'note' ? this.t('typeNoteShort') : this.t('typeIssue').replace(/^⚠️ /, ''), this.sevLabel(r.severity), r.lineStopped ? this.t('yes') : '', r.title, r.detail, r.byName, r.type === 'issue' ? this.statusLabel(r.status) : '', (r.updatedAt || '').replace('T', ' '), (r.closedAt || '').replace('T', ' '), r.resolution, r.photoCount]);
+                const csv = '﻿' + [head].concat(lines).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
+                const name = 'AMC-logbook_' + ymdLocal(new Date()) + '.csv';
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                try {
+                    const file = new File([blob], name, { type: 'text/csv' });
+                    if (this.isIos && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: name }).catch(() => {}); return; }
+                } catch (e) {}
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            },
+
+            // ===== รายละเอียด =====
+            openEntry(no) { this.prevTab = this.tab === 'detail' ? this.prevTab : this.tab; this.tab = 'detail'; this.upd = { text: '', photos: [], busy: false, step: '', error: '' }; this.loadDetail(no); window.scrollTo(0, 0); },
+            closeDetail() { this.tab = this.prevTab || 'list'; this.detail.entry = null; if (this.tab === 'list') this.loadList(false); },
+            async loadDetail(no) {
+                this.detail.no = no; this.detail.loading = true; this.detail.error = '';
+                const gen = this.sessionGen;
+                try {
+                    const data = await this.api({ action: 'get', entryNo: no });
+                    if (gen !== this.sessionGen) return;
+                    this.detail.entry = data.entry; this.detail.updates = data.updates || [];
+                } catch (e) { this.detail.error = e.message; this.detail.entry = null; }
+                this.detail.loading = false;
+            },
+            imgSrc(p, w, entryNo) {
+                const c = this.photoCache[p.fileId];
+                if (c) return c === 'loading' ? PLACEHOLDER : c;
+                if (p.private || !(this.config && this.config.photoUrl) || p._failed) { this.fetchPhoto(entryNo, p.fileId); return PLACEHOLDER; }
+                return this.config.photoUrl.thumb.replace('{id}', p.fileId).replace('{w}', String(w || 400)) + (p._retry ? '&r=' + p._retry : '');
+            },
+            imgErr(p, entryNo) {   // Drive ยังสร้าง thumbnail ไม่ทัน -> ลองใหม่ 1 ครั้ง แล้วค่อยดึง base64 ผ่าน Apps Script
+                if (!p._retry) { p._retry = 1; setTimeout(() => { p._retry = 2; }, 2000); return; }
+                if (!p._failed) { p._failed = true; this.fetchPhoto(entryNo, p.fileId); }
+            },
+            async fetchPhoto(entryNo, fileId) {
+                if (this.photoCache[fileId]) return;
+                this.photoCache[fileId] = 'loading';
+                try { const d = await this.api({ action: 'getPhoto', entryNo, fileId }); this.photoCache[fileId] = 'data:' + (d.mime || 'image/jpeg') + ';base64,' + d.data; }
+                catch (e) { delete this.photoCache[fileId]; }
+            },
+            openViewer(p, entryNo) {
+                const c = this.photoCache[p.fileId];
+                const useLink = !p.private && this.config && this.config.photoUrl && !p._failed;
+                this.viewer = { open: true, src: (c && c !== 'loading') ? c : (useLink ? this.config.photoUrl.thumb.replace('{id}', p.fileId).replace('{w}', '1600') : PLACEHOLDER), link: useLink ? this.config.photoUrl.view.replace('{id}', p.fileId) : '' };
+                if (!useLink && !(c && c !== 'loading')) this.fetchPhoto(entryNo, p.fileId).then(() => { const d = this.photoCache[p.fileId]; if (d && d !== 'loading' && this.viewer.open) this.viewer.src = d; });
+            },
+            rank() { return { staff: 1, supervisor: 2, manager: 3 }[this.user ? this.user.role : 'staff'] || 1; },
+            isOwner() { const e = this.detail.entry; return !!(e && this.user && e.byCode === this.user.code); },
+            canUpdate() {
+                const e = this.detail.entry; if (!e) return false;
+                if (this.rank() < 2 && !this.isOwner()) return false;                       // พนักงาน: แก้ได้เฉพาะของตัวเอง
+                if (e.type === 'note') return true;
+                if (e.status === 'closed' || e.status === 'cancelled') return this.rank() >= 2;
+                return true;
+            },
+            readOnlyNote() {
+                const e = this.detail.entry; if (!e) return '';
+                if (this.rank() < 2 && !this.isOwner()) return this.t('notOwner');
+                return e.status === 'cancelled' ? this.t('cancelledNote') : this.t('closedNote');
+            },
+            statusButtons() {
+                const e = this.detail.entry; if (!e || e.type !== 'issue') return [];
+                const sup = this.rank() >= 2, out = [];
+                if (e.status === 'open') out.push({ status: 'in_progress', label: this.t('btnTake'), cls: 'bg-amber-500 text-white' });
+                if (sup && (e.status === 'open' || e.status === 'in_progress')) { out.push({ status: 'closed', label: this.t('btnClose'), cls: 'bg-green-600 text-white' }); out.push({ status: 'cancelled', label: this.t('btnCancel'), cls: 'bg-gray-500 text-white' }); }
+                if (sup && (e.status === 'closed' || e.status === 'cancelled')) out.push({ status: 'open', label: this.t('btnReopen'), cls: 'bg-blue-700 text-white' });
+                return out;
+            },
+            updPlaceholder() { const e = this.detail.entry; return (e && e.type === 'issue' && this.rank() >= 2) ? this.t('progressPhSup') : this.t('progressPh'); },
+            updHint() { const e = this.detail.entry; if (!e || e.type !== 'issue') return this.t('hintNote'); return this.rank() >= 2 ? this.t('hintSup') : this.t('hintStaff'); },
+            async submitUpdate(status) {
+                if (this.upd.busy) return;
+                const e = this.detail.entry; if (!e) return;
+                const text = (this.upd.text || '').trim();
+                this.upd.error = '';
+                if (!text && !status && !this.upd.photos.length) { this.upd.error = this.t('needProgressText'); return; }
+                if ((status === 'closed' || status === 'cancelled') && !text) { this.upd.error = status === 'closed' ? this.t('needResolution') : this.t('needReason'); return; }
+                if (status === 'cancelled' && !confirm(this.t('confirmCancel', { no: e.entryNo }))) return;
+                this.upd.busy = true; this.upd.step = this.t('saving');
+                try {
+                    const r = await this.api({ action: 'addUpdate', entryNo: e.entryNo, text: text || (status ? this.t('statusChangedTo', { s: this.statusLabel(status) }) : ''), status: status || '' });
+                    if (this.upd.photos.length) await this.sendPhotos(e.entryNo, r.seq, this.upd.photos);
+                    const failed = this.upd.photos.filter(p => p.status !== 'sent');
+                    if (failed.length) { this.upd.error = this.t('updPhotoFail', { n: failed.length }) + ': ' + (failed[0].error || ''); this.upd.photos = failed; }
+                    else { this.upd.text = ''; this.upd.photos = []; this.toast(status ? this.t('statusChangedToast', { s: this.statusLabel(status) }) : this.t('progressSaved')); }
+                    this.list.loadedAt = '';
+                    await this.loadDetail(e.entryNo);
+                } catch (err) { this.upd.error = err.message; }
+                this.upd.busy = false;
+            },
+
+            // ===== สรุป =====
+            async loadSummary() {
+                if (!this.user) return;
+                this.sum.loading = true; this.sum.error = '';
+                const gen = this.sessionGen;
+                try {
+                    const data = await this.api(Object.assign({ action: 'summary' }, this.rangeDates(this.sum.range)));
+                    if (gen !== this.sessionGen) return;
+                    this.sum.data = data;
+                } catch (e) { this.sum.error = e.message; }
+                this.sum.loading = false;
+            },
+            barPct(n) { const d = this.sum.data; if (!d) return 0; const max = Math.max(1, ...Object.values(d.byCategory || {})); return Math.round(100 * n / max); },
+
+            // ===== ผู้ใช้ (manager) =====
+            async loadUsersTab() { if (!this.user || this.user.role !== 'manager') return; this.um.error = ''; try { const d = await this.api({ action: 'listUsers' }); this.um.list = (d.users || []).map(u => Object.assign({ showPin: false }, u)); } catch (e) { this.um.error = e.message; } },
+            async addUser() {
+                this.um.error = ''; this.um.msg = ''; this.um.busy = true;
+                try {
+                    const f = this.um.form;
+                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), role: f.role, line: f.line } });
+                    this.um.msg = this.t('addedMsg', { name: d.user.name, code: d.user.code, pin: d.user.pin, site: this.siteKey });
+                    this.um.form = { code: '', name: '', role: 'staff', line: '' };
+                    await this.loadUsersTab();
+                } catch (e) { this.um.error = e.message; }
+                this.um.busy = false;
+            },
+            async setUser(u, patch) {
+                this.um.error = ''; this.um.msg = '';
+                try { await this.api(Object.assign({ action: 'setUser', code: u.code }, patch)); await this.loadUsersTab(); } catch (e) { this.um.error = e.message; await this.loadUsersTab(); }
+            },
+            async toggleUser(u) { if (u.active && !confirm(this.t('confirmDeactivate', { name: u.name }))) return; await this.setUser(u, { active: !u.active }); },
+            async resetPin(u) {
+                if (!confirm(this.t('confirmReset', { name: u.name }))) return;
+                this.um.error = ''; this.um.msg = '';
+                try { const d = await this.api({ action: 'resetPin', code: u.code }); this.um.msg = this.t('newPinMsg', { name: u.name, pin: d.pin }); await this.loadUsersTab(); } catch (e) { this.um.error = e.message; }
+            },
+
+            // ===== helper แสดงผล =====
+            fmtDT(iso) {
+                const d = parseLocal(iso); if (!d) return '-';
+                if (this.lang === 'zh') return d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                return d.getDate() + ' ' + TH_MONTHS[d.getMonth()] + ' ' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+            },
+            fmtD(ymd) {
+                const d = parseLocal(ymd); if (!d) return '-';
+                if (this.lang === 'zh') return d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate());
+                return d.getDate() + ' ' + TH_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+            },
+            fmtRel(iso) {
+                const d = parseLocal(iso); if (!d) return '';
+                const s = Math.round((Date.now() - d.getTime()) / 1000);
+                if (s < 0) return this.t('future');
+                if (s < 60) return this.t('justNow');
+                if (s < 3600) return this.t('minsAgo', { n: Math.floor(s / 60) });
+                if (s < 86400) return this.t('hoursAgo', { n: Math.floor(s / 3600) });
+                return this.t('daysAgo', { n: Math.floor(s / 86400) });
+            },
+            lineName(code) { const l = ((this.config && this.config.lines) || []).find(x => x.code === code); return l ? this.cn(l) : ''; },
+            shiftName(code) { const s = ((this.config && this.config.shifts) || []).find(x => x.code === code); return s ? this.cn(s) : (code || '-'); },
+            catName(row) { const c = ((this.config && this.config.categories) || []).find(x => x.code === row.category); return c ? this.cn(c) : (row.categoryName || row.category || ''); },
+            machineLabel(s) {   // "GI06 Zinc Pot" -> ชื่อตามภาษา · ข้อความอื่นคงเดิม
+                s = String(s || ''); if (!s) return '';
+                const code = s.split(' ')[0].toUpperCase();
+                const m = ((this.config && this.config.machines) || []).find(x => x.code === code);
+                return m ? (m.code + ' ' + this.cn(m)) : s;
+            },
+            roleName(r) { return this.t({ staff: 'roleStaff', supervisor: 'roleSupervisor', manager: 'roleManager' }[r] || 'roleStaff'); },
+            catIcon(code) { return CAT_ICON[code] || '📌'; },
+            statusLabel(s) { const k = { open: 'stOpen', in_progress: 'stInProgress', closed: 'stClosed', cancelled: 'stCancelled' }[s]; return k ? this.t(k) : (s || '-'); },
+            statusClass(s) { return { open: 'bg-blue-100 text-blue-800', in_progress: 'bg-amber-100 text-amber-800', closed: 'bg-green-100 text-green-800', cancelled: 'bg-gray-200 text-gray-600' }[s] || 'bg-gray-100 text-gray-600'; },
+            sevLabel(s) { const k = { normal: 'sevNormal', medium: 'sevMedium', urgent: 'sevUrgent' }[s]; return k ? this.t(k) : ''; },
+            sevChip(s) { return { normal: 'bg-gray-600 text-white border-gray-600', medium: 'bg-amber-500 text-white border-amber-500', urgent: 'bg-red-600 text-white border-red-600' }[s] || 'chip-on'; }
+        };
+    }
+</script>
+</body>
+</html>
