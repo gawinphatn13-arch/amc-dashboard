@@ -83,7 +83,7 @@
                         <template x-for="u in filteredUsers()" :key="u.code">
                             <button type="button" @click="pickUser(u)" class="w-full text-left px-3 py-3 hover:bg-blue-50 flex items-center justify-between">
                                 <span><span class="font-medium" x-text="u.name"></span><span class="text-xs text-gray-400 ml-2" x-text="u.code"></span></span>
-                                <span class="flex items-center gap-2"><span x-show="posName(u.position)" class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-800" x-text="posName(u.position)"></span><span class="text-gray-300">›</span></span>
+                                <span class="flex items-center gap-2"><span x-show="tagOf(u.position, u.dept)" class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-800" x-text="tagOf(u.position, u.dept)"></span><span class="text-gray-300">›</span></span>
                             </button>
                         </template>
                         <div x-show="!usersLoading && !filteredUsers().length" class="px-3 py-4 text-sm text-gray-500 text-center" x-text="t('noName')"></div>
@@ -127,7 +127,7 @@
     <div class="max-w-3xl mx-auto px-4 py-2.5 flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
             <img src="./icon-192.png" alt="" class="w-8 h-8 rounded-lg">
-            <div class="min-w-0"><div class="font-bold leading-tight truncate" x-text="tabTitle()"></div><div class="text-[11px] text-blue-200 truncate" x-text="user ? ([user.name, posName(user.position), roleName(user.role)].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ')) : ''"></div></div>
+            <div class="min-w-0"><div class="font-bold leading-tight truncate" x-text="tabTitle()"></div><div class="text-[11px] text-blue-200 truncate" x-text="user ? ([user.name, posName(user.position), deptName(user.dept), (user.position || user.dept) ? '' : roleName(user.role)].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ')) : ''"></div></div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
             <button @click="setLang(lang === 'th' ? 'zh' : 'th')" class="text-xs bg-white/15 rounded px-2 py-1.5" x-text="lang === 'th' ? '中文' : 'ไทย'"></button>
@@ -512,8 +512,9 @@
                 <select x-model="um.form.role" class="field text-sm"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
                 <input type="text" x-model="um.form.name" :placeholder="t('namePh')" class="field text-sm col-span-2">
                 <select x-model="um.form.position" class="field text-sm"><option value="" x-text="t('noPosition')"></option><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
+                <select x-model="um.form.dept" class="field text-sm"><option value="" x-text="t('noDept')"></option><template x-for="dp in (config ? (config.depts || []) : [])" :key="dp.code"><option :value="dp.code" x-text="cn(dp)"></option></template></select>
                 <select x-model="um.form.line" class="field text-sm"><option value="" x-text="t('defaultLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code + ' ' + cn(l)"></option></template></select>
-                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm col-span-2" x-text="t('add')"></button>
+                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm" x-text="t('add')"></button>
             </div>
             <p class="text-xs text-gray-500 mt-2" x-text="t('positionHint')"></p>
             <p class="text-xs text-gray-500 mt-1" x-text="t('lineHint')"></p>
@@ -525,12 +526,13 @@
             <template x-for="u in um.list" :key="u.code">
                 <div class="border-t py-2.5 text-sm" :class="u.active ? '' : 'opacity-50'">
                     <div class="flex items-center justify-between gap-2">
-                        <div class="min-w-0"><span class="font-bold" x-text="u.name"></span> <span class="text-xs text-gray-500" x-text="u.code"></span> <span x-show="posName(u.position)" class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-800" x-text="posName(u.position)"></span></div>
+                        <div class="min-w-0"><span class="font-bold" x-text="u.name"></span> <span class="text-xs text-gray-500" x-text="u.code"></span> <span x-show="tagOf(u.position, u.dept)" class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-800" x-text="tagOf(u.position, u.dept)"></span></div>
                         <div class="text-xs shrink-0">PIN <span class="font-mono" x-text="u.showPin ? u.pin : '••••'"></span> <button type="button" @click="u.showPin = !u.showPin" class="ml-1">👁</button></div>
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                         <select :value="u.role" @change="setUser(u, { role: $event.target.value })" class="field text-xs py-1 w-auto"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
                         <select :value="u.position || ''" @change="setUser(u, { position: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noPosition')"></option><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
+                        <select :value="u.dept || ''" @change="setUser(u, { dept: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noDept')"></option><template x-for="dp in (config ? (config.depts || []) : [])" :key="dp.code"><option :value="dp.code" x-text="cn(dp)"></option></template></select>
                         <select :value="u.line" @change="setUser(u, { line: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code"></option></template></select>
                         <button type="button" @click="toggleUser(u)" class="chip text-xs" x-text="u.active ? t('deactivate') : t('activate')"></button>
                         <button type="button" @click="resetPin(u)" class="chip text-xs" x-text="t('resetPin')"></button>
@@ -574,7 +576,7 @@
                     <dl class="text-sm mt-3 grid grid-cols-[6.5rem_1fr] gap-y-1">
                         <dt class="text-gray-500" x-text="t('foundAt')"></dt><dd x-text="fmtDT(detail.entry.foundAt) + ' (' + shiftName(detail.entry.shift) + ')'"></dd>
                         <dt class="text-gray-500" x-text="t('machineLabel')"></dt><dd x-text="machineLabel(detail.entry.machine) || '-'"></dd>
-                        <dt class="text-gray-500" x-text="t('reporter')"></dt><dd x-text="byLabel(detail.entry.byCode, detail.entry.byName) + ' · ' + t('savedAt') + ' ' + fmtDT(detail.entry.savedAt)"></dd>
+                        <dt class="text-gray-500" x-text="t('reporter')"></dt><dd x-text="byLabel(detail.entry.byCode, detail.entry.byName, detail.entry) + ' · ' + t('savedAt') + ' ' + fmtDT(detail.entry.savedAt)"></dd>
                         <template x-if="detail.entry.closedAt"><dt class="text-gray-500" x-text="detail.entry.status === 'cancelled' ? t('cancelledAt') : t('closedAt')"></dt></template>
                         <template x-if="detail.entry.closedAt"><dd x-text="fmtDT(detail.entry.closedAt) + ' · ' + detail.entry.closedBy"></dd></template>
                         <template x-if="detail.entry.resolution"><dt class="text-gray-500" x-text="detail.entry.status === 'cancelled' ? t('reason') : t('resolution')"></dt></template>
@@ -652,7 +654,7 @@
 <script>
     // ===== AMC Production Log Book v1.1 (2026-10-08) — ไทย / 中文 =====
     // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
-    const APP_VERSION = '1.3';
+    const APP_VERSION = '1.4';
     const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
     window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
     const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -690,7 +692,7 @@
             lineHint: 'ไลน์เริ่มต้นใช้แค่เลือกไลน์ให้ล่วงหน้าตอนบันทึก พนักงานเปลี่ยนไลน์ได้ทุกครั้ง (มีการหมุนเวียนงานระหว่างไลน์)', userList: 'รายชื่อผู้ใช้', noLine: 'ไม่มีไลน์เริ่มต้น',
             deactivate: 'ปิดใช้งาน', activate: 'เปิดใช้งาน', resetPin: 'รีเซ็ต PIN', addedMsg: 'เพิ่มแล้ว: {name}\nรหัส {code}   PIN {pin}\n(แจ้งรหัสโรงงาน {site} ด้วย)', newPinMsg: '{name} → PIN ใหม่: {pin}',
             confirmDeactivate: 'ปิดใช้งาน {name} ?', confirmReset: 'รีเซ็ต PIN ของ {name} ?', configHint: 'แก้รายการไลน์/เครื่อง/หมวด ชื่อภาษาจีน และรหัสโรงงาน ได้ที่แท็บ Config ใน Google Sheet',
-            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร', position: 'ตำแหน่ง', noPosition: 'ไม่ระบุตำแหน่ง', positionHint: 'ตำแหน่งเป็นป้ายแสดงข้างชื่อ ไม่กระทบสิทธิ์ (สิทธิ์ตามบทบาท) · เพิ่มตำแหน่งใหม่ได้ที่แท็บ Config ประเภท position',
+            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร', position: 'ตำแหน่ง', noPosition: 'ไม่ระบุตำแหน่ง', dept: 'สังกัด', noDept: 'ไม่ระบุสังกัด', positionHint: 'ตำแหน่งและสังกัดเป็นป้ายแสดงข้างชื่อผู้รายงาน ไม่กระทบสิทธิ์ (สิทธิ์ตามบทบาท) · เพิ่ม/แก้รายการได้ที่แท็บ Config ประเภท position / dept',
             stOpen: 'เปิด', stInProgress: 'กำลังแก้ไข', stClosed: 'ปิดงาน', stCancelled: 'ยกเลิก', sevNormal: 'ปกติ', sevMedium: 'ปานกลาง', sevUrgent: 'เร่งด่วนมาก',
             progress: 'ความคืบหน้า', noProgress: 'ยังไม่มีความคืบหน้า', addProgress: 'เพิ่มความคืบหน้า', progressPh: 'ความคืบหน้า สิ่งที่ทำ ผลที่ได้...', progressPhSup: 'ความคืบหน้า / สรุปการแก้ไข (จำเป็นเมื่อปิดงานหรือยกเลิก)',
             saveProgress: '💬 บันทึกความคืบหน้า', btnTake: '🔧 รับเรื่อง', btnClose: '✅ ปิดงาน', btnCancel: '🚫 ยกเลิก', btnReopen: '↩️ เปิดใหม่',
@@ -703,12 +705,12 @@
             noServer: 'ยังไม่ได้ตั้งค่าลิงก์เซิร์ฟเวอร์ (กด "ตั้งค่าเซิร์ฟเวอร์")', netFail: 'ติดต่อเซิร์ฟเวอร์ไม่ได้ (ตรวจสัญญาณอินเทอร์เน็ต)', notJson: 'เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (ตรวจการ deploy: Who has access = Anyone และ URL ลงท้ายด้วย /exec)',
             configPrompt: 'ลิงก์ Apps Script Web App (เว้นว่าง = ใช้ค่าเริ่มต้นในแอป):', notSet: '(ยังไม่ได้ตั้งค่า)',
             justNow: 'เมื่อสักครู่', minsAgo: '{n} นาทีที่แล้ว', hoursAgo: '{n} ชม. ที่แล้ว', daysAgo: '{n} วันที่แล้ว', future: 'ล่วงหน้า',
-            csvHead: 'เลขที่,เวลาที่พบ,กะ,ไลน์,เครื่อง/จุด,หมวด,ประเภท,ความเร่งด่วน,ไลน์หยุด,หัวข้อ,รายละเอียด,ผู้รายงาน,สถานะ,อัปเดตล่าสุด,ปิดงานเมื่อ,สรุปการแก้ไข,จำนวนรูป', yes: 'ใช่',
+            csvHead: 'เลขที่,เวลาที่พบ,กะ,ไลน์,เครื่อง/จุด,หมวด,ประเภท,ความเร่งด่วน,ไลน์หยุด,หัวข้อ,รายละเอียด,ผู้รายงาน,ตำแหน่ง,สังกัด,สถานะ,อัปเดตล่าสุด,ปิดงานเมื่อ,สรุปการแก้ไข,จำนวนรูป', yes: 'ใช่',
             modeRange: 'ช่วงเวลา', modeMonth: 'รายเดือน', monthReport: 'รายงานรายเดือน', print: '🖨 พิมพ์ / PDF', monCsv: '⬇️ CSV รายเดือน', saveSheet: '💾 บันทึกสรุปลงชีต', savedSheet: 'บันทึกสรุปเดือน {m} ลงแท็บ Monthly แล้ว',
             kTotal: 'รายการทั้งหมด', kIssues: 'ปัญหาที่พบ', kNotes: 'บันทึกทั่วไป', kClosed: 'ปิดงานในเดือน', kCancelled: 'ยกเลิกในเดือน', kOpenEnd: 'ยังดำเนินการ (สิ้นเดือน)', kCarry: 'ค้างจากเดือนก่อน', kStopped: 'ไลน์หยุด', kUrgent: 'เร่งด่วนมาก', kAvgDays: 'เฉลี่ยวันปิดงาน',
             secIssues: 'ปัญหาที่พบในเดือนนี้', secClosed: '✅ ปิดแล้ว', secInProg: '🔧 กำลังดำเนินการ', secCancelled: '🚫 ยกเลิก', secCarry: '⏳ ค้างจากเดือนก่อนที่ยังไม่ปิด', secClosedBefore: '✅ ปิดงานในเดือนนี้ (ที่พบเดือนก่อน)', secNotes: '📝 บันทึกทั่วไปของเดือน', secMachines: 'เครื่องที่พบปัญหาบ่อย',
             none: 'ไม่มี', lastUpdate: 'ล่าสุด', foundOn: 'พบ', closedOn: 'ปิด', daysUsed: 'ใช้ {n} วัน', daysOpen: 'ค้าง {n} วัน', generatedAt: 'สร้างเมื่อ', truncatedNote: 'แสดง {n} รายการแรก', items: '{n} รายการ',
-            monCsvHead: 'กลุ่ม,เลขที่,เวลาที่พบ,ไลน์,เครื่อง/จุด,หมวด,หัวข้อ,ความเร่งด่วน,ไลน์หยุด,สถานะ,ผู้รายงาน,ปิดงานเมื่อ,ปิดโดย,จำนวนวัน,สรุปการแก้ไข/เหตุผล,ความคืบหน้าล่าสุด,โดย,เมื่อ', grpClosed: 'ปิดแล้ว', grpProgress: 'กำลังดำเนินการ', grpCancelled: 'ยกเลิก', grpCarry: 'ค้างจากเดือนก่อน', grpClosedBefore: 'ปิดแล้ว (พบเดือนก่อน)', grpNote: 'บันทึกทั่วไป'
+            monCsvHead: 'กลุ่ม,เลขที่,เวลาที่พบ,ไลน์,เครื่อง/จุด,หมวด,หัวข้อ,ความเร่งด่วน,ไลน์หยุด,สถานะ,ผู้รายงาน,ตำแหน่ง,สังกัด,ปิดงานเมื่อ,ปิดโดย,จำนวนวัน,สรุปการแก้ไข/เหตุผล,ความคืบหน้าล่าสุด,โดย,เมื่อ', grpClosed: 'ปิดแล้ว', grpProgress: 'กำลังดำเนินการ', grpCancelled: 'ยกเลิก', grpCarry: 'ค้างจากเดือนก่อน', grpClosedBefore: 'ปิดแล้ว (พบเดือนก่อน)', grpNote: 'บันทึกทั่วไป'
         },
         zh: {
             appName: '生产记录簿', siteKeyTitle: '工厂代码', siteKeyHint: '每台设备只需输入一次，用于显示员工名单（向主管/管理员索取）', siteKeyPh: '例如 ABC123', siteKeyEmpty: '请输入工厂代码',
@@ -737,7 +739,7 @@
             lineHint: '默认产线只用于记录时预先选择，员工每次都可以更改（岗位轮换）', userList: '用户名单', noLine: '无默认产线',
             deactivate: '停用', activate: '启用', resetPin: '重置PIN', addedMsg: '已添加：{name}\n编号 {code}   PIN {pin}\n（同时告知工厂代码 {site}）', newPinMsg: '{name} → 新PIN：{pin}',
             confirmDeactivate: '停用 {name}？', confirmReset: '重置 {name} 的PIN？', configHint: '产线/设备/类别、中文名称和工厂代码可在 Google Sheet 的 Config 页修改',
-            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层', position: '职位', noPosition: '未指定职位', positionHint: '职位只是姓名旁的标签，不影响权限（权限按角色）· 可在 Config 页添加 position 类型的新职位',
+            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层', position: '职位', noPosition: '未指定职位', dept: '部门', noDept: '未指定部门', positionHint: '职位和部门只是报告人姓名旁的标签，不影响权限（权限按角色）· 可在 Config 页的 position / dept 类型中添加或修改',
             stOpen: '待处理', stInProgress: '处理中', stClosed: '已关闭', stCancelled: '已取消', sevNormal: '一般', sevMedium: '中等', sevUrgent: '紧急',
             progress: '进展', noProgress: '暂无进展', addProgress: '添加进展', progressPh: '进展、采取的措施、结果...', progressPhSup: '进展 / 处理总结（关闭或取消时必填）',
             saveProgress: '💬 保存进展', btnTake: '🔧 接单', btnClose: '✅ 关闭', btnCancel: '🚫 取消', btnReopen: '↩️ 重新打开',
@@ -750,12 +752,12 @@
             noServer: '尚未设置服务器链接（点击"服务器设置"）', netFail: '无法连接服务器（请检查网络）', notJson: '服务器返回的不是 JSON（检查部署：Who has access = Anyone，URL 以 /exec 结尾）',
             configPrompt: 'Apps Script Web App 链接（留空 = 使用应用默认值）:', notSet: '（尚未设置）',
             justNow: '刚刚', minsAgo: '{n} 分钟前', hoursAgo: '{n} 小时前', daysAgo: '{n} 天前', future: '未来',
-            csvHead: '编号,发现时间,班次,产线,设备/位置,类别,类型,紧急程度,停线,标题,详情,报告人,状态,最后更新,关闭时间,处理总结,照片数', yes: '是',
+            csvHead: '编号,发现时间,班次,产线,设备/位置,类别,类型,紧急程度,停线,标题,详情,报告人,职位,部门,状态,最后更新,关闭时间,处理总结,照片数', yes: '是',
             modeRange: '时间段', modeMonth: '月报', monthReport: '月度报告', print: '🖨 打印 / PDF', monCsv: '⬇️ 月度CSV', saveSheet: '💾 保存汇总到表格', savedSheet: '已将 {m} 的汇总保存到 Monthly 页',
             kTotal: '全部记录', kIssues: '发现的问题', kNotes: '一般记录', kClosed: '本月关闭', kCancelled: '本月取消', kOpenEnd: '月末仍在处理', kCarry: '上月遗留', kStopped: '停线', kUrgent: '紧急', kAvgDays: '平均关闭天数',
             secIssues: '本月发现的问题', secClosed: '✅ 已关闭', secInProg: '🔧 处理中', secCancelled: '🚫 已取消', secCarry: '⏳ 上月遗留未关闭', secClosedBefore: '✅ 本月关闭（上月发现）', secNotes: '📝 本月一般记录', secMachines: '问题最多的设备',
             none: '无', lastUpdate: '最新', foundOn: '发现', closedOn: '关闭', daysUsed: '用时 {n} 天', daysOpen: '已 {n} 天', generatedAt: '生成于', truncatedNote: '仅显示前 {n} 条', items: '{n} 条',
-            monCsvHead: '分组,编号,发现时间,产线,设备/位置,类别,标题,紧急程度,停线,状态,报告人,关闭时间,关闭人,天数,处理总结/原因,最新进展,进展人,进展时间', grpClosed: '已关闭', grpProgress: '处理中', grpCancelled: '已取消', grpCarry: '上月遗留', grpClosedBefore: '已关闭（上月发现）', grpNote: '一般记录'
+            monCsvHead: '分组,编号,发现时间,产线,设备/位置,类别,标题,紧急程度,停线,状态,报告人,职位,部门,关闭时间,关闭人,天数,处理总结/原因,最新进展,进展人,进展时间', grpClosed: '已关闭', grpProgress: '处理中', grpCancelled: '已取消', grpCarry: '上月遗留', grpClosedBefore: '已关闭（上月发现）', grpNote: '一般记录'
         }
     };
     const TH_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -831,7 +833,7 @@
             upd: { text: '', photos: [], busy: false, step: '', error: '' }, viewer: { open: false, src: '', link: '' }, photoCache: {},
             sum: { range: '7', mode: 'range', data: null, loading: false, error: '' },
             mon: { month: localNowInput().slice(0, 7), data: null, loading: false, error: '', saving: false, msg: '' },
-            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '', position: '' } },
+            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '', position: '', dept: '' } },
 
             init() {
                 this.applyLang();
@@ -934,7 +936,7 @@
                 this.loginBusy = false;
             },
             applyLogin(data, pin) {
-                this.user = { code: data.user.code, name: data.user.name, role: data.user.role, line: data.user.line, position: data.user.position || '', pin: pin, features: data.features || [] };
+                this.user = { code: data.user.code, name: data.user.name, role: data.user.role, line: data.user.line, position: data.user.position || '', dept: data.user.dept || '', pin: pin, features: data.features || [] };
                 this.sessionGen++;
                 ls(K.user, JSON.stringify(this.user));
                 if (data.config) { this.config = data.config; ls(K.config, JSON.stringify(data.config)); }
@@ -1079,7 +1081,7 @@
                 if (!rows.length) { this.toast(this.t('csvNoRows')); return; }
                 const esc = v => { const s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
                 const head = this.t('csvHead').split(',');
-                const lines = rows.map(r => [r.entryNo, r.foundAt.replace('T', ' '), this.shiftName(r.shift), r.line, this.machineLabel(r.machine), this.catName(r), r.type === 'note' ? this.t('typeNoteShort') : this.t('typeIssue').replace(/^⚠️ /, ''), this.sevLabel(r.severity), r.lineStopped ? this.t('yes') : '', r.title, r.detail, r.byName, r.type === 'issue' ? this.statusLabel(r.status) : '', (r.updatedAt || '').replace('T', ' '), (r.closedAt || '').replace('T', ' '), r.resolution, r.photoCount]);
+                const lines = rows.map(r => [r.entryNo, r.foundAt.replace('T', ' '), this.shiftName(r.shift), r.line, this.machineLabel(r.machine), this.catName(r), r.type === 'note' ? this.t('typeNoteShort') : this.t('typeIssue').replace(/^⚠️ /, ''), this.sevLabel(r.severity), r.lineStopped ? this.t('yes') : '', r.title, r.detail, r.byName, this.posOf(r.byCode), this.deptOf(r.byCode), r.type === 'issue' ? this.statusLabel(r.status) : '', (r.updatedAt || '').replace('T', ' '), (r.closedAt || '').replace('T', ' '), r.resolution, r.photoCount]);
                 const csv = '﻿' + [head].concat(lines).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
                 const name = 'AMC-logbook_' + ymdLocal(new Date()) + '.csv';
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -1245,7 +1247,7 @@
                 const head = this.t('monCsvHead').split(',');
                 const grp = { closedNew: 'grpClosed', inProgress: 'grpProgress', cancelled: 'grpCancelled', carry: 'grpCarry', closedBefore: 'grpClosedBefore', notes: 'grpNote' };
                 const lines = [];
-                this.monSections().forEach(sec => sec.items.forEach(x => lines.push([this.t(grp[sec.key]), x.entryNo, (x.foundAt || '').replace('T', ' '), x.line, this.machineLabel(x.machine), this.catName(x), x.title, this.sevLabel(x.severity), x.lineStopped ? this.t('yes') : '', x.status ? this.statusLabel(x.status) : '', x.byName,
+                this.monSections().forEach(sec => sec.items.forEach(x => lines.push([this.t(grp[sec.key]), x.entryNo, (x.foundAt || '').replace('T', ' '), x.line, this.machineLabel(x.machine), this.catName(x), x.title, this.sevLabel(x.severity), x.lineStopped ? this.t('yes') : '', x.status ? this.statusLabel(x.status) : '', x.byName, this.posOf(x.byCode), this.deptOf(x.byCode),
                     (x.closedAt || '').replace('T', ' '), x.closedBy || '', x.days != null ? x.days : (x.daysOpen != null ? x.daysOpen : ''), x.resolution || x.reason || x.detail || '', x.lastText || '', x.lastBy || '', (x.lastAt || '').replace('T', ' ')])));
                 const csv = '﻿' + [head].concat(lines).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
                 const name = 'AMC-logbook-monthly_' + d.month + '.csv';
@@ -1260,9 +1262,9 @@
                 this.um.error = ''; this.um.msg = ''; this.um.busy = true;
                 try {
                     const f = this.um.form;
-                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), role: f.role, line: f.line, position: f.position || '' } });
+                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), role: f.role, line: f.line, position: f.position || '', dept: f.dept || '' } });
                     this.um.msg = this.t('addedMsg', { name: d.user.name, code: d.user.code, pin: d.user.pin, site: this.siteKey });
-                    this.um.form = { code: '', name: '', role: 'staff', line: '', position: '' };
+                    this.um.form = { code: '', name: '', role: 'staff', line: '', position: '', dept: '' };
                     await this.loadUsersTab();
                 } catch (e) { this.um.error = e.message; }
                 this.um.busy = false;
@@ -1308,14 +1310,24 @@
                 return m ? (m.code + ' ' + this.cn(m)) : s;
             },
             roleName(r) { return this.t({ staff: 'roleStaff', supervisor: 'roleSupervisor', manager: 'roleManager' }[r] || 'roleStaff'); },
-            posName(code) { if (!code) return ''; const p = ((this.config && this.config.positions) || []).find(x => x.code === code); return p ? this.cn(p) : code; },
-            posOf(userCode) {   // ตำแหน่งของผู้ใช้จากรายชื่อที่โหลดไว้ (หน้าผู้ใช้ก่อน แล้วค่อยรายชื่อตอนล็อกอิน)
-                if (!userCode) return '';
-                if (this.user && this.user.code === userCode) return this.posName(this.user.position);
-                const u = (this.um.list || []).find(x => x.code === userCode) || (this.users || []).find(x => x.code === userCode);
-                return u ? this.posName(u.position) : '';
+            posName(code) { if (!code) return ''; const p = ((this.config && this.config.positions) || []).find(x => x.code === code); return p ? this.cn(p) : ''; },   // รหัสที่ไม่มี/ปิดใช้งานแล้ว -> ว่าง
+            deptName(code) { if (!code) return ''; const d = ((this.config && this.config.depts) || []).find(x => x.code === code); return d ? this.cn(d) : ''; },
+            tagOf(position, dept) { return [this.posName(position), this.deptName(dept)].filter(Boolean).join(' · '); },
+            userOf(userCode) {   // ข้อมูลผู้ใช้จากรายชื่อที่โหลดไว้ (ตัวเอง → หน้าผู้ใช้ → รายชื่อตอนล็อกอิน)
+                if (!userCode) return null;
+                if (this.user && this.user.code === userCode) return this.user;
+                return (this.um.list || []).find(x => x.code === userCode) || (this.users || []).find(x => x.code === userCode) || null;
             },
-            byLabel(code, name) { const p = this.posOf(code); return p ? (name + ' (' + p + ')') : name; },
+            posOf(userCode) { const u = this.userOf(userCode); return u ? this.posName(u.position) : ''; },
+            deptOf(userCode) { const u = this.userOf(userCode); return u ? this.deptName(u.dept) : ''; },
+            /* ป้าย "ชื่อ (ตำแหน่ง · สังกัด)" — ถ้ารายการเก็บตำแหน่ง/สังกัด ณ เวลาที่แจ้งไว้ (hist.byPosition/byDept) ใช้ค่านั้นก่อน */
+            byLabel(code, name, hist) {
+                const u = this.userOf(code) || {};
+                const pos = (hist && hist.byPosition) ? this.posName(hist.byPosition) : this.posName(u.position);
+                const dep = (hist && hist.byDept) ? this.deptName(hist.byDept) : this.deptName(u.dept);
+                const tag = [pos, dep].filter(Boolean).join(' · ');
+                return tag ? (name + ' (' + tag + ')') : name;
+            },
             catIcon(code) { return CAT_ICON[code] || '📌'; },
             statusLabel(s) { const k = { open: 'stOpen', in_progress: 'stInProgress', closed: 'stClosed', cancelled: 'stCancelled' }[s]; return k ? this.t(k) : (s || '-'); },
             statusClass(s) { return { open: 'bg-blue-100 text-blue-800', in_progress: 'bg-amber-100 text-amber-800', closed: 'bg-green-100 text-green-800', cancelled: 'bg-gray-200 text-gray-600' }[s] || 'bg-gray-100 text-gray-600'; },
