@@ -73,7 +73,7 @@
                         <template x-for="u in filteredUsers()" :key="u.code">
                             <button type="button" @click="pickUser(u)" class="w-full text-left px-3 py-3 hover:bg-blue-50 flex items-center justify-between">
                                 <span><span class="font-medium" x-text="u.name"></span><span class="text-xs text-gray-400 ml-2" x-text="u.code"></span></span>
-                                <span class="text-gray-300">›</span>
+                                <span class="flex items-center gap-2"><span x-show="posName(u.position)" class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-800" x-text="posName(u.position)"></span><span class="text-gray-300">›</span></span>
                             </button>
                         </template>
                         <div x-show="!usersLoading && !filteredUsers().length" class="px-3 py-4 text-sm text-gray-500 text-center" x-text="t('noName')"></div>
@@ -117,7 +117,7 @@
     <div class="max-w-3xl mx-auto px-4 py-2.5 flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
             <img src="./icon-192.png" alt="" class="w-8 h-8 rounded-lg">
-            <div class="min-w-0"><div class="font-bold leading-tight truncate" x-text="tabTitle()"></div><div class="text-[11px] text-blue-200 truncate" x-text="user ? (user.name + ' · ' + roleName(user.role)) : ''"></div></div>
+            <div class="min-w-0"><div class="font-bold leading-tight truncate" x-text="tabTitle()"></div><div class="text-[11px] text-blue-200 truncate" x-text="user ? ([user.name, posName(user.position), roleName(user.role)].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ')) : ''"></div></div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
             <button @click="setLang(lang === 'th' ? 'zh' : 'th')" class="text-xs bg-white/15 rounded px-2 py-1.5" x-text="lang === 'th' ? '中文' : 'ไทย'"></button>
@@ -311,7 +311,7 @@
                     </div>
                     <div class="font-bold mt-1 line-clamp-2" x-text="r.title || r.detail || t('noTitle')"></div>
                     <div class="text-xs text-gray-500 mt-0.5 truncate" x-text="[catName(r), machineLabel(r.machine)].filter(Boolean).join(' · ')"></div>
-                    <div class="text-xs text-gray-500 mt-0.5" x-text="fmtDT(r.foundAt) + ' · ' + fmtRel(r.foundAt) + ' · ' + r.byName + (r.updateCount ? ' · 💬 ' + r.updateCount : '') + (r.photoCount ? ' · 📷 ' + r.photoCount : '')"></div>
+                    <div class="text-xs text-gray-500 mt-0.5" x-text="fmtDT(r.foundAt) + ' · ' + fmtRel(r.foundAt) + ' · ' + byLabel(r.byCode, r.byName) + (r.updateCount ? ' · 💬 ' + r.updateCount : '') + (r.photoCount ? ' · 📷 ' + r.photoCount : '')"></div>
                 </div>
             </button>
         </template>
@@ -394,10 +394,12 @@
                 <input type="text" x-model="um.form.code" :placeholder="t('codePhAuto')" autocapitalize="characters" class="field text-sm uppercase">
                 <select x-model="um.form.role" class="field text-sm"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
                 <input type="text" x-model="um.form.name" :placeholder="t('namePh')" class="field text-sm col-span-2">
+                <select x-model="um.form.position" class="field text-sm"><option value="" x-text="t('noPosition')"></option><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
                 <select x-model="um.form.line" class="field text-sm"><option value="" x-text="t('defaultLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code + ' ' + cn(l)"></option></template></select>
-                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm" x-text="t('add')"></button>
+                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm col-span-2" x-text="t('add')"></button>
             </div>
-            <p class="text-xs text-gray-500 mt-2" x-text="t('lineHint')"></p>
+            <p class="text-xs text-gray-500 mt-2" x-text="t('positionHint')"></p>
+            <p class="text-xs text-gray-500 mt-1" x-text="t('lineHint')"></p>
             <div x-show="um.msg" class="text-sm text-green-700 mt-2 whitespace-pre-line" x-text="um.msg"></div>
             <div x-show="um.error" class="text-sm text-red-600 mt-2" x-text="um.error"></div>
         </div>
@@ -406,11 +408,12 @@
             <template x-for="u in um.list" :key="u.code">
                 <div class="border-t py-2.5 text-sm" :class="u.active ? '' : 'opacity-50'">
                     <div class="flex items-center justify-between gap-2">
-                        <div class="min-w-0"><span class="font-bold" x-text="u.name"></span> <span class="text-xs text-gray-500" x-text="u.code"></span></div>
+                        <div class="min-w-0"><span class="font-bold" x-text="u.name"></span> <span class="text-xs text-gray-500" x-text="u.code"></span> <span x-show="posName(u.position)" class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-800" x-text="posName(u.position)"></span></div>
                         <div class="text-xs shrink-0">PIN <span class="font-mono" x-text="u.showPin ? u.pin : '••••'"></span> <button type="button" @click="u.showPin = !u.showPin" class="ml-1">👁</button></div>
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                         <select :value="u.role" @change="setUser(u, { role: $event.target.value })" class="field text-xs py-1 w-auto"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
+                        <select :value="u.position || ''" @change="setUser(u, { position: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noPosition')"></option><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
                         <select :value="u.line" @change="setUser(u, { line: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code"></option></template></select>
                         <button type="button" @click="toggleUser(u)" class="chip text-xs" x-text="u.active ? t('deactivate') : t('activate')"></button>
                         <button type="button" @click="resetPin(u)" class="chip text-xs" x-text="t('resetPin')"></button>
@@ -427,7 +430,7 @@
     <header class="bg-[#1e3a8a] text-white sticky top-0 z-10 shadow">
         <div class="max-w-3xl mx-auto px-3 py-2.5 flex items-center gap-2">
             <button @click="closeDetail()" class="text-2xl px-2 leading-none">‹</button>
-            <div class="min-w-0 flex-1"><div class="font-bold truncate" x-text="detail.entry ? detail.entry.entryNo : detail.no"></div><div class="text-[11px] text-blue-200" x-text="detail.entry ? (catName(detail.entry) + ' · ' + detail.entry.byName) : ''"></div></div>
+            <div class="min-w-0 flex-1"><div class="font-bold truncate" x-text="detail.entry ? detail.entry.entryNo : detail.no"></div><div class="text-[11px] text-blue-200 truncate" x-text="detail.entry ? (catName(detail.entry) + ' · ' + byLabel(detail.entry.byCode, detail.entry.byName)) : ''"></div></div>
             <button @click="loadDetail(detail.no)" class="text-xs bg-white/15 rounded px-2 py-1.5">🔄</button>
         </div>
     </header>
@@ -454,7 +457,7 @@
                     <dl class="text-sm mt-3 grid grid-cols-[6.5rem_1fr] gap-y-1">
                         <dt class="text-gray-500" x-text="t('foundAt')"></dt><dd x-text="fmtDT(detail.entry.foundAt) + ' (' + shiftName(detail.entry.shift) + ')'"></dd>
                         <dt class="text-gray-500" x-text="t('machineLabel')"></dt><dd x-text="machineLabel(detail.entry.machine) || '-'"></dd>
-                        <dt class="text-gray-500" x-text="t('reporter')"></dt><dd x-text="detail.entry.byName + ' · ' + t('savedAt') + ' ' + fmtDT(detail.entry.savedAt)"></dd>
+                        <dt class="text-gray-500" x-text="t('reporter')"></dt><dd x-text="byLabel(detail.entry.byCode, detail.entry.byName) + ' · ' + t('savedAt') + ' ' + fmtDT(detail.entry.savedAt)"></dd>
                         <template x-if="detail.entry.closedAt"><dt class="text-gray-500" x-text="detail.entry.status === 'cancelled' ? t('cancelledAt') : t('closedAt')"></dt></template>
                         <template x-if="detail.entry.closedAt"><dd x-text="fmtDT(detail.entry.closedAt) + ' · ' + detail.entry.closedBy"></dd></template>
                         <template x-if="detail.entry.resolution"><dt class="text-gray-500" x-text="detail.entry.status === 'cancelled' ? t('reason') : t('resolution')"></dt></template>
@@ -468,7 +471,7 @@
                     <template x-for="u in detail.updates" :key="u.seq">
                         <div class="card p-3 mb-2 relative">
                             <span class="absolute top-4 w-3 h-3 rounded-full border-2 border-white" :class="u.to ? 'bg-blue-700' : 'bg-gray-400'" style="left:-1.2rem"></span>
-                            <div class="text-xs text-gray-500" x-text="fmtDT(u.at) + ' · ' + u.byName"></div>
+                            <div class="text-xs text-gray-500" x-text="fmtDT(u.at) + ' · ' + byLabel(u.byCode, u.byName)"></div>
                             <div x-show="u.to" class="text-xs mt-1"><span class="px-1.5 py-0.5 rounded bg-gray-100" x-text="statusLabel(u.from)"></span> → <span class="px-1.5 py-0.5 rounded font-bold" :class="statusClass(u.to)" x-text="statusLabel(u.to)"></span></div>
                             <div class="text-sm mt-1 whitespace-pre-line" x-text="u.text"></div>
                             <div x-show="u.photos.length" class="grid grid-cols-3 gap-2 mt-2">
@@ -532,7 +535,7 @@
 <script>
     // ===== AMC Production Log Book v1.1 (2026-10-08) — ไทย / 中文 =====
     // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
-    const APP_VERSION = '1.1';
+    const APP_VERSION = '1.2';
     const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
     window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
     const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -570,7 +573,7 @@
             lineHint: 'ไลน์เริ่มต้นใช้แค่เลือกไลน์ให้ล่วงหน้าตอนบันทึก พนักงานเปลี่ยนไลน์ได้ทุกครั้ง (มีการหมุนเวียนงานระหว่างไลน์)', userList: 'รายชื่อผู้ใช้', noLine: 'ไม่มีไลน์เริ่มต้น',
             deactivate: 'ปิดใช้งาน', activate: 'เปิดใช้งาน', resetPin: 'รีเซ็ต PIN', addedMsg: 'เพิ่มแล้ว: {name}\nรหัส {code}   PIN {pin}\n(แจ้งรหัสโรงงาน {site} ด้วย)', newPinMsg: '{name} → PIN ใหม่: {pin}',
             confirmDeactivate: 'ปิดใช้งาน {name} ?', confirmReset: 'รีเซ็ต PIN ของ {name} ?', configHint: 'แก้รายการไลน์/เครื่อง/หมวด ชื่อภาษาจีน และรหัสโรงงาน ได้ที่แท็บ Config ใน Google Sheet',
-            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร',
+            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร', position: 'ตำแหน่ง', noPosition: 'ไม่ระบุตำแหน่ง', positionHint: 'ตำแหน่งเป็นป้ายแสดงข้างชื่อ ไม่กระทบสิทธิ์ (สิทธิ์ตามบทบาท) · เพิ่มตำแหน่งใหม่ได้ที่แท็บ Config ประเภท position',
             stOpen: 'เปิด', stInProgress: 'กำลังแก้ไข', stClosed: 'ปิดงาน', stCancelled: 'ยกเลิก', sevNormal: 'ปกติ', sevMedium: 'ปานกลาง', sevUrgent: 'เร่งด่วนมาก',
             progress: 'ความคืบหน้า', noProgress: 'ยังไม่มีความคืบหน้า', addProgress: 'เพิ่มความคืบหน้า', progressPh: 'ความคืบหน้า สิ่งที่ทำ ผลที่ได้...', progressPhSup: 'ความคืบหน้า / สรุปการแก้ไข (จำเป็นเมื่อปิดงานหรือยกเลิก)',
             saveProgress: '💬 บันทึกความคืบหน้า', btnTake: '🔧 รับเรื่อง', btnClose: '✅ ปิดงาน', btnCancel: '🚫 ยกเลิก', btnReopen: '↩️ เปิดใหม่',
@@ -612,7 +615,7 @@
             lineHint: '默认产线只用于记录时预先选择，员工每次都可以更改（岗位轮换）', userList: '用户名单', noLine: '无默认产线',
             deactivate: '停用', activate: '启用', resetPin: '重置PIN', addedMsg: '已添加：{name}\n编号 {code}   PIN {pin}\n（同时告知工厂代码 {site}）', newPinMsg: '{name} → 新PIN：{pin}',
             confirmDeactivate: '停用 {name}？', confirmReset: '重置 {name} 的PIN？', configHint: '产线/设备/类别、中文名称和工厂代码可在 Google Sheet 的 Config 页修改',
-            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层',
+            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层', position: '职位', noPosition: '未指定职位', positionHint: '职位只是姓名旁的标签，不影响权限（权限按角色）· 可在 Config 页添加 position 类型的新职位',
             stOpen: '待处理', stInProgress: '处理中', stClosed: '已关闭', stCancelled: '已取消', sevNormal: '一般', sevMedium: '中等', sevUrgent: '紧急',
             progress: '进展', noProgress: '暂无进展', addProgress: '添加进展', progressPh: '进展、采取的措施、结果...', progressPhSup: '进展 / 处理总结（关闭或取消时必填）',
             saveProgress: '💬 保存进展', btnTake: '🔧 接单', btnClose: '✅ 关闭', btnCancel: '🚫 取消', btnReopen: '↩️ 重新打开',
@@ -699,7 +702,7 @@
             detail: { no: '', entry: null, updates: [], loading: false, error: '' }, prevTab: 'list',
             upd: { text: '', photos: [], busy: false, step: '', error: '' }, viewer: { open: false, src: '', link: '' }, photoCache: {},
             sum: { range: '7', data: null, loading: false, error: '' },
-            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '' } },
+            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '', position: '' } },
 
             init() {
                 this.applyLang();
@@ -802,7 +805,7 @@
                 this.loginBusy = false;
             },
             applyLogin(data, pin) {
-                this.user = { code: data.user.code, name: data.user.name, role: data.user.role, line: data.user.line, pin: pin, features: data.features || [] };
+                this.user = { code: data.user.code, name: data.user.name, role: data.user.role, line: data.user.line, position: data.user.position || '', pin: pin, features: data.features || [] };
                 this.sessionGen++;
                 ls(K.user, JSON.stringify(this.user));
                 if (data.config) { this.config = data.config; ls(K.config, JSON.stringify(data.config)); }
@@ -1058,9 +1061,9 @@
                 this.um.error = ''; this.um.msg = ''; this.um.busy = true;
                 try {
                     const f = this.um.form;
-                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), role: f.role, line: f.line } });
+                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), role: f.role, line: f.line, position: f.position || '' } });
                     this.um.msg = this.t('addedMsg', { name: d.user.name, code: d.user.code, pin: d.user.pin, site: this.siteKey });
-                    this.um.form = { code: '', name: '', role: 'staff', line: '' };
+                    this.um.form = { code: '', name: '', role: 'staff', line: '', position: '' };
                     await this.loadUsersTab();
                 } catch (e) { this.um.error = e.message; }
                 this.um.busy = false;
@@ -1106,6 +1109,14 @@
                 return m ? (m.code + ' ' + this.cn(m)) : s;
             },
             roleName(r) { return this.t({ staff: 'roleStaff', supervisor: 'roleSupervisor', manager: 'roleManager' }[r] || 'roleStaff'); },
+            posName(code) { if (!code) return ''; const p = ((this.config && this.config.positions) || []).find(x => x.code === code); return p ? this.cn(p) : code; },
+            posOf(userCode) {   // ตำแหน่งของผู้ใช้จากรายชื่อที่โหลดไว้ (หน้าผู้ใช้ก่อน แล้วค่อยรายชื่อตอนล็อกอิน)
+                if (!userCode) return '';
+                if (this.user && this.user.code === userCode) return this.posName(this.user.position);
+                const u = (this.um.list || []).find(x => x.code === userCode) || (this.users || []).find(x => x.code === userCode);
+                return u ? this.posName(u.position) : '';
+            },
+            byLabel(code, name) { const p = this.posOf(code); return p ? (name + ' (' + p + ')') : name; },
             catIcon(code) { return CAT_ICON[code] || '📌'; },
             statusLabel(s) { const k = { open: 'stOpen', in_progress: 'stInProgress', closed: 'stClosed', cancelled: 'stCancelled' }[s]; return k ? this.t(k) : (s || '-'); },
             statusClass(s) { return { open: 'bg-blue-100 text-blue-800', in_progress: 'bg-amber-100 text-amber-800', closed: 'bg-green-100 text-green-800', cancelled: 'bg-gray-200 text-gray-600' }[s] || 'bg-gray-100 text-gray-600'; },
