@@ -505,16 +505,17 @@
 
     <!-- ============ ผู้ใช้ (manager) / 用户 ============ -->
     <section x-show="tab === 'users' && user && user.role === 'manager'">
+        <!-- หลังบ้านรุ่นก่อน 1.5 ยังไม่คำนวณสิทธิ์จากตำแหน่งเอง -->
+        <div x-show="user && user.features && user.features.indexOf('posLevel') < 0" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3" x-text="t('oldBackend')"></div>
         <div class="card p-4 mb-3">
             <div class="font-bold mb-2" x-text="t('addUser')"></div>
             <div class="grid grid-cols-2 gap-2">
-                <input type="text" x-model="um.form.code" :placeholder="t('codePhAuto')" autocapitalize="characters" class="field text-sm uppercase">
-                <select x-model="um.form.role" class="field text-sm"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
                 <input type="text" x-model="um.form.name" :placeholder="t('namePh')" class="field text-sm col-span-2">
-                <select x-model="um.form.position" class="field text-sm"><option value="" x-text="t('noPosition')"></option><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
+                <input type="text" x-model="um.form.code" :placeholder="t('codePhAuto')" autocapitalize="characters" class="field text-sm uppercase">
+                <select x-model="um.form.position" class="field text-sm"><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
                 <select x-model="um.form.dept" class="field text-sm"><option value="" x-text="t('noDept')"></option><template x-for="dp in (config ? (config.depts || []) : [])" :key="dp.code"><option :value="dp.code" x-text="cn(dp)"></option></template></select>
                 <select x-model="um.form.line" class="field text-sm"><option value="" x-text="t('defaultLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code + ' ' + cn(l)"></option></template></select>
-                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm" x-text="t('add')"></button>
+                <button type="button" @click="addUser" :disabled="um.busy || !um.form.name" class="btn bg-blue-800 text-white text-sm col-span-2" x-text="t('add')"></button>
             </div>
             <p class="text-xs text-gray-500 mt-2" x-text="t('positionHint')"></p>
             <p class="text-xs text-gray-500 mt-1" x-text="t('lineHint')"></p>
@@ -530,8 +531,8 @@
                         <div class="text-xs shrink-0">PIN <span class="font-mono" x-text="u.showPin ? u.pin : '••••'"></span> <button type="button" @click="u.showPin = !u.showPin" class="ml-1">👁</button></div>
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        <select :value="u.role" @change="setUser(u, { role: $event.target.value })" class="field text-xs py-1 w-auto"><option value="staff" x-text="roleName('staff')"></option><option value="supervisor" x-text="roleName('supervisor')"></option><option value="manager" x-text="roleName('manager')"></option></select>
-                        <select :value="u.position || ''" @change="setUser(u, { position: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noPosition')"></option><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
+                        <!-- ตำแหน่ง = สิทธิ์ · ตัวเลือก "ไม่ระบุ" โผล่เฉพาะแถวเก่าที่ยังว่าง (เลือกแล้วกลับเป็นว่างไม่ได้) -->
+                        <select :value="u.position || ''" @change="setUser(u, { position: $event.target.value })" class="field text-xs py-1 w-auto"><template x-if="!u.position"><option value="" x-text="t('noPosition')"></option></template><template x-for="p in (config ? (config.positions || []) : [])" :key="p.code"><option :value="p.code" x-text="cn(p)"></option></template></select>
                         <select :value="u.dept || ''" @change="setUser(u, { dept: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noDept')"></option><template x-for="dp in (config ? (config.depts || []) : [])" :key="dp.code"><option :value="dp.code" x-text="cn(dp)"></option></template></select>
                         <select :value="u.line" @change="setUser(u, { line: $event.target.value })" class="field text-xs py-1 w-auto"><option value="" x-text="t('noLine')"></option><template x-for="l in (config ? config.lines : [])" :key="l.code"><option :value="l.code" x-text="l.code"></option></template></select>
                         <button type="button" @click="toggleUser(u)" class="chip text-xs" x-text="u.active ? t('deactivate') : t('activate')"></button>
@@ -652,9 +653,9 @@
 <div x-show="toastMsg" x-transition class="fixed left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center" style="top: calc(4.2rem + env(safe-area-inset-top));" x-text="toastMsg"></div>
 
 <script>
-    // ===== AMC Production Log Book v1.1 (2026-10-08) — ไทย / 中文 =====
+    // ===== AMC Production Log Book v1.5 (2026-10-08) — ไทย / 中文 · สิทธิ์ตามตำแหน่ง =====
     // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
-    const APP_VERSION = '1.4';
+    const APP_VERSION = '1.5';
     const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
     window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
     const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -692,7 +693,9 @@
             lineHint: 'ไลน์เริ่มต้นใช้แค่เลือกไลน์ให้ล่วงหน้าตอนบันทึก พนักงานเปลี่ยนไลน์ได้ทุกครั้ง (มีการหมุนเวียนงานระหว่างไลน์)', userList: 'รายชื่อผู้ใช้', noLine: 'ไม่มีไลน์เริ่มต้น',
             deactivate: 'ปิดใช้งาน', activate: 'เปิดใช้งาน', resetPin: 'รีเซ็ต PIN', addedMsg: 'เพิ่มแล้ว: {name}\nรหัส {code}   PIN {pin}\n(แจ้งรหัสโรงงาน {site} ด้วย)', newPinMsg: '{name} → PIN ใหม่: {pin}',
             confirmDeactivate: 'ปิดใช้งาน {name} ?', confirmReset: 'รีเซ็ต PIN ของ {name} ?', configHint: 'แก้รายการไลน์/เครื่อง/หมวด ชื่อภาษาจีน และรหัสโรงงาน ได้ที่แท็บ Config ใน Google Sheet',
-            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร', position: 'ตำแหน่ง', noPosition: 'ไม่ระบุตำแหน่ง', dept: 'สังกัด', noDept: 'ไม่ระบุสังกัด', positionHint: 'ตำแหน่งและสังกัดเป็นป้ายแสดงข้างชื่อผู้รายงาน ไม่กระทบสิทธิ์ (สิทธิ์ตามบทบาท) · เพิ่ม/แก้รายการได้ที่แท็บ Config ประเภท position / dept',
+            roleStaff: 'พนักงาน', roleSupervisor: 'หัวหน้า', roleManager: 'ผู้บริหาร', position: 'ตำแหน่ง', noPosition: 'ไม่ระบุตำแหน่ง', dept: 'สังกัด', noDept: 'ไม่ระบุสังกัด',
+            positionHint: 'สิทธิ์ตามตำแหน่ง — พนักงาน: ดูได้ทุกรายการ เพิ่มความคืบหน้าเฉพาะที่ตัวเองแจ้ง · Leader / Supervisor: รับเรื่อง อัปเดต ปิดงานได้ทุกรายการ · Manager / ผู้บริหาร: ทุกอย่าง + เห็นหมวดพนักงาน + จัดการผู้ใช้ · สังกัดเป็นป้ายแสดงข้างชื่อ · แก้ชื่อตำแหน่ง/สังกัดได้ที่แท็บ Config ประเภท position / dept',
+            oldBackend: 'หลังบ้าน (Apps Script) ยังเป็นรุ่นก่อน 1.5: สิทธิ์จะถูกตั้งตามตำแหน่งเฉพาะเมื่อแก้จากแอปนี้ — ให้วางโค้ด .gs รุ่นใหม่ → Manage deployments → New version → รัน setupAndTest 1 ครั้ง',
             stOpen: 'เปิด', stInProgress: 'กำลังแก้ไข', stClosed: 'ปิดงาน', stCancelled: 'ยกเลิก', sevNormal: 'ปกติ', sevMedium: 'ปานกลาง', sevUrgent: 'เร่งด่วนมาก',
             progress: 'ความคืบหน้า', noProgress: 'ยังไม่มีความคืบหน้า', addProgress: 'เพิ่มความคืบหน้า', progressPh: 'ความคืบหน้า สิ่งที่ทำ ผลที่ได้...', progressPhSup: 'ความคืบหน้า / สรุปการแก้ไข (จำเป็นเมื่อปิดงานหรือยกเลิก)',
             saveProgress: '💬 บันทึกความคืบหน้า', btnTake: '🔧 รับเรื่อง', btnClose: '✅ ปิดงาน', btnCancel: '🚫 ยกเลิก', btnReopen: '↩️ เปิดใหม่',
@@ -739,7 +742,9 @@
             lineHint: '默认产线只用于记录时预先选择，员工每次都可以更改（岗位轮换）', userList: '用户名单', noLine: '无默认产线',
             deactivate: '停用', activate: '启用', resetPin: '重置PIN', addedMsg: '已添加：{name}\n编号 {code}   PIN {pin}\n（同时告知工厂代码 {site}）', newPinMsg: '{name} → 新PIN：{pin}',
             confirmDeactivate: '停用 {name}？', confirmReset: '重置 {name} 的PIN？', configHint: '产线/设备/类别、中文名称和工厂代码可在 Google Sheet 的 Config 页修改',
-            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层', position: '职位', noPosition: '未指定职位', dept: '部门', noDept: '未指定部门', positionHint: '职位和部门只是报告人姓名旁的标签，不影响权限（权限按角色）· 可在 Config 页的 position / dept 类型中添加或修改',
+            roleStaff: '员工', roleSupervisor: '主管', roleManager: '管理层', position: '职位', noPosition: '未指定职位', dept: '部门', noDept: '未指定部门',
+            positionHint: '权限按职位 — 员工：可查看全部，只能为自己报告的记录添加进展 · Leader / Supervisor：可接单、更新、关闭所有记录 · Manager / 高管：全部权限 + 可见人员类别 + 管理用户 · 部门仅为姓名旁的标签 · 职位/部门名称可在 Config 页的 position / dept 类型中修改',
+            oldBackend: '后台 (Apps Script) 仍是 1.5 之前的版本：只有在本应用中修改职位时才会按职位设置权限 — 请粘贴新版 .gs → Manage deployments → New version → 运行一次 setupAndTest',
             stOpen: '待处理', stInProgress: '处理中', stClosed: '已关闭', stCancelled: '已取消', sevNormal: '一般', sevMedium: '中等', sevUrgent: '紧急',
             progress: '进展', noProgress: '暂无进展', addProgress: '添加进展', progressPh: '进展、采取的措施、结果...', progressPhSup: '进展 / 处理总结（关闭或取消时必填）',
             saveProgress: '💬 保存进展', btnTake: '🔧 接单', btnClose: '✅ 关闭', btnCancel: '🚫 取消', btnReopen: '↩️ 重新打开',
@@ -833,7 +838,7 @@
             upd: { text: '', photos: [], busy: false, step: '', error: '' }, viewer: { open: false, src: '', link: '' }, photoCache: {},
             sum: { range: '7', mode: 'range', data: null, loading: false, error: '' },
             mon: { month: localNowInput().slice(0, 7), data: null, loading: false, error: '', saving: false, msg: '' },
-            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '', position: '', dept: '' } },
+            um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', line: '', position: 'staff', dept: '' } },
 
             init() {
                 this.applyLang();
@@ -1261,18 +1266,23 @@
             async addUser() {
                 this.um.error = ''; this.um.msg = ''; this.um.busy = true;
                 try {
-                    const f = this.um.form;
-                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), role: f.role, line: f.line, position: f.position || '', dept: f.dept || '' } });
+                    const f = this.um.form, position = f.position || 'staff';
+                    // role = ระดับสิทธิ์ที่คำนวณจากตำแหน่ง ส่งไปด้วยเพื่อให้หลังบ้านรุ่นก่อน 1.5 ตั้งสิทธิ์ถูก (รุ่น 1.5 คำนวณเองและไม่สนค่านี้)
+                    const d = await this.api({ action: 'addUser', user: { code: (f.code || '').trim().toUpperCase(), name: f.name.trim(), line: f.line, position: position, dept: f.dept || '', role: this.levelOf(position) } });
                     this.um.msg = this.t('addedMsg', { name: d.user.name, code: d.user.code, pin: d.user.pin, site: this.siteKey });
-                    this.um.form = { code: '', name: '', role: 'staff', line: '', position: '', dept: '' };
+                    this.um.form = { code: '', name: '', line: '', position: 'staff', dept: '' };
                     await this.loadUsersTab();
                 } catch (e) { this.um.error = e.message; }
                 this.um.busy = false;
             },
             async setUser(u, patch) {
                 this.um.error = ''; this.um.msg = '';
-                try { await this.api(Object.assign({ action: 'setUser', code: u.code }, patch)); await this.loadUsersTab(); } catch (e) { this.um.error = e.message; await this.loadUsersTab(); }
+                if (patch.position !== undefined) patch = Object.assign({}, patch, { role: this.levelOf(patch.position) });   // เผื่อหลังบ้านรุ่นก่อน 1.5 (ดูหมายเหตุใน addUser)
+                try { await this.api(Object.assign({ action: 'setUser', code: u.code }, patch)); await this.loadUsersTab(); }
+                catch (e) { await this.loadUsersTab(); this.um.error = e.message; }   // โหลดรายชื่อก่อน (คืนค่า select เดิม) แล้วค่อยแสดง error ไม่งั้น loadUsersTab จะล้างข้อความ
             },
+            /* ระดับสิทธิ์ของตำแหน่ง — ใช้ตารางที่เซิร์ฟเวอร์ส่งมา (config.positionLevel) ถ้าไม่มีใช้ค่ามาตรฐาน */
+            levelOf(position) { const map = (this.config && this.config.positionLevel) || { staff: 'staff', leader: 'supervisor', supervisor: 'supervisor', manager: 'manager', executive: 'manager' }; return map[position] || 'staff'; },
             async toggleUser(u) { if (u.active && !confirm(this.t('confirmDeactivate', { name: u.name }))) return; await this.setUser(u, { active: !u.active }); },
             async resetPin(u) {
                 if (!confirm(this.t('confirmReset', { name: u.name }))) return;
