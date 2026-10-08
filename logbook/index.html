@@ -36,6 +36,16 @@
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         img.lazy { background: #e5e7eb; }
         .langbar button { padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; }
+        .print-only { display: none; }
+        @media print {
+            @page { margin: 12mm; }
+            body { background: #fff !important; }
+            header, nav, .no-print, [x-show="toastMsg"] { display: none !important; }
+            main { max-width: none !important; padding: 0 !important; }
+            .card { box-shadow: none !important; border: 1px solid #e5e7eb; break-inside: avoid; }
+            .print-only { display: block !important; }
+            button { color: inherit; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800" x-data="logbookApp()" x-cloak>
@@ -319,6 +329,11 @@
 
     <!-- ============ สรุป / 汇总 ============ -->
     <section x-show="tab === 'summary'">
+        <div class="flex gap-2 mb-3 no-print">
+            <button type="button" @click="sum.mode = 'range'" class="chip text-sm flex-1 text-center" :class="sum.mode === 'range' ? 'chip-on' : ''" x-text="t('modeRange')"></button>
+            <button type="button" @click="sum.mode = 'month'; if (!mon.data) loadMonthly()" class="chip text-sm flex-1 text-center" :class="sum.mode === 'month' ? 'chip-on' : ''" x-text="t('modeMonth')"></button>
+        </div>
+        <div x-show="sum.mode === 'range'">
         <div class="card p-3 mb-3 flex items-center gap-2">
             <select x-model="sum.range" @change="loadSummary()" class="field text-sm py-2">
                 <option value="today" x-text="t('rToday')"></option>
@@ -384,6 +399,108 @@
                 <button type="button" @click="exportCsv" class="btn w-full bg-white border text-sm" x-text="t('exportCsvLong')"></button>
             </div>
         </template>
+        </div>
+
+        <!-- ===== รายงานรายเดือน / 月度报告 ===== -->
+        <div x-show="sum.mode === 'month'">
+            <div class="card p-3 mb-3 no-print">
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="monShift(-1)" class="chip text-sm shrink-0">‹</button>
+                    <input type="month" x-model="mon.month" @change="loadMonthly()" class="field text-sm py-2">
+                    <button type="button" @click="monShift(1)" class="chip text-sm shrink-0">›</button>
+                    <button type="button" @click="loadMonthly()" class="chip text-sm shrink-0">🔄</button>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-2" x-show="mon.data">
+                    <button type="button" @click="printMonthly" class="btn bg-white border text-sm" x-text="t('print')"></button>
+                    <button type="button" @click="exportMonthlyCsv" class="btn bg-white border text-sm" x-text="t('monCsv')"></button>
+                    <button type="button" x-show="user && user.role === 'manager'" @click="saveMonthly" :disabled="mon.saving" class="btn bg-blue-800 text-white text-sm" x-text="mon.saving ? t('saving') : t('saveSheet')"></button>
+                </div>
+                <div x-show="mon.msg" class="text-sm text-green-700 mt-2" x-text="mon.msg"></div>
+            </div>
+            <div x-show="mon.loading" class="text-sm text-gray-500 px-1 mb-2"><span class="loader"></span> <span x-text="t('loading')"></span></div>
+            <div x-show="mon.error" class="text-sm text-red-600 mb-2 px-1" x-text="mon.error"></div>
+            <template x-if="mon.data">
+                <div>
+                    <div class="print-only mb-3">
+                        <div class="text-xl font-bold" x-text="t('monthReport') + ' · ' + monthLabel(mon.data.month)"></div>
+                        <div class="text-xs text-gray-500" x-text="'AMC Galvanizing Log Book · ' + t('generatedAt') + ' ' + fmtDT(localNowInput()) + (user ? ' · ' + user.name : '')"></div>
+                    </div>
+                    <div class="font-bold text-lg mb-2 no-print" x-text="monthLabel(mon.data.month)"></div>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kIssues')"></div><div class="text-3xl font-bold text-blue-800" x-text="mon.data.counts.issues"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kClosed')"></div><div class="text-3xl font-bold text-green-700" x-text="mon.data.counts.closedInMonth"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kOpenEnd')"></div><div class="text-3xl font-bold text-amber-600" x-text="mon.data.counts.openAtEnd"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kCarry')"></div><div class="text-3xl font-bold text-amber-700" x-text="mon.data.counts.carryOver"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kUrgent')"></div><div class="text-3xl font-bold text-red-600" x-text="mon.data.counts.urgent"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kStopped')"></div><div class="text-3xl font-bold text-red-700" x-text="mon.data.counts.lineStopped"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kAvgDays')"></div><div class="text-3xl font-bold" x-text="mon.data.counts.avgDaysToClose"></div></div>
+                        <div class="card p-3"><div class="text-xs text-gray-500" x-text="t('kCancelled') + ' / ' + t('kNotes') + ' / ' + t('kTotal')"></div><div class="text-2xl font-bold" x-text="mon.data.counts.cancelledInMonth + ' / ' + mon.data.counts.notes + ' / ' + mon.data.counts.total"></div></div>
+                    </div>
+                    <div class="card p-3 mb-3 overflow-x-auto">
+                        <div class="font-bold mb-2" x-text="t('byLine') + ' · ' + fmtD(mon.data.from) + ' – ' + fmtD(mon.data.to)"></div>
+                        <table class="w-full text-sm">
+                            <thead><tr class="text-xs text-gray-500"><th class="text-left py-1" x-text="t('hLine')"></th><th class="text-right" x-text="statusLabel('open')"></th><th class="text-right" x-text="t('hInProg')"></th><th class="text-right" x-text="statusLabel('closed')"></th><th class="text-right" x-text="statusLabel('cancelled')"></th><th class="text-right" x-text="t('noteBadge')"></th><th class="text-right" x-text="t('hTotal')"></th></tr></thead>
+                            <tbody>
+                                <template x-for="l in (config ? config.lines : [])" :key="l.code">
+                                    <tr class="border-t">
+                                        <td class="py-1.5"><span class="px-1.5 py-0.5 rounded text-white text-xs font-bold" :class="'line-' + l.code" x-text="l.code"></span></td>
+                                        <td class="text-right" x-text="(mon.data.byLine[l.code] || {}).open || 0"></td>
+                                        <td class="text-right" x-text="(mon.data.byLine[l.code] || {}).in_progress || 0"></td>
+                                        <td class="text-right" x-text="(mon.data.byLine[l.code] || {}).closed || 0"></td>
+                                        <td class="text-right" x-text="(mon.data.byLine[l.code] || {}).cancelled || 0"></td>
+                                        <td class="text-right" x-text="(mon.data.byLine[l.code] || {}).note || 0"></td>
+                                        <td class="text-right font-bold" x-text="(mon.data.byLine[l.code] || {}).total || 0"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <div class="card p-3">
+                            <div class="font-bold mb-2" x-text="t('byCat')"></div>
+                            <div class="space-y-1.5">
+                                <template x-for="c in (config ? config.categories : [])" :key="c.code">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <div class="w-36 truncate" x-text="catIcon(c.code) + ' ' + cn(c)"></div>
+                                        <div class="flex-1 bg-gray-100 rounded h-3"><div class="bg-blue-700 h-3 rounded" :style="'width:' + monBarPct(mon.data.byCategory[c.code] || 0) + '%'"></div></div>
+                                        <div class="w-8 text-right font-bold" x-text="mon.data.byCategory[c.code] || 0"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card p-3">
+                            <div class="font-bold mb-2" x-text="t('secMachines')"></div>
+                            <div x-show="!mon.data.topMachines.length" class="text-sm text-gray-500" x-text="t('none')"></div>
+                            <template x-for="mm in mon.data.topMachines" :key="mm.machine">
+                                <div class="flex justify-between text-sm py-1 border-t"><span x-text="machineLabel(mm.machine)"></span><span class="font-bold" x-text="mm.n"></span></div>
+                            </template>
+                        </div>
+                    </div>
+                    <template x-for="sec in monSections()" :key="sec.key">
+                        <div class="card p-3 mb-3">
+                            <div class="font-bold mb-1" x-text="sec.title + ' (' + sec.items.length + ')'"></div>
+                            <div x-show="!sec.items.length" class="text-sm text-gray-500" x-text="t('none')"></div>
+                            <template x-for="x in sec.items" :key="x.entryNo">
+                                <button type="button" @click="openEntry(x.entryNo)" class="w-full text-left py-2 border-t text-sm">
+                                    <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+                                        <span class="px-1.5 py-0.5 rounded font-bold text-white" :class="'line-' + x.line" x-text="x.line"></span>
+                                        <span class="text-gray-500" x-text="x.entryNo"></span>
+                                        <span x-show="x.status && sec.kind !== 'note'" class="px-1.5 py-0.5 rounded" :class="statusClass(x.status)" x-text="statusLabel(x.status)"></span>
+                                        <span x-show="x.severity === 'urgent'" class="px-1.5 py-0.5 rounded bg-red-100 text-red-700" x-text="sevLabel('urgent')"></span>
+                                        <span x-show="x.lineStopped" class="px-1.5 py-0.5 rounded bg-red-600 text-white" x-text="t('lineStoppedBadge')"></span>
+                                        <span class="text-gray-400" x-text="[catName(x), machineLabel(x.machine)].filter(Boolean).join(' · ')"></span>
+                                    </div>
+                                    <div class="font-medium mt-0.5" x-text="x.title || t('noTitle')"></div>
+                                    <div class="text-xs text-gray-500" x-text="monMeta(x, sec.kind)"></div>
+                                    <div class="text-xs mt-0.5 whitespace-pre-line" :class="sec.kind === 'closed' ? 'text-green-800' : sec.kind === 'cancelled' ? 'text-gray-600' : 'text-gray-700'" x-text="monText(x, sec.kind)"></div>
+                                </button>
+                            </template>
+                            <div x-show="sec.trunc" class="text-xs text-gray-400 mt-1" x-text="t('truncatedNote', { n: sec.items.length })"></div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
     </section>
 
     <!-- ============ ผู้ใช้ (manager) / 用户 ============ -->
@@ -535,7 +652,7 @@
 <script>
     // ===== AMC Production Log Book v1.1 (2026-10-08) — ไทย / 中文 =====
     // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
-    const APP_VERSION = '1.2';
+    const APP_VERSION = '1.3';
     const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
     window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
     const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -586,7 +703,12 @@
             noServer: 'ยังไม่ได้ตั้งค่าลิงก์เซิร์ฟเวอร์ (กด "ตั้งค่าเซิร์ฟเวอร์")', netFail: 'ติดต่อเซิร์ฟเวอร์ไม่ได้ (ตรวจสัญญาณอินเทอร์เน็ต)', notJson: 'เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (ตรวจการ deploy: Who has access = Anyone และ URL ลงท้ายด้วย /exec)',
             configPrompt: 'ลิงก์ Apps Script Web App (เว้นว่าง = ใช้ค่าเริ่มต้นในแอป):', notSet: '(ยังไม่ได้ตั้งค่า)',
             justNow: 'เมื่อสักครู่', minsAgo: '{n} นาทีที่แล้ว', hoursAgo: '{n} ชม. ที่แล้ว', daysAgo: '{n} วันที่แล้ว', future: 'ล่วงหน้า',
-            csvHead: 'เลขที่,เวลาที่พบ,กะ,ไลน์,เครื่อง/จุด,หมวด,ประเภท,ความเร่งด่วน,ไลน์หยุด,หัวข้อ,รายละเอียด,ผู้รายงาน,สถานะ,อัปเดตล่าสุด,ปิดงานเมื่อ,สรุปการแก้ไข,จำนวนรูป', yes: 'ใช่'
+            csvHead: 'เลขที่,เวลาที่พบ,กะ,ไลน์,เครื่อง/จุด,หมวด,ประเภท,ความเร่งด่วน,ไลน์หยุด,หัวข้อ,รายละเอียด,ผู้รายงาน,สถานะ,อัปเดตล่าสุด,ปิดงานเมื่อ,สรุปการแก้ไข,จำนวนรูป', yes: 'ใช่',
+            modeRange: 'ช่วงเวลา', modeMonth: 'รายเดือน', monthReport: 'รายงานรายเดือน', print: '🖨 พิมพ์ / PDF', monCsv: '⬇️ CSV รายเดือน', saveSheet: '💾 บันทึกสรุปลงชีต', savedSheet: 'บันทึกสรุปเดือน {m} ลงแท็บ Monthly แล้ว',
+            kTotal: 'รายการทั้งหมด', kIssues: 'ปัญหาที่พบ', kNotes: 'บันทึกทั่วไป', kClosed: 'ปิดงานในเดือน', kCancelled: 'ยกเลิกในเดือน', kOpenEnd: 'ยังดำเนินการ (สิ้นเดือน)', kCarry: 'ค้างจากเดือนก่อน', kStopped: 'ไลน์หยุด', kUrgent: 'เร่งด่วนมาก', kAvgDays: 'เฉลี่ยวันปิดงาน',
+            secIssues: 'ปัญหาที่พบในเดือนนี้', secClosed: '✅ ปิดแล้ว', secInProg: '🔧 กำลังดำเนินการ', secCancelled: '🚫 ยกเลิก', secCarry: '⏳ ค้างจากเดือนก่อนที่ยังไม่ปิด', secClosedBefore: '✅ ปิดงานในเดือนนี้ (ที่พบเดือนก่อน)', secNotes: '📝 บันทึกทั่วไปของเดือน', secMachines: 'เครื่องที่พบปัญหาบ่อย',
+            none: 'ไม่มี', lastUpdate: 'ล่าสุด', foundOn: 'พบ', closedOn: 'ปิด', daysUsed: 'ใช้ {n} วัน', daysOpen: 'ค้าง {n} วัน', generatedAt: 'สร้างเมื่อ', truncatedNote: 'แสดง {n} รายการแรก', items: '{n} รายการ',
+            monCsvHead: 'กลุ่ม,เลขที่,เวลาที่พบ,ไลน์,เครื่อง/จุด,หมวด,หัวข้อ,ความเร่งด่วน,ไลน์หยุด,สถานะ,ผู้รายงาน,ปิดงานเมื่อ,ปิดโดย,จำนวนวัน,สรุปการแก้ไข/เหตุผล,ความคืบหน้าล่าสุด,โดย,เมื่อ', grpClosed: 'ปิดแล้ว', grpProgress: 'กำลังดำเนินการ', grpCancelled: 'ยกเลิก', grpCarry: 'ค้างจากเดือนก่อน', grpClosedBefore: 'ปิดแล้ว (พบเดือนก่อน)', grpNote: 'บันทึกทั่วไป'
         },
         zh: {
             appName: '生产记录簿', siteKeyTitle: '工厂代码', siteKeyHint: '每台设备只需输入一次，用于显示员工名单（向主管/管理员索取）', siteKeyPh: '例如 ABC123', siteKeyEmpty: '请输入工厂代码',
@@ -628,9 +750,15 @@
             noServer: '尚未设置服务器链接（点击"服务器设置"）', netFail: '无法连接服务器（请检查网络）', notJson: '服务器返回的不是 JSON（检查部署：Who has access = Anyone，URL 以 /exec 结尾）',
             configPrompt: 'Apps Script Web App 链接（留空 = 使用应用默认值）:', notSet: '（尚未设置）',
             justNow: '刚刚', minsAgo: '{n} 分钟前', hoursAgo: '{n} 小时前', daysAgo: '{n} 天前', future: '未来',
-            csvHead: '编号,发现时间,班次,产线,设备/位置,类别,类型,紧急程度,停线,标题,详情,报告人,状态,最后更新,关闭时间,处理总结,照片数', yes: '是'
+            csvHead: '编号,发现时间,班次,产线,设备/位置,类别,类型,紧急程度,停线,标题,详情,报告人,状态,最后更新,关闭时间,处理总结,照片数', yes: '是',
+            modeRange: '时间段', modeMonth: '月报', monthReport: '月度报告', print: '🖨 打印 / PDF', monCsv: '⬇️ 月度CSV', saveSheet: '💾 保存汇总到表格', savedSheet: '已将 {m} 的汇总保存到 Monthly 页',
+            kTotal: '全部记录', kIssues: '发现的问题', kNotes: '一般记录', kClosed: '本月关闭', kCancelled: '本月取消', kOpenEnd: '月末仍在处理', kCarry: '上月遗留', kStopped: '停线', kUrgent: '紧急', kAvgDays: '平均关闭天数',
+            secIssues: '本月发现的问题', secClosed: '✅ 已关闭', secInProg: '🔧 处理中', secCancelled: '🚫 已取消', secCarry: '⏳ 上月遗留未关闭', secClosedBefore: '✅ 本月关闭（上月发现）', secNotes: '📝 本月一般记录', secMachines: '问题最多的设备',
+            none: '无', lastUpdate: '最新', foundOn: '发现', closedOn: '关闭', daysUsed: '用时 {n} 天', daysOpen: '已 {n} 天', generatedAt: '生成于', truncatedNote: '仅显示前 {n} 条', items: '{n} 条',
+            monCsvHead: '分组,编号,发现时间,产线,设备/位置,类别,标题,紧急程度,停线,状态,报告人,关闭时间,关闭人,天数,处理总结/原因,最新进展,进展人,进展时间', grpClosed: '已关闭', grpProgress: '处理中', grpCancelled: '已取消', grpCarry: '上月遗留', grpClosedBefore: '已关闭（上月发现）', grpNote: '一般记录'
         }
     };
+    const TH_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
     let LANG = (function () { try { return localStorage.getItem('amcLogLang') === 'zh' ? 'zh' : 'th'; } catch (e) { return 'th'; } })();
     function tr(key, p) {
         let s = (I18N[LANG] && I18N[LANG][key] !== undefined) ? I18N[LANG][key] : (I18N.th[key] !== undefined ? I18N.th[key] : key);
@@ -701,7 +829,8 @@
             filter: { line: '', status: 'active', category: '', type: '', range: '7', dateFrom: '', dateTo: '', q: '', mine: false },
             detail: { no: '', entry: null, updates: [], loading: false, error: '' }, prevTab: 'list',
             upd: { text: '', photos: [], busy: false, step: '', error: '' }, viewer: { open: false, src: '', link: '' }, photoCache: {},
-            sum: { range: '7', data: null, loading: false, error: '' },
+            sum: { range: '7', mode: 'range', data: null, loading: false, error: '' },
+            mon: { month: localNowInput().slice(0, 7), data: null, loading: false, error: '', saving: false, msg: '' },
             um: { list: [], busy: false, msg: '', error: '', form: { code: '', name: '', role: 'staff', line: '', position: '' } },
 
             init() {
@@ -732,7 +861,7 @@
             go(t) {
                 this.tab = t;
                 if (t === 'list') this.loadList(false);
-                if (t === 'summary' && !this.sum.data) this.loadSummary();
+                if (t === 'summary') { if (this.sum.mode === 'month') { if (!this.mon.data) this.loadMonthly(); } else if (!this.sum.data) this.loadSummary(); }
                 if (t === 'users') this.loadUsersTab();
                 window.scrollTo(0, 0);
             },
@@ -828,7 +957,7 @@
                 this.loginError = msg || ''; this.pin = ''; this.pick = null; this.manualMode = false;
                 this.loginStep = this.siteKey ? 'pick' : 'site';
                 this.list = { rows: [], loading: false, error: '', loadedAt: '', total: 0, truncated: false };
-                this.sum.data = null; this.um.list = []; this.detail.entry = null; this.photoCache = {}; this.tab = 'new';
+                this.sum.data = null; this.mon.data = null; this.mon.msg = ''; this.um.list = []; this.detail.entry = null; this.photoCache = {}; this.tab = 'new';
                 this.photos = []; this.saved = null; this.saveError = '';
                 this.draft = this.blankDraft(); this.shiftAuto = true; ls(K.draft, null);   // เครื่องใช้ร่วมกัน: ไม่ส่งต่อร่างให้คนถัดไป
             },
@@ -1054,6 +1183,76 @@
                 this.sum.loading = false;
             },
             barPct(n) { const d = this.sum.data; if (!d) return 0; const max = Math.max(1, ...Object.values(d.byCategory || {})); return Math.round(100 * n / max); },
+
+            // ===== รายงานรายเดือน =====
+            monthLabel(ym) {
+                const m = /^(\d{4})-(\d{2})$/.exec(ym || ''); if (!m) return ym || '';
+                return this.lang === 'zh' ? (m[1] + '年' + Number(m[2]) + '月') : (TH_MONTHS_FULL[Number(m[2]) - 1] + ' ' + m[1]);
+            },
+            monShift(delta) {
+                const m = /^(\d{4})-(\d{2})$/.exec(this.mon.month || ''); if (!m) { this.mon.month = localNowInput().slice(0, 7); return; }
+                const d = new Date(Number(m[1]), Number(m[2]) - 1 + delta, 1);
+                this.mon.month = d.getFullYear() + '-' + pad(d.getMonth() + 1);
+                this.loadMonthly();
+            },
+            async loadMonthly() {
+                if (!this.user || !/^\d{4}-\d{2}$/.test(this.mon.month || '')) return;
+                this.mon.loading = true; this.mon.error = ''; this.mon.msg = '';
+                const gen = this.sessionGen, month = this.mon.month;
+                try {
+                    const data = await this.api({ action: 'monthly', month });
+                    if (gen !== this.sessionGen || month !== this.mon.month) return;
+                    this.mon.data = data;
+                } catch (e) { this.mon.error = e.message; this.mon.data = null; }
+                this.mon.loading = false;
+            },
+            async saveMonthly() {
+                if (!this.mon.data || this.mon.saving) return;
+                this.mon.saving = true; this.mon.msg = ''; this.mon.error = '';
+                try { const data = await this.api({ action: 'monthly', month: this.mon.data.month, save: true }); this.mon.data = data; this.mon.msg = this.t('savedSheet', { m: this.monthLabel(data.month) }); }
+                catch (e) { this.mon.error = e.message; }
+                this.mon.saving = false;
+            },
+            printMonthly() { window.print(); },
+            monBarPct(n) { const d = this.mon.data; if (!d) return 0; const max = Math.max(1, ...Object.values(d.byCategory || {})); return Math.round(100 * n / max); },
+            monSections() {
+                const d = this.mon.data; if (!d) return [];
+                return [
+                    { key: 'closedNew', kind: 'closed', title: this.t('secIssues') + ' · ' + this.t('secClosed'), items: d.closed.filter(c => !c.foundBefore), trunc: d.truncated.closed },
+                    { key: 'inProgress', kind: 'progress', title: this.t('secIssues') + ' · ' + this.t('secInProg'), items: d.inProgress, trunc: d.truncated.inProgress },
+                    { key: 'cancelled', kind: 'cancelled', title: this.t('secIssues') + ' · ' + this.t('secCancelled'), items: d.cancelled, trunc: d.truncated.cancelled },
+                    { key: 'carry', kind: 'progress', title: this.t('secCarry'), items: d.carryOver, trunc: d.truncated.carryOver },
+                    { key: 'closedBefore', kind: 'closed', title: this.t('secClosedBefore'), items: d.closed.filter(c => c.foundBefore), trunc: false },
+                    { key: 'notes', kind: 'note', title: this.t('secNotes'), items: d.notes, trunc: d.truncated.notes }
+                ];
+            },
+            monMeta(x, kind) {
+                const parts = [this.t('foundOn') + ' ' + this.fmtDT(x.foundAt) + ' · ' + this.byLabel(x.byCode, x.byName)];
+                if (kind === 'closed') parts.push(this.t('closedOn') + ' ' + this.fmtDT(x.closedAt) + ' · ' + x.closedBy + ' · ' + this.t('daysUsed', { n: x.days }));
+                else if (kind === 'cancelled') parts.push(this.t('closedOn') + ' ' + this.fmtDT(x.closedAt) + ' · ' + x.closedBy);
+                else if (kind === 'progress') parts.push(this.t('daysOpen', { n: Math.floor(x.daysOpen) }));
+                return parts.join(' · ');
+            },
+            monText(x, kind) {
+                if (kind === 'closed') return '✅ ' + (x.resolution || '-');
+                if (kind === 'cancelled') return '🚫 ' + (x.reason || '-');
+                if (kind === 'note') return x.detail || '';
+                return x.lastText ? ('🔧 ' + x.lastText + ' (' + x.lastBy + ', ' + this.fmtDT(x.lastAt) + ')') : this.t('noProgress');
+            },
+            exportMonthlyCsv() {
+                const d = this.mon.data; if (!d) return;
+                const esc = v => { const s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                const head = this.t('monCsvHead').split(',');
+                const grp = { closedNew: 'grpClosed', inProgress: 'grpProgress', cancelled: 'grpCancelled', carry: 'grpCarry', closedBefore: 'grpClosedBefore', notes: 'grpNote' };
+                const lines = [];
+                this.monSections().forEach(sec => sec.items.forEach(x => lines.push([this.t(grp[sec.key]), x.entryNo, (x.foundAt || '').replace('T', ' '), x.line, this.machineLabel(x.machine), this.catName(x), x.title, this.sevLabel(x.severity), x.lineStopped ? this.t('yes') : '', x.status ? this.statusLabel(x.status) : '', x.byName,
+                    (x.closedAt || '').replace('T', ' '), x.closedBy || '', x.days != null ? x.days : (x.daysOpen != null ? x.daysOpen : ''), x.resolution || x.reason || x.detail || '', x.lastText || '', x.lastBy || '', (x.lastAt || '').replace('T', ' ')])));
+                const csv = '﻿' + [head].concat(lines).map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
+                const name = 'AMC-logbook-monthly_' + d.month + '.csv';
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                try { const file = new File([blob], name, { type: 'text/csv' }); if (this.isIos && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: name }).catch(() => {}); return; } } catch (e) {}
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            },
 
             // ===== ผู้ใช้ (manager) =====
             async loadUsersTab() { if (!this.user || this.user.role !== 'manager') return; this.um.error = ''; try { const d = await this.api({ action: 'listUsers' }); this.um.list = (d.users || []).map(u => Object.assign({ showPin: false }, u)); } catch (e) { this.um.error = e.message; } },
