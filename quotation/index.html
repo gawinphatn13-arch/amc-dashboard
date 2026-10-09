@@ -54,14 +54,14 @@
 
     <div class="no-print max-w-7xl mx-auto mb-4 flex flex-wrap gap-2 justify-between items-center">
         <div class="flex flex-wrap gap-2">
-            <button @click="goCreateTab()" :class="{'bg-blue-600 text-white': activeTab === 'form', 'bg-white text-gray-700': activeTab !== 'form'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📝 สร้างใบเสนอราคา' : '📝 Create Quotation'"></button>
-            <button @click="activeTab = 'tracker'; loadHistory()" :class="{'bg-blue-600 text-white': activeTab === 'tracker', 'bg-white text-gray-700': activeTab !== 'tracker'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📚 ประวัติใบเสนอราคา' : '📚 Quotation History'"></button>
+            <button x-show="!isPurchasing" @click="goCreateTab()" :class="{'bg-blue-600 text-white': activeTab === 'form', 'bg-white text-gray-700': activeTab !== 'form'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📝 สร้างใบเสนอราคา' : '📝 Create Quotation'"></button>
+            <button x-show="!isPurchasing" @click="activeTab = 'tracker'; loadHistory()" :class="{'bg-blue-600 text-white': activeTab === 'tracker', 'bg-white text-gray-700': activeTab !== 'tracker'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📚 ประวัติใบเสนอราคา' : '📚 Quotation History'"></button>
             <button x-show="user" @click="activeTab = 'spec'; loadSpecSummary()" :class="{'bg-blue-600 text-white': activeTab === 'spec', 'bg-white text-gray-700': activeTab !== 'spec'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '📊 สรุปสเปกลูกค้า' : '📊 Customer Specs'"></button>
             <button x-show="user && user.role === 'manager'" @click="activeTab = 'users'; loadUsersTab()" :class="{'bg-blue-600 text-white': activeTab === 'users', 'bg-white text-gray-700': activeTab !== 'users'}" class="px-4 py-2 rounded shadow font-bold" x-text="lang === 'th' ? '👥 พนักงานขาย' : '👥 Sales Staff'"></button>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <button x-show="user && installPrompt" @click="installApp" class="text-sm bg-white text-blue-700 border border-blue-600 rounded shadow px-3 py-2 hover:bg-blue-50 font-bold" x-text="installLabel(true)"></button>
-            <div x-show="user" class="text-sm bg-white rounded shadow px-3 py-2"><span class="font-bold" x-text="user ? user.name : ''"></span> <span class="text-gray-500" x-text="user && user.role === 'manager' ? (lang === 'th' ? '(ผู้บริหาร)' : '(Manager)') : ''"></span></div>
+            <div x-show="user" class="text-sm bg-white rounded shadow px-3 py-2"><span class="font-bold" x-text="user ? user.name : ''"></span> <span class="text-gray-500" x-text="user && user.role !== 'sales' ? '(' + roleLabel(user.role) + ')' : ''"></span></div>
             <button x-show="user" @click="logout()" class="text-sm bg-white text-gray-600 rounded shadow px-3 py-2 hover:bg-gray-100" x-text="lang === 'th' ? 'ออกจากระบบ' : 'Sign out'"></button>
             <div class="flex bg-white rounded shadow overflow-hidden">
                 <button @click="lang = 'th'" :class="lang === 'th' ? 'bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100'" class="px-4 py-2 text-sm font-bold transition">TH</button>
@@ -70,7 +70,7 @@
         </div>
     </div>
 
-    <div x-show="activeTab === 'form'" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
+    <div x-show="activeTab === 'form' && !isPurchasing" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
         
         <div class="no-print lg:col-span-5 space-y-4">
 
@@ -462,7 +462,7 @@
         </div>
     </div>
 
-    <div x-show="activeTab === 'tracker'" x-cloak class="max-w-7xl mx-auto bg-white p-6 rounded shadow no-print">
+    <div x-show="activeTab === 'tracker' && !isPurchasing" x-cloak class="max-w-7xl mx-auto bg-white p-6 rounded shadow no-print">
         <div class="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2">
             <h2 class="text-xl font-bold" x-text="user && user.role === 'manager' ? (lang === 'th' ? 'ประวัติใบเสนอราคาทุกคน' : 'All Quotations') : (lang === 'th' ? 'ประวัติใบเสนอราคาของฉัน' : 'My Quotations')"></h2>
             <button @click="loadHistory(true)" :disabled="historyLoading" class="text-sm bg-blue-600 text-white px-3 py-2 rounded disabled:opacity-60" x-text="historyLoading ? (lang === 'th' ? 'กำลังโหลด...' : 'Loading...') : (lang === 'th' ? '🔄 โหลดใหม่' : '🔄 Refresh')"></button>
@@ -627,7 +627,7 @@
         <p class="text-xs text-gray-500 mb-4" x-text="lang === 'th' ? 'พนักงานใหม่จะได้รหัสและ PIN ทันที (แสดงครั้งเดียว) พนักงานที่ลาออกให้กด ปิดใช้งาน ข้อมูลเดิมยังอยู่ครบ' : 'New staff get a code and PIN immediately (shown once). Disable staff who leave; their data is kept.'"></p>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 items-end">
             <div class="md:col-span-2"><label class="block text-xs mb-1" x-text="lang === 'th' ? 'ชื่อ-นามสกุล' : 'Full name'"></label><input type="text" x-model="newUser.name" @keydown.enter="addUser" class="w-full border p-2.5 rounded"></div>
-            <div><label class="block text-xs mb-1" x-text="lang === 'th' ? 'บทบาท' : 'Role'"></label><select x-model="newUser.role" class="w-full border p-2.5 rounded"><option value="sales" x-text="lang === 'th' ? 'พนักงานขาย' : 'Sales'"></option><option value="manager" x-text="lang === 'th' ? 'ผู้บริหาร' : 'Manager'"></option></select></div>
+            <div><label class="block text-xs mb-1" x-text="lang === 'th' ? 'บทบาท' : 'Role'"></label><select x-model="newUser.role" class="w-full border p-2.5 rounded"><option value="sales" x-text="lang === 'th' ? 'พนักงานขาย' : 'Sales'"></option><option value="manager" x-text="lang === 'th' ? 'ผู้บริหาร' : 'Manager'"></option><template x-if="hasFeature('purchasing')"><option value="purchasing" x-text="L('เจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว)', 'Foreign purchasing officer (spec summary only)')"></option></template></select></div>
             <button @click="addUser" :disabled="usersBusy" class="bg-blue-600 text-white p-2.5 rounded font-bold hover:bg-blue-700 disabled:opacity-60" x-text="lang === 'th' ? '+ เพิ่มพนักงาน' : '+ Add staff'"></button>
         </div>
         <div x-show="usersMessage" class="mb-3 p-3 rounded bg-green-50 border border-green-300 text-green-800 text-sm whitespace-pre-wrap font-bold" x-text="usersMessage"></div>
@@ -642,7 +642,7 @@
                         <tr :class="u.active ? '' : 'bg-gray-50 text-gray-400'">
                             <td class="border p-2 font-bold" x-text="u.code"></td>
                             <td class="border p-2" x-text="u.name"></td>
-                            <td class="border p-2" x-text="u.role === 'manager' ? (lang === 'th' ? 'ผู้บริหาร' : 'Manager') : (lang === 'th' ? 'พนักงานขาย' : 'Sales')"></td>
+                            <td class="border p-2" x-text="roleLabel(u.role)"></td>
                             <td class="border p-2 font-mono" x-text="u.pin"></td>
                             <td class="border p-2" x-text="u.active ? (lang === 'th' ? 'ใช้งาน' : 'Active') : (lang === 'th' ? 'ปิดใช้งาน' : 'Disabled')"></td>
                             <td class="border p-2 whitespace-nowrap">
@@ -665,7 +665,7 @@
         </div>
         <div class="no-print flex flex-wrap justify-between items-start gap-2 mb-3 border-b pb-3">
             <div>
-                <h2 class="text-xl font-bold" x-text="user && user.role === 'manager' ? L('📊 สรุปสเปกลูกค้าของพนักงานขายทุกคน', '📊 Customer specs — all salespeople') : L('📊 สรุปสเปกลูกค้าของฉัน', '📊 My customers\' specs')"></h2>
+                <h2 class="text-xl font-bold" x-text="seesAllSpecs ? L('📊 สรุปสเปกลูกค้าของพนักงานขายทุกคน', '📊 Customer specs — all salespeople') : L('📊 สรุปสเปกลูกค้าของฉัน', '📊 My customers\' specs')"></h2>
                 <div class="text-xs text-gray-500 mt-1" x-text="L('รวมจากทุกบรรทัดสินค้าในใบเสนอราคาที่บันทึกไว้ · ไม่มีราคา จึงส่งต่อฝ่ายผลิตได้', 'Built from every saved quotation line · no prices, safe to share with production')"></div>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
@@ -684,7 +684,7 @@
         </div>
 
         <div class="no-print grid grid-cols-2 md:grid-cols-7 gap-3 mb-3">
-            <template x-if="user && user.role === 'manager'">
+            <template x-if="seesAllSpecs">
                 <div class="col-span-2 md:col-span-1">
                     <label class="block text-xs mb-1" x-text="L('พนักงานขาย', 'Salesperson')"></label>
                     <select x-model="specFilter.salesCode" @change="rebuildSpec()" class="w-full border p-2 rounded">
@@ -865,7 +865,7 @@
             </template>
         </section>
 
-        <template x-if="specSum.staleDeals.length">
+        <template x-if="specSum.staleDeals.length && !isPurchasing">
             <div class="mb-6 border border-amber-300 rounded p-3 bg-amber-50/40 print:break-inside-avoid" :class="specPrint === 'production' || specPrint === 'overview' ? 'print:hidden' : ''">
                 <h3 class="font-bold text-sm mb-1 text-amber-900" x-text="L('⏰ ดีลที่เสนอราคาค้างเกิน 45 วัน — กรุณาอัปเดตสถานะ (ปิดการขาย / ไม่ซื้อ / ยกเลิก)', '⏰ Quotes open for more than 45 days — please update their status')"></h3>
                 <div class="text-[11px] text-amber-800 mb-2" x-text="L('ดีลเหล่านี้ไม่ถูกนับในตัน “ระหว่างเสนอ” จนกว่าจะอัปเดต', 'These are not counted in open tons until updated')"></div>
@@ -1090,7 +1090,7 @@
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.4 (2026-10-07) — ภาพรวมการใช้เหล็ก (เกรด · Coating · ความหนา · กลุ่มลูกค้า) · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
+        // ===== AMC Quotation App v1.5 (2026-10-09) — ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -1524,7 +1524,8 @@
                     window.addEventListener('appinstalled', () => { this.installPrompt = null; });
                     if ('serviceWorker' in navigator && location.protocol !== 'file:') { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
                     this.setSpecPreset(this.specFilter.preset, true);
-                    this.$watch('activeTab', (v) => this.togglePrintLandscape(v === 'spec'));
+                    this.$watch('activeTab', (v) => { this.togglePrintLandscape(v === 'spec'); if (this.isPurchasing && v !== 'spec') this.$nextTick(() => this.enforceRoleTab()); });
+                    this.enforceRoleTab();
                     this.$watch('savedNo', (v) => { if (v) this.specLoadedFor = ''; });   // บันทึก/เปิดใบใหม่ -> หน้าสรุปโหลดใหม่ครั้งถัดไป
                     window.addEventListener('hashchange', () => this.openSpecFromHash());
                     this.openSpecFromHash();
@@ -1545,6 +1546,14 @@
                     if (!data || data.ok !== true) { const err = new Error((data && data.error) || 'Unknown error'); err.code = data && data.code; err.data = data; throw err; }
                     return data;
                 },
+                get isPurchasing() { return !!(this.user && this.user.role === 'purchasing'); },
+                get seesAllSpecs() { return !!(this.user && (this.user.role === 'manager' || this.user.role === 'purchasing')); },   // หน้าสรุปของพนักงานขายทุกคน
+                roleLabel(r) {
+                    return r === 'manager' ? this.L('ผู้บริหาร', 'Manager') : (r === 'purchasing' ? this.L('จัดซื้อต่างประเทศ', 'Foreign purchasing') : this.L('พนักงานขาย', 'Sales'));
+                },
+                enforceRoleTab() {   // จัดซื้อต่างประเทศ: ใช้ได้เฉพาะหน้าสรุปสเปก (หลังบ้านก็ปฏิเสธ action อื่นอยู่แล้ว)
+                    if (this.isPurchasing && this.activeTab !== 'spec') { this.activeTab = 'spec'; this.loadSpecSummary(); }
+                },
                 hasFeature(f) { return !!(this.user && Array.isArray(this.user.features) && this.user.features.indexOf(f) >= 0); },
                 // แก้ไข/ออก Rev./เปลี่ยนสถานะ/ทำสำเนา ได้เฉพาะใบของลูกค้าตัวเอง — ผู้บริหารก็เช่นกัน (ผู้บริหารดู/พิมพ์ซ้ำใบของทุกคนได้)
                 canEditDeal(row) { return !!(this.user && row && row.salesCode && row.salesCode === this.user.code); },
@@ -1557,7 +1566,7 @@
                         this.sessionGen++; this.customerNames = []; this.customerNamesTried = false;
                         try { localStorage.setItem(USER_KEY, JSON.stringify(this.user)); } catch (e) {}
                         this.salesName = this.user.name; this.loginForm = { code: '', pin: '' };
-                        this.openSpecFromHash();
+                        this.openSpecFromHash(); this.enforceRoleTab();
                     } catch (e) { this.loginError = e.message; }
                     this.loginBusy = false;
                 },
@@ -1582,6 +1591,7 @@
                             if (this.activeTab === 'tracker') this.loadHistory(true);
                             else if (this.activeTab === 'spec') this.loadSpecSummary(true);
                         }
+                        this.enforceRoleTab();                       // ถูกเปลี่ยนเป็นจัดซื้อ -> ไปหน้าสรุปสเปก
                     } catch (e) {
                         if (gen === this.sessionGen && /PIN|ปิดใช้งาน|เข้าสู่ระบบ/i.test(e.message)) this.logout(e.message);
                     }
@@ -1638,7 +1648,7 @@
                 rebuildSpec() {
                     const f = this.specFilter;
                     this.specSum = buildSpecSummary(this.specRows, { from: f.from, to: f.to, type: f.type, q: f.q, status: f.status,   // เซลล์: กรองเป็นรหัสตัวเองซ้ำอีกชั้น
-                        salesCode: this.user && this.user.role === 'manager' ? f.salesCode : (this.user ? this.user.code : '__none__'), today: localToday() });
+                        salesCode: this.seesAllSpecs ? f.salesCode : (this.user ? this.user.code : '__none__'), today: localToday() });
                 },
                 async loadSpecSummary(force) {
                     if (!this.user) return;
@@ -1676,7 +1686,7 @@
                 },
                 specScopeName() {
                     if (!this.user) return '';
-                    if (this.user.role !== 'manager') return this.user.name;
+                    if (!this.seesAllSpecs) return this.user.name;
                     if (!this.specFilter.salesCode) return this.L('พนักงานขายทุกคน', 'All salespeople');
                     const o = this.specSalesOptions().find(x => x.code === this.specFilter.salesCode);
                     return o ? o.name : this.specFilter.salesCode;
