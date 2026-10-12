@@ -113,9 +113,6 @@
                     <option value="GAS">Grand Asia Steel Processing Center Co.,Ltd.</option>
                 </select>
 
-                <label class="block text-sm mb-1 mt-2 text-blue-600 font-bold" x-text="lang === 'th' ? 'อัปโหลดโลโก้บริษัท (ถ้ามี)' : 'Upload Company Logo (Optional)'"></label>
-                <input type="file" @change="handleLogoUpload" accept="image/*" class="w-full border p-2.5 rounded mb-3 text-sm bg-blue-50">
-
                 <label class="block text-sm mb-1 mt-2 font-bold" x-text="lang === 'th' ? 'ชื่อพนักงานขาย (Sales Rep.)' : 'Sales Representative'"></label>
                 <input type="text" x-model="salesName" readonly class="w-full border p-2.5 rounded mb-3 bg-gray-100 text-gray-700" :title="lang === 'th' ? 'ชื่อจากบัญชีที่เข้าสู่ระบบ' : 'Name from the signed-in account'">
 
@@ -395,11 +392,13 @@
                 
                 <div class="flex justify-between items-start mb-6">
                     <div class="w-1/4">
-                        <template x-if="!logoBase64">
-                            <div class="w-24 h-24 border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold bg-gray-50">LOGO</div>
+                        <!-- v1.8: โลโก้ตามบริษัทผู้ออกใบเสนอราคา (logos/) · โหลดไม่ได้ -> กล่อง LOGO แบบเดิม -->
+                        <template x-if="companyLogo && !logoFailed[companyPrefix]">
+                            <img :src="companyLogo" :alt="getCompanyInfo().name" @error="logoFailed[companyPrefix] = true"
+                                 :class="companyPrefix === 'STC' ? 'w-full max-h-24 object-contain object-left' : 'max-h-24 max-w-[150px] object-contain'">
                         </template>
-                        <template x-if="logoBase64">
-                            <img :src="logoBase64" class="max-h-24 max-w-[150px] object-contain">
+                        <template x-if="!companyLogo || logoFailed[companyPrefix]">
+                            <div class="w-24 h-24 border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold bg-gray-50">LOGO</div>
                         </template>
                     </div>
                     <div class="w-2/4 text-center">
@@ -1162,11 +1161,13 @@
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.7 (2026-10-12) — ตารางรายการแบบใหม่ (ประเภทสินค้า · Thickness x Width · Slit · Spec) · v1.6 แก้ไขรายการทีละบรรทัด (ส่วนลด/ปริมาณ/สเปก) + ยอด USD = ตัน × ราคา/ตันบนใบ · v1.5 ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
+        // ===== AMC Quotation App v1.8 (2026-10-12) — โลโก้ตามบริษัทผู้ออกใบเสนอราคา · v1.7 ตารางรายการแบบใหม่ (ประเภทสินค้า · Thickness x Width · Slit · Spec) · v1.6 แก้ไขรายการทีละบรรทัด (ส่วนลด/ปริมาณ/สเปก) + ยอด USD = ตัน × ราคา/ตันบนใบ · v1.5 ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
         const USER_KEY = 'amcQuoteUser';
+        // v1.8 โลโก้บนเอกสารตามบริษัทผู้ออกใบเสนอราคา (ไฟล์อยู่ในโฟลเดอร์ logos/ — deploy-quotation.bat คัดลอกขึ้นเว็บด้วย)
+        const COMPANY_LOGOS = { AMC: 'logos/logo-amc.png', GAS: 'logos/logo-gas.png', STC: 'logos/logo-stc.jpg' };
         const SPEC_CACHE = 'amcQuoteSpec2_', HIST_CACHE = 'amcQuoteHistory2_';   // v1.3: รูปแบบข้อมูลใหม่ (มีสถานะ/ฉบับ) จึงเปลี่ยนชื่อคีย์
 
         // ราคา Extra อ้างอิง: GI / Mg-Al-Zn Steel_Quotation_Data update 09.28.2026.xlsx (saved 28/09/2026 15:04)
@@ -1794,7 +1795,7 @@
                 dataGen: 0,      // เปลี่ยนเมื่อบทบาท/รุ่นหลังบ้านเปลี่ยน (ไม่กระทบการบันทึกที่ค้างอยู่)
                 historySeq: 0, specSeq: 0,   // ใช้เฉพาะผลของการโหลดครั้งล่าสุด
 
-                logoBase64: null,
+                logoFailed: {},           // บริษัทที่โหลดรูปโลโก้ไม่ได้ -> แสดงกล่อง LOGO
                 companyPrefix: 'AMC',
                 quoteDate: localToday(),
                 runningNo: '',
@@ -2370,14 +2371,7 @@
                     } catch (e) { this.usersError = e.message; }
                 },
 
-                handleLogoUpload(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => { this.logoBase64 = e.target.result; };
-                        reader.readAsDataURL(file);
-                    }
-                },
+                get companyLogo() { return COMPANY_LOGOS[this.companyPrefix] || ''; },
 
                 getCompanyInfo() {
                     const companies = {
