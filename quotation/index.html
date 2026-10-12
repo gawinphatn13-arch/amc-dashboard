@@ -80,9 +80,16 @@
                     <div class="font-bold" x-text="L('กำลังแสดงใบเลขที่ ', 'Showing quotation ') + savedNo"></div>
                     <div class="text-xs mt-1" x-text="docMeta && !canEditDeal(docMeta) ? L('ใบของ ' + salesName + ' — ดู/พิมพ์ซ้ำได้อย่างเดียว', 'Belongs to ' + salesName + ' — view/print only') : L('บันทึกแล้ว — ฟอร์มนี้แก้ไม่ได้ (ดู/พิมพ์ซ้ำ)', 'Saved — this form is locked (view/print)')"></div>
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <button type="button" @click="newQuotation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold" x-text="L('🆕 เริ่มใบเสนอราคาใหม่', '🆕 New quotation')"></button>
+                        <button type="button" @click="isSaving || printing || newQuotation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold" x-text="L('🆕 เริ่มใบเสนอราคาใหม่', '🆕 New quotation')"></button>
                         <button type="button" x-show="hasFeature('revise') && docMeta && canEditDeal(docMeta)" @click="reviseCurrentDoc()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded font-bold" x-text="L('📝 ออกฉบับแก้ไข', '📝 Revise')"></button>
                     </div>
+                </div>
+            </template>
+
+            <template x-if="revNotice && !savedNo">
+                <div class="bg-sky-50 border border-sky-300 text-sky-900 rounded shadow p-3 text-sm">
+                    <div class="whitespace-pre-line" x-text="'ℹ️ ' + revNotice"></div>
+                    <button type="button" @click="revNotice = ''" class="mt-1 text-xs underline" x-text="L('รับทราบ', 'OK')"></button>
                 </div>
             </template>
 
@@ -92,11 +99,11 @@
                     <div class="mt-1"><span x-text="L('แทนที่ใบ ', 'Replaces ')"></span><b x-text="reviseOf.no"></b><span x-show="reviseOf.reopen" class="ml-1 text-xs bg-amber-200 rounded px-1" x-text="L('เปิดดีลอีกครั้ง', 'reopened')"></span></div>
                     <div class="text-xs mt-1" x-text="L('ลูกค้า: ', 'Customer: ') + reviseOf.customer"></div>
                     <div class="text-xs mt-1 text-amber-800" x-text="L('แก้ราคา/ปริมาณ/สเปกได้ทุกช่อง · บันทึกแล้วใบเดิมจะเป็น “ถูกแทนที่” และหน้าสรุปนับเฉพาะฉบับนี้', 'Edit any field · on save the old version becomes “superseded” and the summary counts only this one')"></div>
-                    <button type="button" @click="cancelRevise()" :disabled="isSaving" class="mt-2 text-xs underline text-amber-900 disabled:opacity-40 disabled:cursor-not-allowed" x-text="L('ยกเลิกการแก้ไข', 'Discard revision')"></button>
+                    <button type="button" @click="cancelRevise()" :disabled="isSaving" class="mt-2 text-xs underline text-amber-900 disabled:opacity-40 disabled:cursor-not-allowed" x-text="L('ยกเลิกฉบับแก้ไขทั้งใบ', 'Discard the whole revision')"></button>
                 </div>
             </template>
 
-            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''" :inert="!!savedNo">
+            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''" :inert="!!savedNo || isSaving">
                 <h2 class="text-lg font-bold mb-3 border-b pb-2" x-text="lang === 'th' ? 'ข้อมูลเอกสารและลูกค้า' : 'Document & Customer Info'"></h2>
 
                 <label class="block text-sm mb-1 mt-2" x-text="lang === 'th' ? 'บริษัทผู้ออกใบเสนอราคา' : 'Issuing Company'"></label>
@@ -151,8 +158,21 @@
                 </select>
             </div>
 
-            <div class="bg-white p-5 rounded shadow" :class="savedNo ? 'opacity-60 pointer-events-none select-none' : ''" :inert="!!savedNo">
+            <div id="specCard" class="bg-white p-5 rounded shadow" :class="[savedNo ? 'opacity-60 pointer-events-none select-none' : '', specEdit ? 'ring-4 ring-amber-400' : '']" :inert="!!savedNo || isSaving">
                 <h2 class="text-lg font-bold mb-3 border-b pb-2" x-text="lang === 'th' ? 'กำหนดสเปกสินค้า' : 'Product Specifications'"></h2>
+                <template x-if="specEdit">
+                    <div class="mb-3 space-y-2">
+                        <div class="bg-amber-50 border border-amber-300 text-amber-900 rounded p-3 text-sm">
+                            <div class="font-bold" x-text="L('🔧 กำลังแก้สเปกรายการที่ ' + itemNo(specEdit.uid), '🔧 Editing item ' + itemNo(specEdit.uid))"></div>
+                            <div class="text-xs mt-1" x-text="L('แก้ค่าในฟอร์มแล้วกด 💾 อัปเดตรายการ (ด้านล่าง) — รายการเดิมถูกแทนที่ในตำแหน่งเดิม', 'Change the form, then press 💾 Update item below — it replaces the item in place')"></div>
+                        </div>
+                        <div x-show="specEdit.legacy" class="bg-yellow-100 border border-yellow-400 text-yellow-900 rounded p-3 text-sm">
+                            <div class="font-bold" x-text="L('⚠ รายการจากใบเก่า: ราคา Base คำนวณย้อนจากราคาเดิม กรุณาตรวจราคา Base ก่อนอัปเดต', '⚠ Item from an older quotation: the base price was back-calculated from the old price — check it before updating')"></div>
+                            <div class="text-xs mt-1" x-show="specEdit.unsure.length" x-text="L('ช่องที่ระบบเดาหรือไม่แน่ใจ: ', 'Guessed / uncertain fields: ') + specEdit.unsure.map(k => unsureLabel(k)).join(' · ')"></div>
+                        </div>
+                        <div x-show="!specEdit.legacy && specEdit.unsure.length" class="bg-yellow-50 border border-yellow-300 text-yellow-900 rounded p-2 text-xs" x-text="'⚠ ' + specEdit.unsure.map(k => unsureLabel(k)).join(' · ')"></div>
+                    </div>
+                </template>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <div>
@@ -166,9 +186,13 @@
                         <label class="block text-sm mb-1 font-bold text-red-600" x-text="lang === 'th' ? 'ราคา Base' : 'Base Price'"></label>
                         <input type="number" x-model.number="basePrice" @input="calculatePrice" class="w-full border p-2.5 rounded bg-yellow-50 font-bold text-red-600" placeholder="บาท/ตัน">
                     </div>
-                    <div>
-                        <label class="block text-sm mb-1 font-bold text-green-600" x-text="lang === 'th' ? 'ส่วนลด/ตัน' : 'Discount'"></label>
+                    <div x-show="!usdDiscountMode">
+                        <label class="block text-sm mb-1 font-bold text-green-600" x-text="lang === 'th' ? 'ส่วนลด/ตัน (บาท)' : 'Discount (THB/Ton)'"></label>
                         <input type="number" x-model.number="discountPerTon" @input="calculatePrice" class="w-full border p-2.5 rounded bg-green-50 font-bold text-green-700" placeholder="บาท/ตัน">
+                    </div>
+                    <div x-show="usdDiscountMode">
+                        <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'ส่วนลด/ตัน (USD)' : 'Discount (USD/Ton)'"></label>
+                        <input type="number" x-model.number="discountUsd" @input="calculatePrice" class="w-full border-2 border-green-500 p-2.5 rounded bg-green-50 font-bold text-green-800" placeholder="USD/Ton" step="0.01">
                     </div>
                 </div>
 
@@ -181,7 +205,7 @@
                         <label class="block text-sm mb-1" x-text="lang === 'th' ? 'เกรดเหล็ก' : 'Steel Grade'"></label>
                         <select x-model="spec" @change="calculatePrice" class="w-full border p-2.5 rounded">
                             <template x-for="(extra, name) in pricingData[productType].specs" :key="name">
-                                <option :value="name" x-text="name + ' (+' + extra + ' ฿)'"></option>
+                                <option :value="name" :selected="name === spec" x-text="name + ' (+' + extra + ' ฿)'"></option>
                             </template>
                         </select>
                     </div>
@@ -257,9 +281,9 @@
                         <label class="block text-sm mb-1">Spangle</label>
                         <select x-model="spangleType" @change="calculatePrice" class="w-full border p-2.5 rounded">
                             <template x-if="productType === 'galvanized'">
-                                <option value="Minimize">Minimize (+0 ฿)</option>
+                                <option value="Minimize" :selected="spangleType === 'Minimize'">Minimize (+0 ฿)</option>
                             </template>
-                            <option value="Zero" x-text="'Zero (+' + (productType === 'galvanized' ? '150' : '0') + ' ฿)'"></option>
+                            <option value="Zero" :selected="spangleType === 'Zero'" x-text="'Zero (+' + (productType === 'galvanized' ? '150' : '0') + ' ฿)'"></option>
                         </select>
                     </div>
                     
@@ -276,7 +300,7 @@
                     <div><label class="block text-sm mb-1">Non finger (AFP)</label><select x-model="fingerExtra" @change="calculatePrice" class="w-full border p-2.5 rounded"><option value="0">Non AFP (+0 ฿)</option><option value="200">AFP (+200 ฿)</option></select></div>
                     
                     <div><label class="block text-sm mb-1">Customer Segment</label>
-                        <select x-model="customerSegment" @change="calculatePrice" class="w-full border p-2.5 rounded">
+                        <select x-model="customerSegment" @change="onFormModeChange()" class="w-full border p-2.5 rounded">
                             <option value="Pipe construction">Pipe construction (+0 ฿)</option>
                             <option value="Export">Export (+600 ฿)</option>
                             <option value="Pipe Industry">Pipe Industry (+0 ฿)</option>
@@ -300,9 +324,9 @@
                     </div>
                 </div>
 
-                <template x-if="customerSegment === 'Export'">
+                <template x-if="customerSegment === 'Export' || hasExportItems">
                     <div class="mb-3 p-4 bg-green-50 border border-green-200 rounded grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                        <div>
+                        <div x-show="customerSegment === 'Export'">
                             <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'Term การขาย' : 'Sales Term'"></label>
                             <select x-model="exportTerm" @change="calculatePrice" class="w-full border border-green-300 p-2.5 rounded bg-white font-bold">
                                 <option value="Ex.work">Ex.work</option>
@@ -311,15 +335,17 @@
                                 <option value="CIF">CIF</option>
                             </select>
                         </div>
-                        <div>
+                        <div x-show="customerSegment === 'Export'">
                             <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'บวกเพิ่ม (USD/Ton)' : 'Extra Cost (USD/Ton)'"></label>
                             <input type="number" x-model.number="exportExtraUsd" @input="calculatePrice" placeholder="เช่น 15" class="w-full border border-green-300 p-2.5 rounded bg-white" step="0.01">
                         </div>
                         <div>
                             <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'อัตราแลกเปลี่ยน (THB/USD)' : 'Exchange Rate'"></label>
-                            <input type="number" x-model.number="exchangeRate" @input="calculatePrice" placeholder="เช่น 35.50" class="w-full border border-green-300 p-2.5 rounded bg-white" step="0.01">
+                            <input type="number" x-model.number="exchangeRate" @input="calculatePrice()" @change="commitRate()" :disabled="editBusy" :title="editBusy ? L('ปิดการแก้ไขรายการก่อนเปลี่ยนอัตราแลกเปลี่ยน', 'Finish the item edit before changing the rate') : ''" placeholder="เช่น 35.50" class="w-full border border-green-300 p-2.5 rounded bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" step="0.01">
                         </div>
-                        <div class="col-span-1 md:col-span-3 text-xs text-green-600" x-text="lang === 'th' ? '* ระบบจะคำนวณราคาในใบเสนอราคาเป็นสกุลเงิน USD อัตโนมัติ (ปัดเศษทศนิยม)' : '* Quotation prices will be automatically calculated and rounded to whole numbers in USD'"></div>
+                        <div class="col-span-1 md:col-span-3 text-xs" :class="exchangeRate > 0 ? 'text-green-600' : 'text-amber-700 font-bold'" x-text="exchangeRate > 0
+                            ? L('* ใบเสนอราคาแสดงเป็น USD: ราคา/ตันปัดเป็น USD เต็มจำนวน · Amount = ตัน × ราคา/ตันบนใบ · ยอดรวม = ผลรวมทุกบรรทัด (ตรงกับที่ลูกค้าคิด) · ส่วนลดของรายการ Export กรอกเป็น USD/ตัน', '* Shown in USD: unit price rounded to whole USD · Amount = qty × printed unit price · Total = sum of lines · Export discounts are entered in USD/ton')
+                            : L('* ยังไม่ได้กรอกอัตราแลกเปลี่ยน: ใบนี้จะคิดและแสดงเป็นบาท และส่วนลดเป็นบาท/ตัน — ถ้าจะเสนอราคาเป็น USD ให้กรอกอัตราแลกเปลี่ยนก่อนเพิ่มรายการ', '* No exchange rate yet: this quotation is priced in THB and discounts are THB/ton — enter the rate before adding items to quote in USD')"></div>
                     </div>
                 </template>
 
@@ -328,17 +354,19 @@
 
                 <div class="bg-gray-100 p-4 rounded text-center mb-4 border border-gray-300 shadow-inner">
                     <div class="text-sm text-gray-500 font-bold" x-text="lang === 'th' ? 'ราคาประเมิน (ไม่รวม VAT)' : 'Estimated Net Price (excl. VAT)'"></div>
-                    <div class="text-3xl font-bold text-red-600 mt-1" x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(calculatedPrice / exchangeRate) + ' USD/Ton' : formatCurrency(calculatedPrice) + ' THB/Ton'"></div>
+                    <div class="text-3xl font-bold text-red-600 mt-1" x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(usdUnit(calculatedPrice, exchangeRate)) + ' USD/Ton' : formatCurrency(calculatedPrice) + ' THB/Ton'"></div>
+                    <div x-show="priceMissing.length" class="text-xs text-amber-700 mt-1 font-bold" x-text="L('⚠ ไม่พบในตารางราคาปัจจุบัน: ', '⚠ Not in the current price table: ') + priceMissing.map(m => m === 'spec' ? L('เกรด', 'grade') + ' ' + spec : (m === 'coating' ? 'coating ' + coating : L('ความหนา', 'thickness') + ' ' + thickness)).join(', ') + L(' (คิดส่วนเพิ่มเป็น 0)', ' (extra counted as 0)')"></div>
                     <template x-if="exchangeRate > 0">
                         <div class="text-sm text-gray-500 mt-1" x-text="'( ≈ ' + formatCurrency(calculatedPrice) + ' THB/Ton )'"></div>
                     </template>
                 </div>
 
-                <button @click="addItem" :disabled="!!savedNo" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700 transition text-lg disabled:opacity-50 disabled:cursor-not-allowed" x-text="lang === 'th' ? '+ เพิ่มรายการลงใบเสนอราคา' : '+ Add Item to Quotation'"></button>
+                <button @click="$event.detail > 1 || addItem()" :disabled="!!savedNo || !!quickDraft" :class="specEdit ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'" class="w-full text-white p-3 rounded font-bold transition text-lg disabled:opacity-50 disabled:cursor-not-allowed" x-text="specEdit ? L('💾 อัปเดตรายการที่ ' + itemNo(specEdit.uid), '💾 Update item ' + itemNo(specEdit.uid)) : (lang === 'th' ? '+ เพิ่มรายการลงใบเสนอราคา' : '+ Add Item to Quotation')"></button>
+                <button x-show="specEdit" type="button" @click="$event.detail > 1 || cancelSpecEdit()" class="w-full mt-2 bg-white border border-amber-500 text-amber-700 p-2 rounded font-bold hover:bg-amber-50" x-text="L('ยกเลิกการแก้ไขรายการ', 'Cancel item edit')"></button>
             </div>
 
             <template x-if="!savedNo">
-                <button @click="saveAndPrint" :disabled="isSaving" :class="isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'" class="w-full text-white p-4 rounded shadow font-bold transition text-lg mt-4 flex justify-center items-center">
+                <button @click="$event.detail > 1 || saveAndPrint()" :disabled="isSaving || editBusy" :title="editBusy ? L('กำลังแก้ไขรายการ — ใช้ค่า/อัปเดต หรือยกเลิกก่อน', 'Finish or cancel the item edit first') : ''" :class="(isSaving || editBusy) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'" class="w-full text-white p-4 rounded shadow font-bold transition text-lg mt-4 flex justify-center items-center">
                     <span x-show="isSaving" class="loader"></span>
                     <span x-text="isSaving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (reviseOf ? L('💾 บันทึกฉบับแก้ไข (Rev.' + (reviseOf.rev + 1) + ') และสั่งพิมพ์', '💾 Save revision (Rev.' + (reviseOf.rev + 1) + ') & Print') : (lang === 'th' ? '💾 บันทึกส่วนกลางและสั่งพิมพ์' : '💾 Save to Central & Print'))"></span>
                 </button>
@@ -355,9 +383,9 @@
                         <span x-text="L('ฉบับนี้ถูกแทนที่แล้ว ฉบับล่าสุดคือ ', 'Superseded — latest version is ')"></span>
                         <button type="button" class="underline text-blue-700 font-bold" @click="openQuotation(docMeta.currentNo, 'view')" x-text="docMeta ? docMeta.currentNo : ''"></button>
                     </div>
-                    <button @click="printAgain" class="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded shadow font-bold transition text-lg" x-text="lang === 'th' ? '🖨️ พิมพ์ซ้ำ' : '🖨️ Print again'"></button>
+                    <button @click="$event.detail > 1 || printAgain()" class="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded shadow font-bold transition text-lg" x-text="lang === 'th' ? '🖨️ พิมพ์ซ้ำ' : '🖨️ Print again'"></button>
                     <button x-show="hasFeature('revise') && docMeta && canEditDeal(docMeta)" @click="reviseCurrentDoc()" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-3 rounded shadow font-bold transition" x-text="docMeta && !docMeta.cur ? L('📝 ออกฉบับแก้ไขจากฉบับล่าสุด', '📝 Revise the latest version') : L('📝 ออกฉบับแก้ไข (Rev. ใหม่)', '📝 Revise (new Rev.)')"></button>
-                    <button @click="newQuotation" class="w-full bg-white border border-blue-600 text-blue-700 p-3 rounded shadow font-bold hover:bg-blue-50 transition" x-text="lang === 'th' ? '🆕 เริ่มใบเสนอราคาใหม่' : '🆕 New quotation'"></button>
+                    <button @click="isSaving || printing || newQuotation()" class="w-full bg-white border border-blue-600 text-blue-700 p-3 rounded shadow font-bold hover:bg-blue-50 transition" x-text="lang === 'th' ? '🆕 เริ่มใบเสนอราคาใหม่' : '🆕 New quotation'"></button>
                 </div>
             </template>
         </div>
@@ -406,42 +434,86 @@
                     </div>
                 </div>
 
-                <table class="w-full mb-6 border-collapse">
+                <!-- v1.7: ตารางแยกคอลัมน์ตาม feedback ลูกค้า (หัวข้อประเภทสินค้า + ขนาด / สลิต / สเปก) -->
+                <table class="w-full mb-6 border-collapse table-fixed text-xs">
+                    <colgroup><col style="width: 5%"><col style="width: 15%"><col style="width: 10%"><col><col style="width: 8%"><col style="width: 13%"><col style="width: 17%"></colgroup>
                     <thead>
                         <tr class="bg-[#1e3a8a] text-white print-color-adjust">
-                            <th class="border p-2 w-10 text-center">No.</th><th class="border p-2">Description</th><th class="border p-2 text-center w-24">Q'ty<br>(Tons)</th><th class="border p-2 text-right w-32">Unit Price<br>(Net Price)</th><th class="border p-2 text-right w-32">Amount</th>
+                            <th class="border p-2 text-center">No.</th>
+                            <th class="border p-2 text-center">Thickness x Width<br>(mm)</th>
+                            <th class="border p-2 text-center">Slit<br>(mm)</th>
+                            <th class="border p-2 text-center">Spec</th>
+                            <th class="border p-2 text-center">Q'ty<br>(Tons)</th>
+                            <th class="border p-2 text-right">Unit Price<br>(Net Price)</th>
+                            <th class="border p-2 text-right">Amount</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <template x-for="(item, index) in items" :key="index">
-                            <tr class="print:break-inside-avoid">
-                                <td class="border p-2 text-center align-top" x-text="index + 1"></td>
-                                <td class="border p-2 text-xs">
-                                    <div class="font-bold text-sm" x-text="(item.productType === 'galvanized' ? 'GALVANIZED STEEL THICKNESS ' : 'Mg-Al-Zn STEEL THICKNESS ') + Number(item.thickness).toFixed(2) + ' MM'"></div>
-                                    <div class="text-gray-700 mt-1">Grade: <span x-text="item.spec"></span> | Coating: <span x-text="item.coating"></span></div>
-                                    <div class="text-gray-700">Dimension: <span x-text="item.baseThicknessType + ', Width ' + item.width + ' mm, ' + item.edgeLabel + (item.slitSize ? ' (Size ' + item.slitSize + ' mm)' : '')"></span></div>
-                                    <div class="text-gray-700">Surface: <span x-text="item.surfaceLabel"></span> <span class="font-bold ml-1 text-blue-800" x-text="item.packagingLabel !== '0' ? '| Packaging: ' + item.packagingLabel : ''"></span></div>
-                                    
-                                    <template x-if="item.additionalDetails"><div class="text-gray-600 italic mt-1" x-text="item.additionalDetails"></div></template>
+                    <!-- v1.6: 1 รายการ = 1 tbody (แถวรายการ + แผงแก้ไขที่ไม่พิมพ์) · key = uid เพื่อแก้/ลบไม่ผิดแถว -->
+                    <template x-for="(item, index) in items" :key="item.uid">
+                        <tbody class="print:break-inside-avoid">
+                            <tr x-show="isGroupStart(items, index)" class="bg-gray-100 print-color-adjust print:break-after-avoid">
+                                <td colspan="7" class="border p-2 text-sm font-bold text-[#1e3a8a]" x-text="L('ประเภทสินค้า: ', 'Product: ') + productTypeLabel(item.productType)"></td>
+                            </tr>
+                            <tr class="print:break-inside-avoid" :class="rowEditing(item) ? 'bg-amber-50 outline outline-2 outline-amber-400 print:bg-white print:outline-none' : ''">
+                                <td class="border p-2 text-center align-top">
+                                    <div x-text="index + 1"></div>
                                 </td>
-                                <td class="border p-2 text-center align-top" x-text="item.qty.toFixed(2)"></td>
-                                <td class="border p-2 text-right align-top">
-                                    <div x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(item.price / exchangeRate) + ' USD' : formatCurrency(item.price) + ' THB'"></div>
+                                <td class="border px-1.5 py-2 text-center align-top print:whitespace-nowrap" x-text="sizeText(item)"></td>
+                                <td class="border px-1.5 py-2 text-center align-top" x-text="slitText(item).replace(/\+/g, '+' + String.fromCharCode(8203))"></td>
+                                <td class="border p-2 align-top break-words">
+                                    <div><span x-text="specText(item)"></span> <span x-show="item.edited && !savedNo" class="no-print ml-1 text-[10px] leading-tight bg-amber-100 text-amber-800 rounded px-1 whitespace-nowrap" x-text="L('แก้ไขแล้ว', 'edited')"></span></div>
+                                    <div x-show="packagingText(item)" class="text-gray-700" x-text="packagingText(item)"></div>
+                                    <template x-if="item.additionalDetails"><div class="text-gray-600 italic whitespace-pre-line" x-text="item.additionalDetails"></div></template>
                                 </td>
-                                <td class="border p-2 text-right align-top">
-                                    <div x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(item.amount / exchangeRate) + ' USD' : formatCurrency(item.amount) + ' THB'"></div>
-                                    <button x-show="!savedNo" @click="items.splice(index, 1)" class="no-print text-red-500 text-xs mt-2 underline" x-text="lang === 'th' ? 'ลบ' : 'Delete'"></button>
+                                <td class="border px-1.5 py-2 text-center align-top" x-text="item.qty.toFixed(2)"></td>
+                                <td class="border px-1.5 py-2 text-right align-top">
+                                    <div class="print:whitespace-nowrap" x-text="docUsd ? formatCurrencyNoDecimals(docUsd.lines[index].unit) + ' USD' : formatCurrency(item.price) + ' THB'"></div>
+                                </td>
+                                <td class="border px-1.5 py-2 text-right align-top">
+                                    <div class="print:whitespace-nowrap" x-text="docUsd ? usdAmountText(docUsd.lines[index].amount) : formatCurrency(item.amount) + ' THB'"></div>
+                                    <div x-show="!savedNo && !isSaving" class="no-print mt-2 flex flex-col items-end gap-1 text-xs">
+                                        <button type="button" @click="startQuickEdit(item)" :disabled="editBusy" class="underline text-blue-700 disabled:opacity-30 disabled:no-underline" x-text="L('✏️ แก้ราคา/ปริมาณ', '✏️ Price/qty')"></button>
+                                        <button type="button" @click="startSpecEdit(item)" :disabled="editBusy" class="underline text-amber-700 disabled:opacity-30 disabled:no-underline" x-text="L('🔧 แก้สเปก', '🔧 Edit spec')"></button>
+                                        <button type="button" @click="$event.detail > 1 || deleteItem(item)" :disabled="editBusy" class="underline text-red-500 disabled:opacity-30 disabled:no-underline" x-text="lang === 'th' ? 'ลบ' : 'Delete'"></button>
+                                    </div>
                                 </td>
                             </tr>
-                        </template>
-                    </tbody>
+                            <tr class="no-print" x-show="quickDraft && quickDraft.uid === item.uid">
+                                <template x-if="quickDraft && quickDraft.uid === item.uid">
+                                    <td colspan="7" class="border-2 border-amber-400 bg-amber-50 p-3 text-sm">
+                                        <div class="font-bold text-amber-900 mb-2" x-text="L('✏️ แก้ราคา/ปริมาณ รายการที่ ', '✏️ Price/qty — item ') + (index + 1) + L(' (ไม่คำนวณใหม่จากตารางราคา)', ' (price table is not re-applied)')"></div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <label class="block"><span class="block text-xs mb-1" x-text="L('ปริมาณ (ตัน)', 'Quantity (tons)')"></span>
+                                                <input type="number" step="0.01" x-model.number="quickDraft.qty" class="w-full border p-2 rounded bg-white"></label>
+                                            <label class="block"><span class="block text-xs mb-1 font-bold text-green-700" x-text="L('ส่วนลด/ตัน (', 'Discount/ton (') + (quickDraft.unit === 'USD' ? 'USD' : L('บาท', 'THB')) + ')'"></span>
+                                                <input type="number" step="0.01" x-model.number="quickDraft.discount" @input="quickDraft.discountTouched = true" class="w-full border-2 border-green-500 p-2 rounded bg-white font-bold text-green-800"></label>
+                                            <label class="block"><span class="block text-xs mb-1" x-text="L('รายละเอียดเพิ่มเติม', 'Additional details')"></span>
+                                                <textarea rows="2" x-model="quickDraft.details" class="w-full border p-2 rounded bg-white"></textarea></label>
+                                        </div>
+                                        <div x-show="quickDraft.hint" class="text-xs text-gray-600 mt-2" x-text="quickDraft.hint"></div>
+                                        <template x-if="quickPreview">
+                                            <div class="mt-2 text-sm">
+                                                <span x-text="L('ราคา/ตัน: ', 'Unit price: ') + quickPreview.oldUnit"></span>
+                                                <span x-show="quickPreview.changed" x-text="' → ' + quickPreview.newUnit" class="font-bold text-red-600"></span>
+                                                <span class="ml-3" x-text="L('Amount ใหม่: ', 'New amount: ') + quickPreview.amount"></span>
+                                            </div>
+                                        </template>
+                                        <div class="mt-3 flex gap-2">
+                                            <button type="button" @click="$event.detail > 1 || applyQuick()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded font-bold" x-text="L('ใช้ค่านี้', 'Apply')"></button>
+                                            <button type="button" @click="$event.detail > 1 || cancelQuick()" class="bg-white border border-gray-400 px-4 py-1.5 rounded" x-text="L('ยกเลิก', 'Cancel')"></button>
+                                        </div>
+                                    </td>
+                                </template>
+                            </tr>
+                        </tbody>
+                    </template>
                     <tbody x-show="items.length > 0" class="print:break-inside-avoid">
                         <tr class="font-bold bg-gray-50 print-color-adjust">
-                            <td colspan="2" class="border p-2 text-right">GRAND TOTAL</td><td class="border p-2 text-center" x-text="grandTotalQty.toFixed(2)"></td><td class="border p-2"></td>
+                            <td colspan="4" class="border p-2 text-right">GRAND TOTAL</td><td class="border p-2 text-center" x-text="grandTotalQty.toFixed(2)"></td><td class="border p-2"></td>
                             <td class="border p-2 text-right text-red-600">
-                                <div x-text="exchangeRate > 0 ? formatCurrencyNoDecimals(grandTotalAmount / exchangeRate) + ' USD' : formatCurrency(grandTotalAmount) + ' THB'"></div>
-                                <template x-if="exchangeRate > 0">
-                                    <div class="text-xs text-gray-500 mt-1 font-normal" x-text="'( ≈ ' + formatCurrency(grandTotalAmount) + ' THB )'"></div>
+                                <div class="print:whitespace-nowrap" x-text="docUsd ? usdAmountText(docUsd.total) : formatCurrency(grandTotalAmount) + ' THB'"></div>
+                                <template x-if="docUsd">
+                                    <div class="text-[11px] text-gray-500 mt-1 font-normal" x-text="'≈ ' + formatCurrency(docUsd.thb) + ' THB'"></div>
                                 </template>
                             </td>
                         </tr>
@@ -1090,7 +1162,7 @@
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.5 (2026-10-09) — ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
+        // ===== AMC Quotation App v1.7 (2026-10-12) — ตารางรายการแบบใหม่ (ประเภทสินค้า · Thickness x Width · Slit · Spec) · v1.6 แก้ไขรายการทีละบรรทัด (ส่วนลด/ปริมาณ/สเปก) + ยอด USD = ตัน × ราคา/ตันบนใบ · v1.5 ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -1136,6 +1208,253 @@
                 specs: { "CS-A": 0, "CS-B": 0, "SS230": 0, "SS255": 0, "SS275": 0, "SS340-1": 350, "SS340-2": 350, "SS340-3": 420, "SS340-4": 350, "SS380": 420, "SS410": 420, "SS480": 420 }
             }
         };
+
+        // ===================================================================================
+        //  v1.6 ราคา / USD / แก้ไขรายการ — ฟังก์ชันกลาง (อยู่นอก Alpine: ทดสอบแยกได้ใน test/item-tests.html)
+        // ===================================================================================
+        const CHROME_EXTRAS = { "None chrome": 0, "Cr3": 0, "CrFree": 200 };
+        const SEGMENT_EXTRAS = { "Pipe construction": 0, "Export": 600, "Pipe Industry": 0, "Furniture": 0, "Purlin": 1000, "Local content": 1500, "Home Appliance": 2000, "Grand Asia": 1000 };
+        const PACKAGING_EXTRAS = { "0": 0, "Coil": 300, "Slit": 300, "Sheet": 300, "Export": 500 };
+        // ช่องในฟอร์มที่กำหนดราคา/สเปกของรายการ (เก็บไว้ใน item.input เพื่อดึงกลับมาแก้ได้ครบ)
+        const ITEM_INPUT_KEYS = ['productType', 'basePrice', 'spec', 'baseThicknessType', 'thickness', 'width', 'coating', 'edgeType', 'slitSize',
+            'spangleType', 'chromeTreatment', 'oilExtra', 'skinpassExtra', 'fingerExtra', 'transportExtra', 'customerSegment', 'packagingType', 'exportTerm', 'exportExtraUsd'];
+
+        // ปัดครึ่งขึ้น โดยตัดเศษเลขฐานสองก่อน (828.4999999999 -> 828.5 -> 829, 1.005 -> 1.01)
+        function roundHalfUp(x, dp) {
+            const n = Number(x); if (!isFinite(n)) return 0;
+            const p = Number(n.toPrecision(12)), a = Math.abs(p), s = p < 0 ? -1 : 1;
+            let r = Number(Math.round(Number(a + 'e' + dp)) + 'e-' + dp);
+            if (!isFinite(r)) r = Math.round(a * Math.pow(10, dp)) / Math.pow(10, dp);
+            return s * r;
+        }
+        function round2(x) { return roundHalfUp(x, 2); }
+        function hasRate(rate) { return Number(rate) > 0; }
+
+        // สูตรราคา (บาท/ตัน) — ลำดับการบวกเหมือน calculatePrice() v1.5 ทุกบรรทัด (มีเทสต์ golden เทียบ)
+        // inp = ค่าจากฟอร์ม · opts = { rate, discountThb, discountUsd }
+        // ใบ Export ที่มีอัตรา: ส่วนลดเป็น USD (แปลงเป็นบาท = USD × อัตรา) · อื่น ๆ ส่วนลดเป็นบาท
+        function computePrice(inp, opts) {
+            opts = opts || {};
+            const pData = pricingData[inp.productType] || pricingData.galvanized;
+            const rate = Number(opts.rate) > 0 ? Number(opts.rate) : 0;
+            const missing = [];
+            let total = parseFloat(inp.basePrice) || 0;
+            const row = pData.coatingMatrix.find(r => inp.thickness >= r.range[0] && inp.thickness <= r.range[1]);
+            const extraThickness = row ? row.extraThickness : 0;
+            if (row) {
+                total += row.extraThickness;
+                total += row[inp.coating] || 0;
+                if (row[inp.coating] === undefined) missing.push('coating');
+            } else missing.push('thickness');
+            const widthExtra = (inp.width >= 491 && inp.width <= 580) ? 200 : 0;
+            total += widthExtra;
+            if (pData.specs[inp.spec]) total += pData.specs[inp.spec];
+            if (pData.specs[inp.spec] === undefined) missing.push('spec');
+            const spangleCost = (inp.spangleType === 'Zero' && inp.productType === 'galvanized') ? 150 : 0;
+            total += parseInt(inp.edgeType) + spangleCost + parseInt(inp.oilExtra) +
+                     parseInt(inp.skinpassExtra) + parseInt(inp.fingerExtra) + parseInt(inp.transportExtra);
+            total += CHROME_EXTRAS[inp.chromeTreatment] || 0;
+            total += SEGMENT_EXTRAS[inp.customerSegment] || 0;
+            total += PACKAGING_EXTRAS[inp.packagingType] || 0;
+            total += inp.baseThicknessType === 'BMT' ? 100 : 0;
+            const thbPart = total;                                   // ส่วนที่เป็นบาท (ก่อนค่าบวก USD และส่วนลด)
+            const usdMode = inp.customerSegment === 'Export' && rate > 0;
+            const extraUsd = (usdMode && inp.exportExtraUsd > 0) ? parseFloat(inp.exportExtraUsd) : 0;
+            const discountUsd = usdMode ? (parseFloat(opts.discountUsd) || 0) : 0;
+            const discountThb = usdMode ? discountUsd * rate : (parseFloat(opts.discountThb) || 0);
+            return { total: priceFromParts(thbPart, extraUsd, discountThb, rate), thbPart, extraThickness, widthExtra, extraUsd, discountUsd, discountThb, usdMode, missing };
+        }
+        // ราคาสุทธิจากส่วนประกอบ — ใช้ทั้งตอนเพิ่มรายการ แก้ส่วนลด และเปลี่ยนอัตรา (คิดใหม่จากต้นทุกครั้ง ไม่บวกทบ)
+        function priceFromParts(thbPart, extraUsd, discountThb, rate) {
+            let total = thbPart;
+            if (extraUsd > 0 && rate > 0) total += parseFloat(extraUsd) * parseFloat(rate);
+            total -= discountThb;
+            return total;
+        }
+        // ข้อความบนเอกสาร (ใช้ร่วมกันทั้งเพิ่มและอัปเดตรายการ -> หน้าสรุปสเปกอ่านได้เหมือนเดิม)
+        function buildLabels(inp) {
+            return {
+                edgeLabel: inp.edgeType == '250' ? 'Slit edge' : 'Mill edge',
+                slitSize: inp.edgeType == '250' ? inp.slitSize : null,
+                surfaceLabel: [inp.spangleType, inp.chromeTreatment,
+                    inp.oilExtra == '200' ? 'Slightly oil' : 'Unoil',
+                    inp.skinpassExtra == '200' ? 'skinpass' : 'non skinpass',
+                    inp.fingerExtra == '200' ? 'AFP' : 'Non AFP'].join(', '),
+                packagingLabel: inp.packagingType,
+                exportTerm: inp.customerSegment === 'Export' ? inp.exportTerm : ''
+            };
+        }
+
+        // ---- v1.7 ตารางรายการบนเอกสาร: No. | Thickness x Width | Slit | Spec | Q'ty | Unit Price | Amount ----
+        function productTypeLabel(pt) { return pt === 'mgalzn' ? 'Mg-Al-Zn STEEL' : 'GALVANIZED STEEL'; }
+        function isGroupStart(items, i) { return i === 0 || !items[i - 1] || (items[i - 1].productType === 'mgalzn') !== (items[i].productType === 'mgalzn'); }
+        function sizeText(it) {   // 'TCT 0.45 x 550'
+            const t = Number(it.thickness), w = Number(it.width);
+            return [String(it.baseThicknessType || '').trim(), (isFinite(t) && t ? t.toFixed(2) : '-') + ' x ' + (isFinite(w) && w ? String(w) : '-')].filter(Boolean).join(' ');
+        }
+        function slitText(it) {   // ขนาดสลิต · Mill edge = '-' · Slit edge ไม่ระบุขนาด = 'Slit edge' · รายการที่ประกอบกลับจากชีต 'Slit edge 100+150 mm' -> '100+150'
+            const size = String(it.slitSize == null ? '' : it.slitSize).trim();
+            const raw = String(it.edgeLabel == null ? '' : it.edgeLabel).trim();
+            const e = /^(slit|mill)\s*edge(?:\s+(.*?))?(?:\s*mm)?$/i.exec(raw);
+            if (e && e[1].toLowerCase() === 'mill' && !e[2]) return '-';                     // Mill edge ธรรมดา
+            if (e && e[1].toLowerCase() === 'slit') return size || (e[2] || '').trim() || 'Slit edge';
+            return [raw, size].filter(Boolean).join(' ') || '-';                            // ข้อความแบบอื่น (พิมพ์เองในชีต) -> แสดงตามที่พิมพ์
+        }
+        function specText(it) {   // บรรทัดแรกของช่อง Spec: เกรด, coating, ผิว
+            return [it.spec, it.coating, it.surfaceLabel].map(x => String(x == null ? '' : x).trim()).filter(Boolean).join(', ');
+        }
+        function packagingText(it) { const p = String(it.packagingLabel == null ? '' : it.packagingLabel).trim(); return p && p !== '0' ? 'Packaging: ' + p : ''; }
+
+        // ---- USD บนเอกสาร: ราคา/ตันปัดเป็น USD เต็ม · Amount = ตัน × ราคา/ตันที่พิมพ์ · รวม = ผลรวมบรรทัด (ตรงกับที่ลูกค้าคิด) ----
+        function amountThb(qty, price) { return Math.round(Number(qty) * Number(price) * 100) / 100; }   // ยอดบาท = สูตร v1.5 (ใบในประเทศได้ตัวเลขเดิมทุกสตางค์)
+        function qtyDecimalsOk(q) { const n = Number(q); return isFinite(n) && Math.abs(n * 100 - Math.round(n * 100)) < 1e-6; }   // ปริมาณไม่เกิน 2 ตำแหน่ง (ตรงกับที่พิมพ์บนใบ)
+        function usdUnit(price, rate) { return roundHalfUp(Number(price) / Number(rate), 0); }
+        function usdLine(item, rate) {
+            const unit = usdUnit(item.price, rate);
+            return { unit, amount: round2((Number(item.qty) || 0) * unit) };
+        }
+        // mode: 'live' (คำนวณจากราคาบาท) · 'stored' (ใบที่บันทึกด้วยกติกาใหม่ ใช้ค่าที่ประทับไว้) · 'legacy' (ใบเก่า แสดงแบบเดิม v1.5)
+        function usdDoc(items, rate, mode) {
+            items = items || [];
+            if (mode === 'legacy') {          // เหมือน v1.5: ยอดบาท ÷ อัตรา แล้วปัดเป็นจำนวนเต็มทีละช่อง
+                const lines = items.map(it => ({ unit: Math.round(Number(it.price) / rate), amount: Math.round(Number(it.amount) / rate) }));
+                const thb = Math.round(items.reduce((s, it) => s + (Number(it.amount) || 0), 0) * 100) / 100;
+                return { lines, total: Math.round(thb / rate), thb, decimals: 0 };
+            }
+            const lines = items.map(it => (mode === 'stored' && it.usdRule === 2 && it.priceUsd !== undefined)
+                ? { unit: Number(it.priceUsd), amount: Number(it.amountUsd) } : usdLine(it, rate));
+            const total = round2(lines.reduce((s, l) => s + l.amount, 0));
+            // "≈ บาท" ใต้ยอดรวม = ยอดบาทรวมที่บันทึกในระบบ (ตรงกับหน้าประวัติ/สรุป)
+            const thb = Math.round(items.reduce((s, it) => s + (Number(it.amount) || 0), 0) * 100) / 100;
+            return { lines, total, thb, decimals: 2 };
+        }
+        // ใบที่บันทึกด้วย v1.6: ใช้ค่าที่ประทับได้เมื่อทุกรายการประทับด้วยอัตราของใบ และตรงกับราคา/ปริมาณของรายการ
+        // (ถ้าหน้าเว็บรุ่นเก่าที่เปิดค้างคัดลอกใบไปแก้ ค่าประทับจะไม่ตรง -> แสดงแบบเดิม)
+        function stampsValid(items, rate) {
+            return (items || []).length > 0 && items.every(it => it.usdRule === 2 && it.priceUsd !== undefined && Number(it.fxRate) === Number(rate)
+                && Number(it.priceUsd) === usdUnit(it.price, rate) && Number(it.amountUsd) === round2((Number(it.qty) || 0) * Number(it.priceUsd)));
+        }
+        // ตอนบันทึก: ประทับค่า USD ที่พิมพ์ลงในแต่ละรายการ (หลังบ้านเก็บรายการครบทุกช่อง) · ไม่มีอัตรา = ล้างค่า USD เก่า
+        function stampUsd(items, rate) {
+            return (items || []).map(it => {
+                const o = Object.assign({}, it);
+                delete o.usdRule; delete o.priceUsd; delete o.amountUsd;
+                if (hasRate(rate)) { const l = usdLine(o, rate); o.usdRule = 2; o.priceUsd = l.unit; o.amountUsd = l.amount; o.fxRate = Number(rate); }
+                return o;
+            });
+        }
+        // เปลี่ยนอัตราแลกเปลี่ยน: รายการ Export ที่คิดเป็น USD คิดราคาบาทใหม่จากส่วนบาท + (บวก USD − ส่วนลด USD) × อัตราใหม่
+        // (รายการที่คิดเป็นบาท เช่นเพิ่มตอนยังไม่มีอัตรา ราคาบาทคงเดิม)
+        function itemExtraUsd(it) { return it.input && Number(it.input.exportExtraUsd) > 0 ? Number(it.input.exportExtraUsd) : 0; }
+        function canRebase(it) { return !!(it && it.customerSegment === 'Export' && it.thbPart !== undefined && (it.discountUnit === 'USD' || itemExtraUsd(it) > 0)); }
+        function rebaseItemRate(it, rate) {
+            if (!canRebase(it) || !hasRate(rate)) return it;
+            const o = Object.assign({}, it);
+            const extraUsd = itemExtraUsd(it);
+            o.discount = it.discountUnit === 'USD' ? (Number(it.discountUsd) || 0) * rate : (Number(it.discount) || 0);   // ส่วนลด USD คงที่เป็น USD · ส่วนลดบาทคงที่เป็นบาท
+            o.price = priceFromParts(Number(it.thbPart), extraUsd, o.discount, rate);
+            o.amount = amountThb(o.qty, o.price);
+            o.fxRate = Number(rate);
+            return o;
+        }
+        // แก้ราคา/ปริมาณในตาราง (ส่วนลดต่อตัน) — ไม่คำนวณใหม่จากตารางราคา: ราคาใหม่ = ราคาก่อนส่วนลด − ส่วนลดใหม่
+        // draft = { qty, discount (หน่วยตาม quickUnit), discountTouched, details }
+        function quickUnit(it, rate) { return it.customerSegment === 'Export' && hasRate(rate) ? 'USD' : 'THB'; }
+        function quickDiscountValue(it, rate) {     // ค่าส่วนลดที่แสดงในช่องแก้
+            if (quickUnit(it, rate) === 'USD') return it.discountUsd !== undefined ? Number(it.discountUsd) : round2((Number(it.discount) || 0) / rate);
+            return Number(it.discount) || 0;
+        }
+        function quickDiscEdited(draft) {
+            if (draft.discount0 === undefined) return !!draft.discountTouched;
+            return Math.abs((parseFloat(draft.discount) || 0) - (Number(draft.discount0) || 0)) > 1e-9;
+        }
+        function applyQuickEdit(it, draft, rate) {
+            const o = Object.assign({}, it);
+            o.qty = round2(parseFloat(draft.qty) || 0);
+            if (quickDiscEdited(draft)) {
+                const d = parseFloat(draft.discount) || 0;
+                if (quickUnit(it, rate) === 'USD') {
+                    const thb = d * rate;
+                    if (canRebase(it)) o.price = priceFromParts(Number(it.thbPart), itemExtraUsd(it), thb, rate);
+                    else {   // รายการเก่า/คิดเป็นบาท: ส่วนบาท = ราคาก่อนส่วนลด ณ อัตรานี้ -> ต่อไปเปลี่ยนอัตราแล้วส่วนลด USD คงที่
+                        o.thbPart = Number(it.price) + (Number(it.discount) || 0);
+                        o.price = priceFromParts(o.thbPart, 0, thb, rate);
+                    }
+                    o.discountUsd = d; o.discount = thb; o.discountUnit = 'USD'; o.fxRate = Number(rate);
+                } else {
+                    o.price = (it.thbPart !== undefined && it.customerSegment !== 'Export') ? priceFromParts(Number(it.thbPart), 0, d, 0)
+                        : Number(it.price) + (Number(it.discount) || 0) - d;
+                    o.discount = d; o.discountUnit = 'THB'; delete o.discountUsd;
+                }
+            }
+            if (o.qty !== Number(it.qty) || o.price !== Number(it.price)) o.amount = amountThb(o.qty, o.price);   // แก้แค่รายละเอียด -> ยอดเดิม
+            if (draft.details !== undefined) o.additionalDetails = draft.details;
+            return o;
+        }
+
+        // ---- ดึงรายการกลับขึ้นฟอร์ม: รายการ v1.6 มี item.input ครบ · รายการเก่าเดาจากข้อความ + คำนวณราคา Base ย้อนกลับ ----
+        function parseSurface(label, productType) {
+            const out = {}, unsure = [];
+            String(label || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tok => {
+                const t = tok.toLowerCase();
+                if (/skin\s*-?\s*pass/.test(t)) out.skinpassExtra = /non|no\b|without/.test(t) ? '0' : '200';
+                else if (/afp|finger/.test(t)) out.fingerExtra = /non\s*-?\s*afp|no\s*afp|without/.test(t) ? '0' : '200';
+                else if (/oil|dry/.test(t)) out.oilExtra = /un\s*-?\s*oil|non\s*-?\s*oil|no\s*oil|dry/.test(t) ? '0' : '200';
+                else if (/chrom|cr\s*-?\s*free|crfree|\bcr\s*-?\s*3\b|\bcr3\b/.test(t)) {
+                    if (/free/.test(t)) out.chromeTreatment = 'CrFree';
+                    else if (/none|non|no\s*chrom|without/.test(t)) out.chromeTreatment = 'None chrome';
+                    else if (/3/.test(t)) out.chromeTreatment = 'Cr3';
+                    else unsure.push('Chrome "' + tok + '"');
+                } else if (/spangle|minimi[sz]|zero|regular|normal/.test(t)) {
+                    if (/zero/.test(t)) out.spangleType = 'Zero';
+                    else { out.spangleType = 'Minimize'; if (!/minimi[sz]/.test(t)) unsure.push('Spangle "' + tok + '" → Minimize'); }
+                } else unsure.push('"' + tok + '"');
+            });
+            const defaults = { spangleType: productType === 'mgalzn' ? 'Zero' : 'Minimize', chromeTreatment: 'Cr3', oilExtra: '0', skinpassExtra: '200', fingerExtra: '0' };
+            const names = { spangleType: 'Spangle', chromeTreatment: 'Chrome', oilExtra: 'Oil', skinpassExtra: 'Skinpass', fingerExtra: 'AFP' };
+            Object.keys(defaults).forEach(k => { if (out[k] === undefined) { out[k] = defaults[k]; unsure.push(names[k]); } });
+            if (productType === 'mgalzn' && out.spangleType !== 'Zero') out.spangleType = 'Zero';   // Mg-Al-Zn มีแค่ Zero (ไม่มีผลกับราคา)
+            return { values: out, unsure };
+        }
+        // ctx = { rate, transportExtra } ของใบปัจจุบัน -> { input, discountThb, discountUsd, legacy, unsure[] }
+        function inputsFromItem(it, ctx) {
+            ctx = ctx || {};
+            const rate = Number(ctx.rate) > 0 ? Number(ctx.rate) : 0;
+            const transport = String(ctx.transportExtra || '0');
+            const usdMode = it.customerSegment === 'Export' && rate > 0;
+            const discountUsd = usdMode ? quickDiscountValue(it, rate) : 0;
+            const discountThb = usdMode ? 0 : (Number(it.discount) || 0);
+            if (it.input && typeof it.input === 'object') {
+                const input = Object.assign({}, it.input, { transportExtra: transport });
+                const unsure = String(it.input.transportExtra || '0') !== transport ? ['transport'] : [];
+                return { input, discountThb, discountUsd, legacy: false, unsure };
+            }
+            const unsure = [];
+            const productType = it.productType === 'mgalzn' ? 'mgalzn' : 'galvanized';
+            const input = { productType, spec: String(it.spec || ''), thickness: Number(it.thickness) || 0, width: Number(it.width) || 0, coating: String(it.coating || ''),
+                transportExtra: transport, exportTerm: it.exportTerm || 'Ex.work', exportExtraUsd: '' };
+            const bt = String(it.baseThicknessType || '').toUpperCase();
+            input.baseThicknessType = bt === 'BMT' ? 'BMT' : 'TCT';
+            if (bt !== 'BMT' && bt !== 'TCT') unsure.push('TCT/BMT');
+            const e = /^(slit|mill)\s*edge\s*(.*?)(?:\s*mm)?$/i.exec(String(it.edgeLabel || '').trim());
+            if (e) {
+                input.edgeType = e[1].toLowerCase() === 'slit' ? '250' : '0';
+                input.slitSize = input.edgeType === '250' ? String(it.slitSize || e[2] || '').trim() : '';
+            } else { input.edgeType = '0'; input.slitSize = ''; unsure.push('Edge'); }
+            const sf = parseSurface(it.surfaceLabel, productType);
+            Object.assign(input, sf.values); unsure.push.apply(unsure, sf.unsure);
+            const pk = Object.keys(PACKAGING_EXTRAS).find(k => k.toLowerCase() === String(it.packagingLabel || '0').trim().toLowerCase());
+            input.packagingType = pk || '0';
+            if (!pk) unsure.push('Packaging "' + it.packagingLabel + '"');
+            if (SEGMENT_EXTRAS[it.customerSegment] !== undefined) input.customerSegment = it.customerSegment;
+            else { input.customerSegment = 'Pipe construction'; unsure.push('Segment "' + (it.customerSegment || '') + '"'); }
+            if (input.customerSegment === 'Export') unsure.push('exportExtraUsd');
+            // ราคา Base ย้อนกลับ: ราคาเดิม + ส่วนลดเดิม(บาท) − ส่วนเพิ่มตามตารางปัจจุบัน (ค่าบวก USD เดิม/ตารางที่เปลี่ยน รวมอยู่ใน Base)
+            const zero = computePrice(Object.assign({}, input, { basePrice: 0, exportExtraUsd: '' }), { rate: 0 });
+            input.basePrice = roundHalfUp(Number(it.price) + (Number(it.discount) || 0) - zero.thbPart, 6);   // เก็บทศนิยมเดิม (ค่าบวก USD × อัตรา) ไม่ให้ราคาขยับ
+            zero.missing.forEach(m => unsure.push(m === 'spec' ? 'Grade "' + input.spec + '"' : (m === 'coating' ? 'Coating "' + input.coating + '"' : 'Thickness ' + input.thickness)));
+            return { input, discountThb, discountUsd, legacy: true, unsure };
+        }
 
         // ===================================================================================
         //  หน้าสรุปสเปกลูกค้า — ฟังก์ชันรวมข้อมูล (อยู่นอก Alpine: ทดสอบแยกได้ และคำนวณเฉพาะตอนเปลี่ยนตัวกรอง)
@@ -1505,14 +1824,26 @@
                 // สำหรับ Export Segment
                 exportTerm: 'Ex.work',
                 exportExtraUsd: '',
-                exchangeRate: null, 
-                
+                exchangeRate: null,
+                discountUsd: 0,           // v1.6: ใบ Export ที่มีอัตรา -> ส่วนลดเป็น USD/ตัน (ช่องแยกจากส่วนลดบาท)
+                lastDiscMode: false,      // หน่วยส่วนลดล่าสุด (เปลี่ยนหน่วย -> ล้างส่วนลด กันเลขบาทกลายเป็น USD)
+                rateCommitted: null,      // อัตราที่รายการในใบคิดไว้แล้ว (เปลี่ยนอัตรา -> ยืนยันแล้วคิดรายการ Export ใหม่)
+                exportThbOk: false,       // ยืนยันแล้วว่าใบ Export นี้เสนอเป็นบาท (ถามครั้งเดียวต่อใบ)
+
                 additionalDetails: '',
-                
-                calculatedPrice: 0, 
-                extraThicknessPrice: 0, 
-                widthExtraPrice: 0, 
+
+                calculatedPrice: 0,
+                extraThicknessPrice: 0,
+                widthExtraPrice: 0,
+                priceMissing: [],
                 items: [],
+                // v1.6 แก้ไขรายการ: แก้ได้ทีละแถว อ้างอิงด้วย uid (ไม่ใช่ลำดับแถว)
+                uidSeq: 0,
+                quickDraft: null,         // { uid, qty, discount, discountTouched, details, unit, hint }
+                specEdit: null,           // { uid, backup, legacy, unsure[], oldPrice, oldDiscount, oldDiscShown, oldDiscUnit, convUsd }
+                editClosedAt: 0,          // เวลาที่ปิดการแก้สเปก (กันคลิกที่ 2 ของดับเบิลคลิก)
+                printing: false,          // กำลังรอเปิดหน้าพิมพ์ (กันพิมพ์ซ้ำ/หัวเรื่องหน้าต่างค้าง)
+                revNotice: '',
 
                 init() {
                     this.updateRunningNo(); this.calculatePrice();
@@ -1893,8 +2224,32 @@
                         this.companyPrefix = q.prefix || this.companyPrefix;
                         this.customerInfo = Object.assign({ name: '', address: '', phone: '', delivery: '', payment: '' }, q.customer || {});
                         this.transportExtra = String(q.transport || '0');
-                        this.exchangeRate = q.exchangeRate || null;
-                        this.items = (q.items || []).map(it => Object.assign({}, it, { qty: Number(it.qty) || 0, price: Number(it.price) || 0, amount: Number(it.amount) || 0 }));
+                        this.discardEdits(); this.revNotice = ''; this.exportThbOk = false;
+                        this.exchangeRate = q.exchangeRate || null; this.rateCommitted = this.exchangeRate;
+                        const loaded = (q.items || []).map(it => Object.assign({}, it, { qty: Number(it.qty) || 0, price: Number(it.price) || 0, amount: Number(it.amount) || 0, uid: this.newUid() }));
+                        if (mode !== 'view') {    // ฉบับใหม่ (Rev./สำเนา) ใช้กติกา USD v1.6 — แจ้งถ้ายอดต่างจากฉบับเดิม
+                            const rate = Number(this.exchangeRate), notes = [];
+                            const oldUsd = hasRate(rate) && !stampsValid(loaded, rate) ? usdDoc(loaded, rate, 'legacy').total : null;
+                            const qtyFixed = [];
+                            loaded.forEach((it, k) => {
+                                delete it.edited;
+                                const q2 = Number(Number(it.qty).toFixed(2));          // ปัดแบบที่ v1.5 พิมพ์บนใบ (toFixed)
+                                if (q2 !== it.qty) {
+                                    const oldQty = it.qty, oldAmt = it.amount;
+                                    it.qty = q2; it.amount = amountThb(q2, it.price);
+                                    qtyFixed.push(this.L('รายการที่ ', 'Item ') + (k + 1) + ': ' + oldQty + ' → ' + q2.toFixed(2) + this.L(' ตัน (ยอดบาท ', ' t (THB amount ') + this.formatCurrency(Number(oldAmt) || 0) + ' → ' + this.formatCurrency(it.amount) + ')');
+                                }
+                            });
+                            if (oldUsd !== null) {
+                                const newUsd = usdDoc(loaded, rate, 'live').total;
+                                if (Math.abs(newUsd - oldUsd) >= 0.005) notes.push(this.L('ยอดรวม USD คิดแบบใหม่ (ตัน × ราคา/ตันบนใบ ตรงกับที่ลูกค้าคิด): ฉบับเดิม ' + this.formatCurrencyNoDecimals(oldUsd) + ' → ฉบับนี้ ' + this.formatCurrency(newUsd) + ' USD',
+                                    'USD totals now use qty × printed unit price (as customers calculate): previous ' + this.formatCurrencyNoDecimals(oldUsd) + ' → this version ' + this.formatCurrency(newUsd) + ' USD'));
+                            }
+                            if (qtyFixed.length) notes.push(this.L('ปริมาณที่มีทศนิยมเกิน 2 ตำแหน่ง ปัดเป็นค่าที่พิมพ์บนใบเดิมแล้ว — กรุณาตรวจ:\n', 'Quantities with more than 2 decimals were set to the value printed on the previous version — please check:\n') + qtyFixed.join('\n'));
+                            this.revNotice = notes.join('\n');
+                        }
+                        this.items = loaded;
+                        this.lastDiscMode = this.usdDiscountMode;
                         const meta = { no: q.runningNo, root: q.root || q.runningNo, rev: Number(q.rev) || 0, replaces: q.replaces || '', cur: q.cur !== false,
                             currentNo: q.currentNo || q.runningNo, status: q.status || 'open', salesCode: q.salesCode, versions: Number(q.versions) || 1 };
                         if (mode === 'duplicate') {
@@ -1927,7 +2282,9 @@
                 },
                 cancelRevise() {
                     if (this.isSaving) return;   // กำลังบันทึกอยู่: ล้างฟอร์มตอนนี้จะทำให้พิมพ์เอกสารว่างภายใต้เลขใหม่
-                    if (!confirm(this.L('ยกเลิกการแก้ไขนี้? (ข้อมูลในฟอร์มจะถูกล้าง)', 'Discard this revision? (the form will be cleared)'))) return;
+                    const rvNo = this.reviseOf ? this.reviseOf.root + ' Rev.' + (this.reviseOf.rev + 1) : '';
+                    if (!confirm(this.L('ยกเลิกการออกฉบับแก้ไข ' + rvNo + ' ทั้งใบ?\nรายการทั้งหมด ' + this.items.length + ' รายการและข้อมูลลูกค้าในฟอร์มจะถูกล้าง (ใบเดิมไม่เปลี่ยน)\n\nถ้าต้องการยกเลิกแค่การแก้รายการเดียว ให้กด "ยกเลิก" ที่กล่องนี้ แล้วกด "ยกเลิกการแก้ไขรายการ" ใต้ฟอร์มแทน',
+                        'Discard the whole revision ' + rvNo + '?\nAll ' + this.items.length + ' item(s) and the customer details in the form will be cleared (the original stays unchanged)\n\nTo cancel only one item edit, press Cancel here and use "Cancel item edit" under the form'))) return;
                     this.newQuotation();
                 },
                 // ===== ประวัติทุกฉบับของดีล (ย้อนถึงใบแรก) =====
@@ -2043,83 +2400,251 @@
                     return `${code} (${this.formatSigned((row && row[code] !== undefined) ? row[code] : 0, 0)} ฿)`;
                 },
 
-                calculatePrice() {
-                    let pData = pricingData[this.productType];
-                    let total = parseFloat(this.basePrice) || 0;
-                    let row = pData.coatingMatrix.find(r => this.thickness >= r.range[0] && this.thickness <= r.range[1]);
-                    
-                    if (row) { 
-                        this.extraThicknessPrice = row.extraThickness; 
-                        total += row.extraThickness; 
-                        total += row[this.coating] || 0; 
-                    } 
-                    else { this.extraThicknessPrice = 0; }
-
-                    this.widthExtraPrice = (this.width >= 491 && this.width <= 580) ? 200 : 0;
-                    total += this.widthExtraPrice;
-                    if (pData.specs[this.spec]) total += pData.specs[this.spec];
-                    
-                    const chromeExtras = { "None chrome": 0, "Cr3": 0, "CrFree": 200 };
-                    const segmentExtras = { "Pipe construction": 0, "Export": 600, "Pipe Industry": 0, "Furniture": 0, "Purlin": 1000, "Local content": 1500, "Home Appliance": 2000, "Grand Asia": 1000 };
-                    const packagingExtras = { "0": 0, "Coil": 300, "Slit": 300, "Sheet": 300, "Export": 500 };
-
-                    let spangleCost = (this.spangleType === 'Zero' && this.productType === 'galvanized') ? 150 : 0;
-
-                    total += parseInt(this.edgeType) + spangleCost + parseInt(this.oilExtra) + 
-                             parseInt(this.skinpassExtra) + parseInt(this.fingerExtra) + parseInt(this.transportExtra);
-                    
-                    total += chromeExtras[this.chromeTreatment] || 0;
-                    total += segmentExtras[this.customerSegment] || 0;
-                    total += packagingExtras[this.packagingType] || 0;
-                    
-                    total += this.baseThicknessType === 'BMT' ? 100 : 0;
-                    
-                    // คำนวณค่ามูลค่าเพิ่มเติมของ Export (ถ้ามีและกรอก Exchange Rate แล้ว)
-                    let extraUsdInThb = 0;
-                    if (this.customerSegment === 'Export' && this.exchangeRate > 0 && this.exportExtraUsd > 0) {
-                        extraUsdInThb = parseFloat(this.exportExtraUsd) * parseFloat(this.exchangeRate);
-                    }
-                    total += extraUsdInThb;
-
-                    let discount = parseFloat(this.discountPerTon) || 0;
-                    total -= discount;
-
-                    this.calculatedPrice = total;
+                calculatePrice() {   // สูตรอยู่ที่ computePrice() (ฟังก์ชันกลาง ทดสอบเทียบสูตร v1.5 ได้)
+                    const r = computePrice(this, { rate: this.exchangeRate, discountThb: this.discountPerTon, discountUsd: this.discountUsd });
+                    this.extraThicknessPrice = r.extraThickness;
+                    this.widthExtraPrice = r.widthExtra;
+                    this.priceMissing = r.missing;
+                    this.calculatedPrice = r.total;
                 },
-
-                addItem() {
+                // ใบ Export ที่กรอกอัตราแล้ว -> ส่วนลดเป็น USD/ตัน
+                get usdDiscountMode() { return this.customerSegment === 'Export' && hasRate(this.exchangeRate); },
+                get hasExportItems() { return this.items.some(it => it.customerSegment === 'Export'); },
+                onFormModeChange() {   // เปลี่ยน Segment / อัตรา: ถ้าหน่วยส่วนลดเปลี่ยน (บาท <-> USD) ล้างส่วนลดในฟอร์ม
+                    if (this.usdDiscountMode !== this.lastDiscMode) { this.discountPerTon = 0; this.discountUsd = 0; this.lastDiscMode = this.usdDiscountMode; }
                     this.calculatePrice();
-                    let surfaceParts = [
-                        this.spangleType, 
-                        this.chromeTreatment,
-                        this.oilExtra == '200' ? 'Slightly oil' : 'Unoil',
-                        this.skinpassExtra == '200' ? 'skinpass' : 'non skinpass',
-                        this.fingerExtra == '200' ? 'AFP' : 'Non AFP'
-                    ];
-
-                    this.items.push({
-                        productType: this.productType, qty: parseFloat(this.qty), spec: this.spec,
+                },
+                newUid() { return 'i' + (++this.uidSeq); },
+                // รายการจากค่าในฟอร์ม (ใช้ทั้งเพิ่มและอัปเดตรายการ)
+                makeItem(uid) {
+                    const r = computePrice(this, { rate: this.exchangeRate, discountThb: this.discountPerTon, discountUsd: this.discountUsd });
+                    const input = {}; ITEM_INPUT_KEYS.forEach(k => { input[k] = this[k]; });
+                    const qty = round2(parseFloat(this.qty) || 0);
+                    const lb = buildLabels(this);
+                    const it = {
+                        uid, productType: this.productType, qty, spec: this.spec,
                         baseThicknessType: this.baseThicknessType,
                         thickness: this.thickness, width: this.width, coating: this.coating,
-                        edgeLabel: this.edgeType == '250' ? 'Slit edge' : 'Mill edge',
-                        slitSize: this.edgeType == '250' ? this.slitSize : null,
-                        surfaceLabel: surfaceParts.join(', '), 
-                        packagingLabel: this.packagingType, 
-                        customerSegment: this.customerSegment,
-                        exportTerm: this.customerSegment === 'Export' ? this.exportTerm : '',
-                        discount: parseFloat(this.discountPerTon) || 0,
+                        edgeLabel: lb.edgeLabel, slitSize: lb.slitSize, surfaceLabel: lb.surfaceLabel, packagingLabel: lb.packagingLabel,
+                        customerSegment: this.customerSegment, exportTerm: lb.exportTerm,
+                        discount: r.discountThb,
                         additionalDetails: this.additionalDetails,
-                        price: this.calculatedPrice, amount: Math.round((parseFloat(this.qty) * this.calculatedPrice) * 100) / 100
-                    });
-                    
+                        price: r.total, amount: amountThb(qty, r.total),
+                        input, thbPart: r.thbPart, discountUnit: r.usdMode ? 'USD' : 'THB'
+                    };
+                    if (r.usdMode) { it.discountUsd = r.discountUsd; it.fxRate = Number(this.exchangeRate); }
+                    return it;
+                },
+                checkItemForm() {
+                    if (!(round2(parseFloat(this.qty) || 0) > 0)) { alert(this.L('ปริมาณต้องมากกว่า 0', 'Quantity must be above 0')); return false; }
+                    if (!qtyDecimalsOk(this.qty)) { alert(this.L('กรอกปริมาณได้ไม่เกินทศนิยม 2 ตำแหน่ง (เช่น 12.35 ตัน) — ตัวเลขบนใบเสนอราคาแสดง 2 ตำแหน่ง', 'Quantity can have at most 2 decimals (e.g. 12.35 t) — the quotation shows 2 decimals')); return false; }
+                    if (this.customerSegment === 'Export' && !hasRate(this.exchangeRate) && Number(this.exportExtraUsd) > 0) {
+                        alert(this.L('กรุณากรอกอัตราแลกเปลี่ยนก่อน — ค่าบวกเพิ่ม (USD/Ton) ต้องใช้อัตราแลกเปลี่ยนในการคิดราคา', 'Please enter the exchange rate first — the extra cost (USD/Ton) needs it'));
+                        return false;
+                    }
+                    if (!(this.calculatedPrice > 0)) { alert(this.L('ราคาสุทธิต้องมากกว่า 0 — ตรวจราคา Base และส่วนลด', 'Net price must be above 0 — check base price and discount')); return false; }
+                    if (this.customerSegment === 'Export' && !hasRate(this.exchangeRate) && !this.exportThbOk) {
+                        if (!confirm(this.L('ใบนี้ยังไม่ได้กรอกอัตราแลกเปลี่ยน — รายการ Export จะคิดเป็นบาท และส่วนลดเป็นบาท/ตัน\nถ้าจะเสนอราคาเป็น USD ให้กด "ยกเลิก" แล้วกรอกอัตราแลกเปลี่ยนก่อน\n\nยืนยันเสนอราคาเป็นบาท?',
+                            'No exchange rate yet — this Export item will be priced in THB with a THB/ton discount.\nTo quote in USD, press Cancel and enter the rate first.\n\nQuote in THB?'))) return false;
+                        this.exportThbOk = true;
+                    }
+                    return true;
+                },
+                confirmDiscount(it) {   // ส่วนลดสูงผิดปกติ (> 10% ของราคาก่อนลด) -> ยืนยันก่อน กันพิมพ์เลขผิดหน่วย
+                    const before = Number(it.price) + (Number(it.discount) || 0);
+                    if (!(it.discount > 0) || it.discount <= before * 0.1) return true;
+                    const unit = it.discountUnit === 'USD' ? (it.discountUsd + ' USD') : (this.formatCurrency(Number(it.discount)) + ' บาท');
+                    return confirm(this.L('ส่วนลด ' + unit + '/ตัน = ' + (it.discount / before * 100).toFixed(1) + '% ของราคา — สูงกว่าปกติ\nยืนยันใช้ส่วนลดนี้?',
+                        'Discount ' + unit + '/ton = ' + (it.discount / before * 100).toFixed(1) + '% of the price — unusually high.\nUse this discount?'));
+                },
+                addItem() {
+                    if (this.isSaving || this.savedNo) return;
+                    if (this.specEdit) { this.updateItem(); return; }
+                    if (Date.now() - this.editClosedAt < 700) return;      // คลิกที่ 2 ของดับเบิลคลิก "อัปเดตรายการ" -> ไม่เพิ่มรายการซ้ำ
+                    this.calculatePrice();
+                    if (!this.checkItemForm()) return;
+                    const it = this.makeItem(this.newUid());
+                    if (!this.confirmDiscount(it)) return;
+                    this.items.push(it);
+                    if (it.customerSegment === 'Export' && hasRate(this.exchangeRate)) this.rateCommitted = Number(this.exchangeRate);
                     this.additionalDetails = '';
-                    this.discountPerTon = 0; 
+                    this.discountPerTon = 0; this.discountUsd = 0;
                     this.exportExtraUsd = ''; // รีเซ็ตหลังกดเพิ่มสินค้า
                     this.calculatePrice();
+                },
+                deleteItem(item) {
+                    if (this.editBusy) return;
+                    const i = this.items.findIndex(x => x.uid === item.uid);
+                    if (i >= 0) this.items.splice(i, 1);
+                },
+                get editBusy() { return !!(this.quickDraft || this.specEdit); },
+                rowEditing(item) { return !!((this.quickDraft && this.quickDraft.uid === item.uid) || (this.specEdit && this.specEdit.uid === item.uid)); },
+                itemNo(uid) { return this.items.findIndex(x => x.uid === uid) + 1; },
+
+                // ===== v1.6 แก้ราคา/ปริมาณในตาราง (ส่วนลดต่อตัน · ไม่คำนวณใหม่จากตารางราคา) =====
+                startQuickEdit(item) {
+                    if (this.editBusy || this.savedNo || this.isSaving) return;
+                    const rate = Number(this.exchangeRate);
+                    const unit = quickUnit(item, rate);
+                    const disc = quickDiscountValue(item, rate);
+                    let hint = '';
+                    if (unit === 'USD' && item.discountUsd === undefined && Number(item.discount) > 0)
+                        hint = this.L('ส่วนลดเดิม ' + this.formatCurrency(Number(item.discount)) + ' บาท ≈ ' + disc + ' USD (ถ้าไม่แก้ช่องส่วนลด ราคาเดิมคงไว้)',
+                            'Old discount ' + this.formatCurrency(Number(item.discount)) + ' THB ≈ ' + disc + ' USD (price stays unless you change the discount)');
+                    this.quickDraft = { uid: item.uid, qty: item.qty, discount: disc, discount0: disc, discountTouched: false, details: item.additionalDetails || '', unit, hint };
+                },
+                get quickPreview() {
+                    const d = this.quickDraft; if (!d) return null;
+                    const it = this.items.find(x => x.uid === d.uid); if (!it) return null;
+                    const rate = Number(this.exchangeRate), usd = hasRate(rate);
+                    const n = applyQuickEdit(it, d, rate);
+                    const fmtU = v => usd ? this.formatCurrencyNoDecimals(v) + ' USD' : this.formatCurrency(v) + ' THB';
+                    return { item: n,
+                        oldUnit: fmtU(usd ? usdUnit(it.price, rate) : it.price), newUnit: fmtU(usd ? usdUnit(n.price, rate) : n.price),
+                        amount: usd ? this.formatCurrency(usdLine(n, rate).amount) + ' USD' : this.formatCurrency(n.amount) + ' THB',
+                        changed: n.price !== it.price, bad: !(n.price > 0) || !(n.qty > 0), badQty: !qtyDecimalsOk(d.qty) };
+                },
+                applyQuick() {
+                    const p = this.quickPreview;
+                    if (!p) { this.quickDraft = null; return; }
+                    const it0 = this.items.find(x => x.uid === this.quickDraft.uid);
+                    if (it0 && quickUnit(it0, Number(this.exchangeRate)) !== this.quickDraft.unit) {
+                        alert(this.L('หน่วยส่วนลดเปลี่ยนไปแล้ว (อัตราแลกเปลี่ยนเปลี่ยน) — กรุณาเปิดแก้รายการนี้ใหม่', 'The discount unit changed (exchange rate changed) — please reopen this edit'));
+                        this.quickDraft = null; return;
+                    }
+                    if (p.bad) { alert(this.L('ปริมาณและราคาสุทธิต้องมากกว่า 0', 'Quantity and net price must be above 0')); return; }
+                    if (p.badQty) { alert(this.L('กรอกปริมาณได้ไม่เกินทศนิยม 2 ตำแหน่ง', 'Quantity can have at most 2 decimals')); return; }
+                    if (quickDiscEdited(this.quickDraft) && !this.confirmDiscount(p.item)) return;
+                    const i = this.items.findIndex(x => x.uid === this.quickDraft.uid);
+                    if (i >= 0) this.items.splice(i, 1, Object.assign(p.item, { edited: true }));
+                    this.quickDraft = null;
+                },
+                cancelQuick() { this.quickDraft = null; },
+
+                // ===== v1.6 แก้สเปก: ดึงรายการขึ้นฟอร์ม -> อัปเดตแทนที่ตำแหน่งเดิม =====
+                formSnapshot() {
+                    const s = {}; ITEM_INPUT_KEYS.forEach(k => { if (k !== 'transportExtra') s[k] = this[k]; });
+                    return Object.assign(s, { qty: this.qty, discountPerTon: this.discountPerTon, discountUsd: this.discountUsd, additionalDetails: this.additionalDetails, lastDiscMode: this.lastDiscMode });
+                },
+                applyForm(s) {   // option ของเกรด/spangle ผูก :selected ไว้ จึงตั้งค่าพร้อมกันได้แม้ประเภทสินค้าเปลี่ยน
+                    this.productType = s.productType;
+                    Object.keys(s).forEach(k => { if (k !== 'productType' && k !== 'transportExtra') this[k] = s[k]; });
+                    this.calculatePrice();
+                },
+                startSpecEdit(item) {
+                    if (this.editBusy || this.savedNo || this.isSaving) return;
+                    const rate = Number(this.exchangeRate);
+                    const got = inputsFromItem(item, { rate, transportExtra: this.transportExtra });
+                    const backup = this.formSnapshot();
+                    const usdMode = item.customerSegment === 'Export' && hasRate(rate);
+                    const realUsd = usdMode && (item.discountUnit === 'USD' || item.discountUsd !== undefined);   // ส่วนลดของรายการเป็น USD อยู่แล้ว
+                    const converted = usdMode && !realUsd;                                                            // ส่วนลดบาท (รวม 0/ติดลบ) แสดงเป็น USD ในฟอร์ม
+                    this.specEdit = { uid: item.uid, backup, legacy: got.legacy, unsure: got.unsure, oldPrice: Number(item.price), oldDiscount: Number(item.discount) || 0,
+                        oldDiscShown: realUsd ? got.discountUsd : (Number(item.discount) || 0), oldDiscUnit: realUsd ? 'USD' : 'THB',
+                        convUsd: converted ? got.discountUsd : null, rate: Number(this.exchangeRate) || 0 };
+                    this.applyForm(Object.assign({}, got.input, { qty: item.qty, discountPerTon: got.discountThb, discountUsd: got.discountUsd,
+                        additionalDetails: item.additionalDetails || '', lastDiscMode: usdMode }));
+                    this.$nextTick(() => { const el = document.getElementById('specCard'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+                },
+                unsureLabel(k) {
+                    const th = { 'TCT/BMT': 'อ้างอิงความหนา TCT/BMT', Edge: 'ประเภทขอบ', Spangle: 'Spangle', Chrome: 'Chrome', Oil: 'Oil', Skinpass: 'Skinpass', AFP: 'AFP',
+                        exportExtraUsd: 'ค่าบวกเพิ่ม USD เดิม (รวมอยู่ในราคา Base)', transport: 'ค่าขนส่งของใบเปลี่ยนจากตอนเพิ่มรายการ' };
+                    return this.lang === 'th' ? (th[k] || k) : k;
+                },
+                updateItem() {
+                    const se = this.specEdit; if (!se) return;
+                    const i = this.items.findIndex(x => x.uid === se.uid);
+                    if (i < 0) { alert(this.L('ไม่พบรายการที่กำลังแก้ (อาจถูกลบไปแล้ว)', 'The item being edited no longer exists')); this.cancelSpecEdit(); return; }
+                    this.calculatePrice();
+                    if (!this.checkItemForm()) return;
+                    const n = this.makeItem(se.uid);
+                    const rate = Number(this.exchangeRate), usd = hasRate(rate);
+                    if (se.convUsd !== null && n.discountUnit === 'USD' && Math.abs((Number(n.discountUsd) || 0) - se.convUsd) < 1e-9) {
+                        // ส่วนลดเดิมเป็นบาทและไม่ได้แก้ช่องส่วนลด -> คงส่วนลดบาทเดิมทุกสตางค์ (เหมือนแก้ราคา/ปริมาณ)
+                        n.discount = se.oldDiscount; n.discountUnit = 'THB'; delete n.discountUsd;
+                        n.price = priceFromParts(n.thbPart, itemExtraUsd(n), se.oldDiscount, rate);
+                        n.amount = amountThb(n.qty, n.price);
+                    }
+                    if (n.discount === se.oldDiscount && n.price !== se.oldPrice && Math.abs(n.price - se.oldPrice) < 1e-4) {   // เฉพาะเศษทศนิยมของคอมพิวเตอร์ (การแก้ราคาจริง >= 0.01 ไม่ถูกกลืน)
+                        n.price = se.oldPrice; n.amount = amountThb(n.qty, n.price);
+                    }
+                    const notes = [];
+                    // 1) ส่วนลดที่ตกลงกับลูกค้าเปลี่ยน (รวมกรณีถูกล้างเพราะเปลี่ยน Segment) -> แสดงให้เห็นเสมอ
+                    const newDiscShown = n.discountUnit === 'USD' ? (Number(n.discountUsd) || 0) : (Number(n.discount) || 0);
+                    if (n.discountUnit !== se.oldDiscUnit || Math.abs(newDiscShown - (Number(se.oldDiscShown) || 0)) > 0.0001) {
+                        const u = x => x === 'USD' ? 'USD' : this.L('บาท', 'THB');
+                        notes.push(this.L('ส่วนลด/ตัน: ', 'Discount/ton: ') + (Number(se.oldDiscShown) || 0) + ' ' + u(se.oldDiscUnit) + ' → ' + newDiscShown + ' ' + u(n.discountUnit));
+                    }
+                    // 2) ราคาเปลี่ยนมากกว่าผลของส่วนลด (สเปก/ตารางราคา/ค่าขนส่ง/ราคา Base ย้อนกลับ)
+                    const expected = se.oldPrice + se.oldDiscount - n.discount;      // ถ้าเปลี่ยนแค่ส่วนลด ราคาควรเป็นเท่านี้
+                    if (Math.abs(n.price - expected) > 0.01) {
+                        const diff = n.price - expected;
+                        notes.push(this.L(
+                            'ราคาเปลี่ยนมากกว่าผลของส่วนลด ' + (diff > 0 ? '+' : '') + this.formatCurrency(diff) + ' บาท/ตัน\nสาเหตุที่เป็นไปได้: เปลี่ยนสเปก/ตัวเลือก · ตารางราคาปัจจุบันต่างจากตอนทำใบเดิม · ค่าขนส่งของใบ' + (se.legacy ? ' · ราคา Base ที่คำนวณย้อนจากใบเก่า' : ''),
+                            'Price moved beyond the discount change by ' + (diff > 0 ? '+' : '') + this.formatCurrency(diff) + ' THB/ton\nPossible causes: spec/options changed · price table changed since the original · freight setting' + (se.legacy ? ' · back-calculated base price' : '')));
+                    }
+                    if (notes.length) {
+                        const head = this.L('รายการที่ ' + (i + 1) + ': ราคาเดิม ' + this.formatCurrency(se.oldPrice) + ' → ใหม่ ' + this.formatCurrency(n.price) + ' บาท/ตัน',
+                            'Item ' + (i + 1) + ': old ' + this.formatCurrency(se.oldPrice) + ' → new ' + this.formatCurrency(n.price) + ' THB/ton') +
+                            (usd ? ' (' + usdUnit(se.oldPrice, rate) + ' → ' + usdUnit(n.price, rate) + ' USD)' : '');
+                        if (!confirm(head + '\n\n' + notes.join('\n\n') + '\n\n' + this.L('ยืนยันอัปเดตรายการนี้?', 'Update this item?'))) return;
+                    }
+                    if (!this.confirmDiscount(n)) return;
+                    n.edited = true;
+                    this.items.splice(i, 1, n);
+                    if (n.customerSegment === 'Export' && hasRate(this.exchangeRate)) this.rateCommitted = Number(this.exchangeRate);
+                    this.specEdit = null; this.editClosedAt = Date.now();
+                    this.applyForm(se.backup);
+                },
+                cancelSpecEdit() {
+                    const se = this.specEdit; if (!se) return;
+                    this.specEdit = null; this.editClosedAt = Date.now();
+                    this.applyForm(se.backup);
+                },
+                discardEdits() { this.quickDraft = null; if (this.specEdit) this.cancelSpecEdit(); },
+
+                // ===== v1.6 อัตราแลกเปลี่ยน: เปลี่ยนแล้วรายการ Export คิดใหม่ (ค่าบวก/ส่วนลด USD คงเดิม) =====
+                commitRate() {
+                    const rate = Number(this.exchangeRate);
+                    const revert = () => { this.exchangeRate = this.rateCommitted; this.lastDiscMode = this.usdDiscountMode; this.calculatePrice(); return false; };
+                    if (!hasRate(rate)) {
+                        const usdItems = this.items.filter(it => it.customerSegment === 'Export' && ((it.discountUnit === 'USD' && Number(it.discountUsd) !== 0 && !isNaN(Number(it.discountUsd))) || itemExtraUsd(it) > 0));
+                        if (usdItems.length) {
+                            alert(this.L('ใบนี้มีรายการที่คิดเป็น USD (ค่าบวกเพิ่ม/ส่วนลด USD) ต้องมีอัตราแลกเปลี่ยน — คืนค่าอัตราเดิม', 'This quotation has USD-priced items — an exchange rate is required. The previous rate was restored.'));
+                            return revert();
+                        }
+                        this.rateCommitted = this.exchangeRate; this.onFormModeChange(); return true;
+                    }
+                    const pend = this.items.filter(it => canRebase(it) && Number(it.fxRate) !== rate);
+                    const oldRate = Number(this.rateCommitted);
+                    if (!this.items.length || (!pend.length && oldRate === rate)) { this.rateCommitted = rate; this.onFormModeChange(); return true; }
+                    const legacy = this.items.filter(it => it.customerSegment === 'Export' && !(it.input && typeof it.input === 'object'));
+                    const lines = hasRate(oldRate) ? this.items.map(it => {   // ราคา/ตัน USD ที่จะเปลี่ยนบนใบ (ทุกบรรทัด)
+                        const a = usdUnit(it.price, canRebase(it) ? (Number(it.fxRate) || oldRate) : oldRate), b = usdUnit(rebaseItemRate(it, rate).price, rate);
+                        return a === b ? '' : this.L('รายการที่ ', 'Item ') + this.itemNo(it.uid) + ': ' + a + ' → ' + b + ' USD/Ton' + (canRebase(it) ? '' : this.L(' (ราคาบาทคงเดิม)', ' (THB price kept)'));
+                    }).filter(Boolean) : [];
+                    const msg = this.L('เปลี่ยนอัตราแลกเปลี่ยนเป็น ' + rate + ' บาท/USD\nค่าบวกเพิ่ม USD และส่วนลด USD คงเดิม ส่วนที่เป็นบาทแปลงตามอัตราใหม่', 'Change the exchange rate to ' + rate + ' THB/USD\nUSD extras and USD discounts stay the same; the THB part is converted at the new rate') +
+                        (lines.length ? '\n\n' + lines.join('\n') : '') +
+                        (legacy.length ? '\n\n' + this.L('⚠ รายการจากใบเก่า ' + legacy.length + ' รายการ: ค่าบวกเพิ่ม USD เดิม (ถ้ามี) ยังคิดตามอัตราเดิม — ถ้าต้องการให้ถูกต้อง กด 🔧 แก้สเปก แล้วกรอกค่าบวกเพิ่ม USD ใหม่',
+                            '⚠ ' + legacy.length + ' item(s) from an older quotation: their USD extra (if any) stays at the old rate — use 🔧 Edit spec to re-enter it') : '') +
+                        '\n\n' + this.L('ยืนยัน?', 'Continue?');
+                    if (!confirm(msg)) return revert();
+                    this.items = this.items.map(it => canRebase(it) ? Object.assign(rebaseItemRate(it, rate), it.fxRate !== undefined && Number(it.fxRate) !== rate ? { edited: true } : {}) : it);
+                    this.rateCommitted = rate; this.onFormModeChange();
+                    return true;
                 },
 
                 get grandTotalQty() { return Math.round(this.items.reduce((s, i) => s + i.qty, 0) * 100) / 100; },
                 get grandTotalAmount() { return Math.round(this.items.reduce((s, i) => s + i.amount, 0) * 100) / 100; },
+                // USD บนเอกสาร: ใบที่กำลังทำ = คิดสด · ใบที่บันทึกด้วย v1.6 = ค่าที่ประทับไว้ · ใบเก่า (ก่อน v1.6) = แสดงแบบเดิมให้ตรงกับที่ส่งลูกค้า
+                get usdMode() {
+                    if (!hasRate(this.exchangeRate)) return 'thb';
+                    // ใช้ค่าที่ประทับไว้ได้เฉพาะเมื่อทุกรายการประทับด้วยอัตราเดียวกับใบ (ใบที่หน้าเว็บรุ่นเก่าคัดลอกต่อแล้วเปลี่ยนอัตรา -> แสดงแบบเดิม)
+                    if (this.savedNo) return stampsValid(this.items, this.exchangeRate) ? 'stored' : 'legacy';
+                    return 'live';
+                },
+                get docUsd() { return this.usdMode === 'thb' ? null : usdDoc(this.items, Number(this.exchangeRate), this.usdMode); },
+                usdAmountText(v) { return (this.docUsd && this.docUsd.decimals ? this.formatCurrency(v) : this.formatCurrencyNoDecimals(v)) + ' USD'; },
                 
                 formatCurrency(val) { return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
                 formatCurrencyNoDecimals(val) { return Math.round(val).toLocaleString('en-US'); },
@@ -2135,6 +2660,11 @@
                 async saveAndPrint() {
                     if (this.items.length === 0) { alert(this.lang === 'th' ? 'กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการครับ' : 'Please add at least 1 item.'); return; }
                     if (!this.user) { alert(this.lang === 'th' ? 'กรุณาเข้าสู่ระบบก่อน' : 'Please sign in first.'); return; }
+                    if (this.isSaving) return;
+                    if (Date.now() - this.editClosedAt < 700) return;      // คลิกต่อเนื่องหลังปิดการแก้รายการ
+                    if (this.editBusy) { alert(this.L('กำลังแก้ไขรายการอยู่ — กด "ใช้ค่านี้"/"อัปเดตรายการ" หรือยกเลิกการแก้ไขก่อนบันทึก', 'An item is being edited — apply or cancel it before saving')); return; }
+                    if (!this.commitRate()) return;            // อัตราที่กรอกแต่ยังไม่ยืนยัน -> คิดรายการ Export ใหม่ก่อน
+                    this.items = stampUsd(this.items, this.exchangeRate);   // ประทับ USD ที่พิมพ์ลงในรายการ (เปิดดู/พิมพ์ซ้ำได้ตัวเลขเดิม)
                     const rv = this.reviseOf;
                     if (rv && normCustomer(this.customerInfo.name) !== normCustomer(rv.customer)
                         && !confirm(this.L('ชื่อลูกค้าเปลี่ยนจาก "' + rv.customer + '" เป็น "' + this.customerInfo.name + '"\nถ้าเป็นลูกค้าคนละราย ควรกดยกเลิก แล้วใช้ "ทำสำเนา" (ดีลใหม่) แทน\n\nยืนยันบันทึกเป็นฉบับแก้ไขของดีลเดิม?',
@@ -2145,7 +2675,8 @@
                         prefix: this.companyPrefix, quoteDate: this.quoteDate, customer: Object.assign({}, this.customerInfo),
                         transport: this.transportExtra, exchangeRate: this.exchangeRate,
                         priceTerm: (this.items.length > 0 && this.items[0].exportTerm) ? this.items[0].exportTerm : '-',
-                        lang: this.lang, items: this.items, totalQty: this.grandTotalQty, totalAmount: this.grandTotalAmount
+                        lang: this.lang, items: this.items.map(it => { const o = Object.assign({}, it); delete o.uid; delete o.edited; return o; }),
+                        totalQty: this.grandTotalQty, totalAmount: this.grandTotalAmount
                     };
                     try {
                         let result;
@@ -2176,7 +2707,8 @@
                             currentNo: result.runningNo, status: 'open', salesCode: rv ? rv.ownerCode : this.user.code, versions: (Number(result.rev) || 0) + 1 };
                         this.reviseOf = null;
                         this.historyRows = [];          // ให้แท็บประวัติโหลดใหม่ครั้งหน้า
-                        this.printDocument();
+                        this.activeTab = 'form';
+                        await this.printDocument();
                     } catch (error) {
                         console.error(error);
                         if (gen === this.sessionGen) alert((this.lang === 'th' ? 'บันทึกไม่สำเร็จ: ' : 'Save failed: ') + error.message);
@@ -2189,9 +2721,15 @@
                 printDocument() {
                     const d = new Date(this.quoteDate);
                     const dateFormatted = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}`;
-                    const originalTitle = document.title;
+                    if (this.printing) return Promise.resolve();
+                    this.printing = true;
+                    const originalTitle = document.title, no = this.savedNo;
                     document.title = `${this.runningNo}_${dateFormatted}`;
-                    setTimeout(() => { window.print(); document.title = originalTitle; }, 300);
+                    // พิมพ์เฉพาะเมื่อหน้าจอยังแสดงใบเดิมในแท็บสร้างใบเสนอราคา (กันพิมพ์แท็บอื่น/ฟอร์มว่าง ถ้าผู้ใช้กดเปลี่ยนระหว่างรอ)
+                    return new Promise(res => setTimeout(() => {
+                        try { if (this.activeTab === 'form' && this.savedNo && this.savedNo === no) window.print(); }
+                        finally { document.title = originalTitle; this.printing = false; res(); }
+                    }, 300));
                 },
                 printAgain() { if (!this.savedNo) return; this.runningNo = this.savedNo; this.printDocument(); },
                 goCreateTab() {   // แท็บ "สร้างใบเสนอราคา": ถ้าฟอร์มกำลังแสดงใบที่บันทึกแล้ว/เปิดดูอยู่ -> เริ่มใบใหม่ทันที (งานที่ยังไม่บันทึกไม่ถูกล้าง)
@@ -2199,9 +2737,11 @@
                     this.activeTab = 'form';
                 },
                 newQuotation() {
+                    this.discardEdits(); this.revNotice = ''; this.exportThbOk = false;
                     this.items = []; this.savedNo = ''; this.savedAt = ''; this.reviseOf = null; this.docMeta = null;
                     this.customerInfo = { name: '', address: '', phone: '', delivery: '', payment: '' };
-                    this.additionalDetails = ''; this.discountPerTon = 0; this.exportExtraUsd = ''; this.exchangeRate = null;
+                    this.additionalDetails = ''; this.discountPerTon = 0; this.discountUsd = 0; this.exportExtraUsd = ''; this.exchangeRate = null; this.rateCommitted = null;
+                    this.lastDiscMode = this.usdDiscountMode;
                     this.quoteDate = localToday();
                     this.salesName = this.user ? this.user.name : this.salesName;
                     this.updateRunningNo(); this.calculatePrice(); this.activeTab = 'form';
