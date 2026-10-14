@@ -145,6 +145,8 @@
         <template x-if="saved && !sending.active">
             <div class="card p-4 mb-3 border-l-4" :class="saved.pending ? 'border-amber-500' : 'border-green-600'">
                 <div class="font-bold" x-text="(saved.pending ? t('savedPending', { n: saved.pending }) : t('savedOk')) + ' — ' + t('entryNoLabel') + ' ' + saved.entryNo"></div>
+                <!-- เวลาที่เซิร์ฟเวอร์ประทับตอนกดบันทึก (จาก savedAt ที่ตอบกลับ) -->
+                <div x-show="saved.savedAt" class="text-sm text-gray-600 mt-1" x-text="'🕒 ' + t('savedAt') + ' ' + fmtDT(saved.savedAt)"></div>
                 <div x-show="saveError" class="text-sm text-red-600 mt-1" x-text="saveError"></div>
                 <div class="flex flex-wrap gap-2 mt-3">
                     <button x-show="saved.pending" @click="retryPhotos" class="btn bg-amber-500 text-white text-sm" x-text="t('retryPhotos')"></button>
@@ -201,17 +203,36 @@
 
             <div class="card p-4 mb-3">
                 <div class="font-bold mb-2" x-text="t('foundAt')"></div>
-                <div class="flex gap-2">
-                    <input type="datetime-local" x-model="draft.foundAt" @change="onFoundAtChange" step="60" class="field">
-                    <button type="button" @click="setNow" class="btn bg-white border text-sm shrink-0" x-text="t('now')"></button>
-                </div>
-                <div class="flex items-center gap-2 mt-2 text-sm flex-wrap">
-                    <span class="text-gray-600" x-text="t('shift')"></span>
-                    <template x-for="s in (config ? config.shifts : [])" :key="s.code">
-                        <button type="button" @click="draft.shift = s.code; shiftAuto = false" class="chip text-sm" :class="draft.shift === s.code ? 'chip-on' : ''" x-text="cn(s)"></button>
-                    </template>
-                    <span x-show="shiftAuto" class="text-xs text-gray-400" x-text="t('auto')"></span>
-                </div>
+                <!-- โหมดอัตโนมัติ (ค่าเริ่มต้น): เซิร์ฟเวอร์ประทับเวลาตอนกดบันทึก (เวลาไทย) และคำนวณกะเอง — นาฬิกาแค่บอกว่าจะได้เวลาไหน -->
+                <template x-if="draft.foundAtMode !== 'manual'">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🕒</span>
+                            <div class="min-w-0">
+                                <div class="text-sm font-medium" x-text="t('foundAuto')"></div>
+                                <div class="text-xs text-gray-500" x-text="t('foundAutoNow', { time: fmtDT(clock), shift: shiftName(shiftOf(clock)) })"></div>
+                            </div>
+                        </div>
+                        <button type="button" @click="setFoundMode('manual')" class="text-xs text-blue-700 underline mt-2" x-text="t('setManual')"></button>
+                    </div>
+                </template>
+                <!-- โหมดระบุเอง: กรณีพบก่อนหน้านี้ (เช่น พบตอนกะดึก มาแจ้งตอนเช้า) -->
+                <template x-if="draft.foundAtMode === 'manual'">
+                    <div>
+                        <div class="flex gap-2">
+                            <input type="datetime-local" x-model="draft.foundAt" @change="onFoundAtChange" step="60" class="field">
+                            <button type="button" @click="setNow" class="btn bg-white border text-sm shrink-0" x-text="t('now')"></button>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 text-sm flex-wrap">
+                            <span class="text-gray-600" x-text="t('shift')"></span>
+                            <template x-for="s in (config ? config.shifts : [])" :key="s.code">
+                                <button type="button" @click="draft.shift = s.code; shiftAuto = false" class="chip text-sm" :class="draft.shift === s.code ? 'chip-on' : ''" x-text="cn(s)"></button>
+                            </template>
+                            <span x-show="shiftAuto" class="text-xs text-gray-400" x-text="t('auto')"></span>
+                        </div>
+                        <button type="button" @click="setFoundMode('auto')" class="text-xs text-blue-700 underline mt-2" x-text="t('setAuto')"></button>
+                    </div>
+                </template>
             </div>
 
             <div class="card p-4 mb-3">
@@ -653,9 +674,9 @@
 <div x-show="toastMsg" x-transition class="fixed left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center" style="top: calc(4.2rem + env(safe-area-inset-top));" x-text="toastMsg"></div>
 
 <script>
-    // ===== AMC Production Log Book v1.5 (2026-10-08) — ไทย / 中文 · สิทธิ์ตามตำแหน่ง =====
+    // ===== AMC Production Log Book v1.6 (2026-10-14) — ไทย / 中文 · สิทธิ์ตามตำแหน่ง · เวลาที่พบ = เวลาที่กดบันทึก =====
     // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
-    const APP_VERSION = '1.5';
+    const APP_VERSION = '1.6';
     const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
     window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
     const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -679,7 +700,9 @@
             line: 'ไลน์การผลิต', machine: 'เครื่อง / จุดที่พบ', machineNone: '— ไม่ระบุ —', machineOther: 'อื่นๆ (พิมพ์เอง)', machineOtherPh: 'ระบุเครื่อง/จุด',
             category: 'หมวด', peopleHint: 'หมวดพนักงาน/การปฏิบัติงาน: เห็นเฉพาะผู้บริหารเท่านั้น — หลังบันทึก คุณจะไม่เห็นรายการนี้ในรายการ รูปเก็บแบบส่วนตัว',
             type: 'ประเภท', typeIssue: '⚠️ ปัญหา (ติดตามสถานะ)', typeNote: '📝 บันทึกทั่วไป', typeNoteShort: 'บันทึกทั่วไป', severity: 'ความเร่งด่วน', lineStopped: 'ไลน์หยุดเดินเครื่องจากปัญหานี้',
-            foundAt: 'เวลาที่พบ', now: 'ตอนนี้', shift: 'กะ:', auto: '(อัตโนมัติ)', title: 'หัวข้อ', titlePh: 'สั้นๆ ว่าพบอะไร เช่น Zinc pot อุณหภูมิสูง', detail: 'รายละเอียด', detailPh: 'สภาพที่พบ ค่าที่วัดได้ ผลกระทบ สิ่งที่ทำไปแล้ว...',
+            foundAt: 'เวลาที่พบ', now: 'ตอนนี้', shift: 'กะ:', auto: '(อัตโนมัติ)',
+            foundAuto: 'อัตโนมัติ — ใช้เวลาที่กดบันทึก', foundAutoNow: 'ตอนนี้ {time} · {shift}', setManual: 'พบก่อนหน้านี้? ระบุเวลาเอง', setAuto: '← กลับเป็นอัตโนมัติ (ใช้เวลาที่กดบันทึก)',
+            title: 'หัวข้อ', titlePh: 'สั้นๆ ว่าพบอะไร เช่น Zinc pot อุณหภูมิสูง', detail: 'รายละเอียด', detailPh: 'สภาพที่พบ ค่าที่วัดได้ ผลกระทบ สิ่งที่ทำไปแล้ว...',
             photos: 'รูปภาพ', resizing: 'กำลังย่อรูป...', takePhoto: '📷 ถ่ายรูป', pickPhoto: '🖼 เลือกรูป', photoNote: 'รูปถูกย่อให้ด้านยาวสุด 1280 px ก่อนส่ง · รูปยังไม่ถูกเก็บจนกว่าจะกดบันทึก (ปิดแอปแล้วรูปจะหาย ข้อความยังอยู่)', maxPhotos: 'ใส่รูปได้สูงสุด {n} รูป',
             save: '💾 บันทึกรายการ', offlineSave: 'ออฟไลน์ — บันทึกไม่ได้', saving: 'กำลังบันทึก...', sendingPhoto: 'ส่งรูป {i}/{n}', savedToast: 'บันทึกแล้ว', photoFail: 'ส่งรูปไม่สำเร็จ',
             needLine: 'กรุณาเลือกไลน์การผลิต', needCat: 'กรุณาเลือกหมวด', needText: 'กรุณากรอกหัวข้อหรือรายละเอียด', imgConvertFail: 'แปลงรูปไม่สำเร็จ', imgReadFail: 'อ่านไฟล์รูปไม่ได้',
@@ -728,7 +751,9 @@
             line: '生产线', machine: '设备 / 位置', machineNone: '— 未指定 —', machineOther: '其他（手动输入）', machineOtherPh: '填写设备/位置',
             category: '类别', peopleHint: '人员/操作类别：仅管理层可见 — 保存后您将无法在列表中看到此记录，照片以私密方式保存',
             type: '类型', typeIssue: '⚠️ 问题（跟踪状态）', typeNote: '📝 一般记录', typeNoteShort: '一般记录', severity: '紧急程度', lineStopped: '此问题导致停线',
-            foundAt: '发现时间', now: '现在', shift: '班次:', auto: '（自动）', title: '标题', titlePh: '简述发现了什么，例如 锌锅温度过高', detail: '详情', detailPh: '现场情况、测量值、影响、已采取的措施...',
+            foundAt: '发现时间', now: '现在', shift: '班次:', auto: '（自动）',
+            foundAuto: '自动 — 以按下保存的时间为准', foundAutoNow: '现在 {time} · {shift}', setManual: '更早发现？手动指定时间', setAuto: '← 恢复自动（以按下保存的时间为准）',
+            title: '标题', titlePh: '简述发现了什么，例如 锌锅温度过高', detail: '详情', detailPh: '现场情况、测量值、影响、已采取的措施...',
             photos: '照片', resizing: '正在压缩照片...', takePhoto: '📷 拍照', pickPhoto: '🖼 选择照片', photoNote: '照片上传前会压缩到最长边 1280 px · 按保存前照片不会被保留（关闭应用后照片会丢失，文字会保留）', maxPhotos: '最多 {n} 张照片',
             save: '💾 保存记录', offlineSave: '离线 — 无法保存', saving: '正在保存...', sendingPhoto: '上传照片 {i}/{n}', savedToast: '已保存', photoFail: '照片上传失败',
             needLine: '请选择生产线', needCat: '请选择类别', needText: '请填写标题或详情', imgConvertFail: '照片转换失败', imgReadFail: '无法读取图片文件',
@@ -831,7 +856,7 @@
             isIos: /iPhone|iPad|iPod/i.test(navigator.userAgent), isMobile: /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
             sessionGen: 0, toastMsg: '', _toastTimer: null,
             loginStep: 'site', siteKey: '', siteKeyInput: '', users: [], usersLoading: false, userSearch: '', pick: null, pin: '', manualCode: '', manualMode: false, loginBusy: false, loginError: '',
-            draft: null, shiftAuto: true, photos: [], photoBusy: false, sending: { active: false, step: '' }, saved: null, saveError: '',
+            draft: null, shiftAuto: true, clock: localNowInput(), photos: [], photoBusy: false, sending: { active: false, step: '' }, saved: null, saveError: '',
             list: { rows: [], loading: false, error: '', loadedAt: '', total: 0, truncated: false },
             filter: { line: '', status: 'active', category: '', type: '', range: '7', dateFrom: '', dateTo: '', q: '', mine: false },
             detail: { no: '', entry: null, updates: [], loading: false, error: '' }, prevTab: 'list',
@@ -852,6 +877,7 @@
                 if (u && u.code && u.pin) { this.user = u; this.restoreDraft(); this.restoreListCache(); this.verifyUser(); }
                 this.$watch('draft', () => this.saveDraft());
                 this.$watch('filter', () => ls(K.filter, JSON.stringify(this.filter)));
+                setInterval(() => { this.clock = localNowInput(); }, 30000);   // นาฬิกาในการ์ด "เวลาที่พบ" (โหมดอัตโนมัติ) — แค่แสดงผล เวลาจริงประทับที่เซิร์ฟเวอร์
                 window.addEventListener('online', () => { this.online = true; });
                 window.addEventListener('offline', () => { this.online = false; });
                 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this.installPrompt = e; });
@@ -970,15 +996,21 @@
             },
 
             // ===== บันทึกใหม่ =====
-            blankDraft() { return { clientId: '', line: '', machine: '', machineOther: '', category: '', type: 'issue', severity: 'normal', lineStopped: false, foundAt: localNowInput(), shift: '', title: '', detail: '' }; },
+            // foundAtMode: 'auto' (ค่าเริ่มต้น) = เซิร์ฟเวอร์ประทับเวลาตอนกดบันทึก · 'manual' = ผู้ใช้ระบุเวลาที่พบเอง (foundAt/shift ในร่างใช้เฉพาะโหมดนี้)
+            blankDraft() { return { clientId: '', line: '', machine: '', machineOther: '', category: '', type: 'issue', severity: 'normal', lineStopped: false, foundAtMode: 'auto', foundAt: localNowInput(), shift: '', title: '', detail: '' }; },
             startNew() { const line = this.draft.line; this.draft = this.blankDraft(); this.draft.line = line; this.shiftAuto = true; this.onFoundAtChange(); this.photos = []; this.saved = null; this.saveError = ''; window.scrollTo(0, 0); },
             saveDraft() { if (!this.user) return; ls(K.draft, JSON.stringify({ draft: this.draft, shiftAuto: this.shiftAuto })); },
             restoreDraft() {
                 const d = lsJson(K.draft);
                 if (d && d.draft) { this.draft = Object.assign(this.blankDraft(), d.draft); this.shiftAuto = d.shiftAuto !== false; }
                 if (!this.draft.line && this.user && this.user.line) this.draft.line = this.user.line;
+                if (this.draft.foundAtMode !== 'manual') { this.draft.foundAtMode = 'auto'; this.draft.foundAt = localNowInput(); this.shiftAuto = true; }   // ร่างค้าง (รวมร่างรุ่นเก่า) ไม่ลากเวลาเก่ามาด้วย
                 if (!this.draft.foundAt) this.draft.foundAt = localNowInput();
                 this.onFoundAtChange();
+            },
+            setFoundMode(mode) {
+                this.draft.foundAtMode = mode === 'manual' ? 'manual' : 'auto';
+                this.draft.foundAt = localNowInput(); this.shiftAuto = true; this.onFoundAtChange();   // เริ่มระบุเองจากเวลาตอนนี้
             },
             setNow() { this.draft.foundAt = localNowInput(); this.onFoundAtChange(); },
             onFoundAtChange() { if (this.shiftAuto) this.draft.shift = this.shiftOf(this.draft.foundAt); },
@@ -1017,10 +1049,12 @@
                 try {
                     const thumb = this.photos.length ? await makeThumb(this.photos[0].dataUrl) : '';
                     const entry = Object.assign({}, this.draft, { machine: this.draft.machine === '__other' ? this.draft.machineOther : this.draft.machine, thumb });
-                    delete entry.machineOther;
+                    delete entry.machineOther; delete entry.foundAtMode;
+                    // โหมดอัตโนมัติ: ส่งเวลา/กะว่าง -> เซิร์ฟเวอร์ประทับเวลาตอนรับคำขอ (เวลาไทย) และคำนวณกะจาก Config (ไม่พึ่งนาฬิกามือถือ)
+                    if (this.draft.foundAtMode !== 'manual') { entry.foundAt = ''; entry.shift = ''; }
                     const r = await this.api({ action: 'addEntry', entry });
                     // หมวดพนักงาน: หลังบันทึก ผู้ที่ไม่ใช่ผู้บริหารจะเปิดดูไม่ได้ จึงไม่แสดงปุ่ม "ดูรายการ"
-                    this.saved = { entryNo: r.entryNo, pending: 0, canView: !(this.draft.category === 'people' && this.user.role !== 'manager') };
+                    this.saved = { entryNo: r.entryNo, savedAt: r.savedAt || '', pending: 0, canView: !(this.draft.category === 'people' && this.user.role !== 'manager') };
                     await this.sendPhotos(r.entryNo, 0, this.photos);
                     this.finishSave();
                 } catch (e) { this.saveError = e.message; }
@@ -1045,7 +1079,7 @@
                     const line = this.draft.line;
                     this.draft = this.blankDraft(); this.draft.line = line; this.shiftAuto = true; this.onFoundAtChange(); ls(K.draft, null);
                     this.photos = []; this.saveError = '';
-                    this.toast(this.t('savedToast') + ' ' + this.saved.entryNo);
+                    this.toast(this.t('savedToast') + ' ' + this.saved.entryNo + (this.saved.savedAt ? ' · ' + this.fmtDT(this.saved.savedAt).slice(-5) : ''));   // ต่อท้ายด้วยเวลา HH:MM ที่ประทับ
                 }
                 this.list.loadedAt = '';
             },
