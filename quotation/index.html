@@ -335,6 +335,7 @@
                         <div x-show="customerSegment === 'Export'">
                             <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'บวกเพิ่ม (USD/Ton)' : 'Extra Cost (USD/Ton)'"></label>
                             <input type="number" x-model.number="exportExtraUsd" @input="calculatePrice" placeholder="เช่น 15" class="w-full border border-green-300 p-2.5 rounded bg-white" step="0.01">
+                            <div class="text-[11px] text-green-700 mt-1" x-text="L('ค้างไว้ให้ทุกรายการที่เพิ่มต่อจากนี้ (จนกว่าจะแก้หรือเริ่มใบใหม่)', 'Kept for every item added next (until changed or a new quotation)')"></div>
                         </div>
                         <div>
                             <label class="block text-sm mb-1 font-bold text-green-700" x-text="lang === 'th' ? 'อัตราแลกเปลี่ยน (THB/USD)' : 'Exchange Rate'"></label>
@@ -433,6 +434,11 @@
                     </div>
                 </div>
 
+                <!-- v1.9: เตือนบนจอเมื่อค่าบวกเพิ่ม USD ของรายการ Export ไม่เท่ากัน (ไม่พิมพ์) -->
+                <div x-show="extraGroups.mismatch" class="no-print mb-2 bg-orange-50 border border-orange-400 text-orange-800 rounded p-2 text-xs">
+                    <span class="font-bold" x-text="L('⚠ ค่าบวกเพิ่ม USD/ตัน ไม่เท่ากัน: ', '⚠ USD/ton extra differs: ')"></span><span x-text="extraMismatchText"></span>
+                    <span x-show="!savedNo" x-text="L(' — ถ้าลืมใส่ กด 🔧 แก้สเปก ที่รายการนั้น', ' — if one was forgotten, use 🔧 Edit spec on that item')"></span>
+                </div>
                 <!-- v1.7: ตารางแยกคอลัมน์ตาม feedback ลูกค้า (หัวข้อประเภทสินค้า + ขนาด / สลิต / สเปก) -->
                 <table class="w-full mb-6 border-collapse table-fixed text-xs">
                     <colgroup><col style="width: 5%"><col style="width: 15%"><col style="width: 10%"><col><col style="width: 8%"><col style="width: 13%"><col style="width: 17%"></colgroup>
@@ -463,6 +469,7 @@
                                     <div><span x-text="specText(item)"></span> <span x-show="item.edited && !savedNo" class="no-print ml-1 text-[10px] leading-tight bg-amber-100 text-amber-800 rounded px-1 whitespace-nowrap" x-text="L('แก้ไขแล้ว', 'edited')"></span></div>
                                     <div x-show="packagingText(item)" class="text-gray-700" x-text="packagingText(item)"></div>
                                     <template x-if="item.additionalDetails"><div class="text-gray-600 italic whitespace-pre-line" x-text="item.additionalDetails"></div></template>
+                                    <div class="no-print text-[10px] leading-tight mt-1" :class="extraGroups.flagged.indexOf(item.uid) >= 0 ? 'text-orange-600 font-bold' : 'text-gray-400'" x-text="lineMetaText(item)"></div>
                                 </td>
                                 <td class="border px-1.5 py-2 text-center align-top" x-text="item.qty.toFixed(2)"></td>
                                 <td class="border px-1.5 py-2 text-right align-top">
@@ -1161,7 +1168,7 @@
     </div>
 
     <script>
-        // ===== AMC Quotation App v1.8 (2026-10-12) — โลโก้ตามบริษัทผู้ออกใบเสนอราคา · v1.7 ตารางรายการแบบใหม่ (ประเภทสินค้า · Thickness x Width · Slit · Spec) · v1.6 แก้ไขรายการทีละบรรทัด (ส่วนลด/ปริมาณ/สเปก) + ยอด USD = ตัน × ราคา/ตันบนใบ · v1.5 ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
+        // ===== AMC Quotation App v1.9 (2026-10-14) — ค่าบวกเพิ่ม USD ค้างไว้ทั้งใบ + แสดง Base/บวก/ส่วนลดบนจอ + ความกว้างต้องมากกว่า 0 · v1.8 โลโก้ตามบริษัทผู้ออกใบเสนอราคา · v1.7 ตารางรายการแบบใหม่ (ประเภทสินค้า · Thickness x Width · Slit · Spec) · v1.6 แก้ไขรายการทีละบรรทัด (ส่วนลด/ปริมาณ/สเปก) + ยอด USD = ตัน × ราคา/ตันบนใบ · v1.5 ตำแหน่งเจ้าหน้าที่จัดซื้อต่างประเทศ (ดูหน้าสรุปสเปกอย่างเดียว) · v1.4 ภาพรวมการใช้เหล็ก · v1.3 ฉบับแก้ไข (Rev.) + สถานะดีล =====
         // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-quotation-setup.md
         const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyohqqAPMNIEE71C43qzhBemI5v76fGFcinmVieIIMNn0wXtX-6fIGOIPX1tl-bKMXV/exec";
         const API_URL = (function () { try { return localStorage.getItem('amcQuoteApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
@@ -1347,6 +1354,40 @@
         // เปลี่ยนอัตราแลกเปลี่ยน: รายการ Export ที่คิดเป็น USD คิดราคาบาทใหม่จากส่วนบาท + (บวก USD − ส่วนลด USD) × อัตราใหม่
         // (รายการที่คิดเป็นบาท เช่นเพิ่มตอนยังไม่มีอัตรา ราคาบาทคงเดิม)
         function itemExtraUsd(it) { return it.input && Number(it.input.exportExtraUsd) > 0 ? Number(it.input.exportExtraUsd) : 0; }
+        // v1.9 ข้อมูลซ่อนของแต่ละรายการ (Base / บวก USD / ส่วนลด) ไว้แสดงบนจอ ไม่พิมพ์
+        function lineMeta(it) {
+            const hasInput = !!(it && it.input && typeof it.input === 'object');
+            const usdDisc = !!(it && (it.discountUnit === 'USD' || it.discountUsd !== undefined));
+            return {
+                legacy: !hasInput,
+                base: hasInput ? (Number(it.input.basePrice) || 0) : null,
+                extraUsd: hasInput && it.customerSegment === 'Export' ? itemExtraUsd(it) : null,   // null = ไม่มี/ไม่ทราบ
+                discount: usdDisc ? (Number(it.discountUsd) || 0) : (Number(it.discount) || 0),
+                discountUnit: usdDisc ? 'USD' : 'THB'
+            };
+        }
+        // รายการ Export ที่คิดเป็น USD (v1.6+) จัดกลุ่มตามค่าบวกเพิ่ม USD -> {groups:[{extra, nos}], unknownNos, flagged(uids)}
+        // ค่าบวกต่างกันในใบเดียว = สัญญาณว่าลืมใส่ (ช่องเคยถูกล้างหลังเพิ่มรายการ) · รายการใบเก่าไม่มีข้อมูล -> unknown
+        function extraUsdGroups(items, rate) {   // rate = อัตราของใบ (ใบที่มีอัตรา: ทุกรายการ Export ที่มีข้อมูลตั้งต้นนับหมด แม้รายการที่เพิ่มก่อนกรอกอัตรา)
+            const groups = [], unknownNos = [];
+            (items || []).forEach((it, i) => {
+                if (!it || it.customerSegment !== 'Export') return;
+                if (!(it.input && typeof it.input === 'object')) { unknownNos.push(i + 1); return; }
+                // ข้ามเฉพาะรายการที่คิดเป็นบาทในใบที่ไม่มีอัตรา (discountUnit บอกหน่วยส่วนลด ไม่ใช่หน่วยราคา — รายการที่มีค่าบวก USD ในราคาต้องนับ)
+                if (it.discountUnit !== 'USD' && !(itemExtraUsd(it) > 0) && !hasRate(rate)) return;
+                const extra = itemExtraUsd(it);
+                let g = groups.find(x => x.extra === extra);
+                if (!g) { g = { extra, nos: [], uids: [] }; groups.push(g); }
+                g.nos.push(i + 1); g.uids.push(it.uid);
+            });
+            let flagged = [];
+            if (groups.length > 1) {
+                // กลุ่มใหญ่สุดถือว่าถูก · เสมอกัน = กลุ่มที่ค่าบวกมากกว่าถือว่าถูก ("ลืมใส่" คือฝั่งที่ค่าน้อยกว่า)
+                const main = groups.reduce((a, b) => (b.nos.length > a.nos.length || (b.nos.length === a.nos.length && b.extra > a.extra) ? b : a), groups[0]);
+                flagged = groups.filter(g => g !== main).flatMap(g => g.uids);
+            }
+            return { groups, unknownNos, flagged, mismatch: groups.length > 1 };
+        }
         function canRebase(it) { return !!(it && it.customerSegment === 'Export' && it.thbPart !== undefined && (it.discountUnit === 'USD' || itemExtraUsd(it) > 0)); }
         function rebaseItemRate(it, rate) {
             if (!canRebase(it) || !hasRate(rate)) return it;
@@ -2250,6 +2291,8 @@
                             this.revNotice = notes.join('\n');
                         }
                         this.items = loaded;
+                        const eg = extraUsdGroups(loaded, this.exchangeRate);   // v1.9: รายการใหม่ใน Rev./สำเนา ได้ค่าบวก USD เดียวกับใบ (ถ้าทุกรายการเท่ากัน)
+                        this.exportExtraUsd = (eg.groups.length === 1 && !eg.unknownNos.length && eg.groups[0].extra > 0) ? eg.groups[0].extra : '';
                         this.lastDiscMode = this.usdDiscountMode;
                         const meta = { no: q.runningNo, root: q.root || q.runningNo, rev: Number(q.rev) || 0, replaces: q.replaces || '', cur: q.cur !== false,
                             currentNo: q.currentNo || q.runningNo, status: q.status || 'open', salesCode: q.salesCode, versions: Number(q.versions) || 1 };
@@ -2404,6 +2447,22 @@
                 // ใบ Export ที่กรอกอัตราแล้ว -> ส่วนลดเป็น USD/ตัน
                 get usdDiscountMode() { return this.customerSegment === 'Export' && hasRate(this.exchangeRate); },
                 get hasExportItems() { return this.items.some(it => it.customerSegment === 'Export'); },
+                // v1.9 ข้อมูลซ่อนของรายการบนจอ (ไม่พิมพ์)
+                get extraGroups() { return extraUsdGroups(this.items, this.exchangeRate); },
+                get extraMismatchText() {
+                    const g = this.extraGroups;
+                    const parts = g.groups.map(x => this.L('รายการ ', 'Item ') + x.nos.join(', ') + ' = ' + x.extra + ' USD');
+                    if (g.unknownNos.length) parts.push(this.L('รายการ ', 'Item ') + g.unknownNos.join(', ') + this.L(' = ใบเก่า (ไม่ทราบ)', ' = older quotation (unknown)'));
+                    return parts.join(' · ');
+                },
+                lineMetaText(it) {
+                    const m = lineMeta(it), parts = [];
+                    if (m.legacy) parts.push(this.L('ใบเก่า (ไม่มีข้อมูลตั้งต้น)', 'older quotation (no inputs)'));
+                    else parts.push('Base ' + m.base.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+                    if (m.extraUsd !== null) parts.push(this.L('บวก ', 'extra ') + m.extraUsd + ' USD');
+                    parts.push(this.L('ส่วนลด ', 'discount ') + (m.discountUnit === 'USD' ? m.discount + ' USD' : this.formatCurrency(m.discount) + this.L(' บาท', ' THB')));
+                    return parts.join(' · ');
+                },
                 onFormModeChange() {   // เปลี่ยน Segment / อัตรา: ถ้าหน่วยส่วนลดเปลี่ยน (บาท <-> USD) ล้างส่วนลดในฟอร์ม
                     if (this.usdDiscountMode !== this.lastDiscMode) { this.discountPerTon = 0; this.discountUsd = 0; this.lastDiscMode = this.usdDiscountMode; }
                     this.calculatePrice();
@@ -2430,6 +2489,8 @@
                     return it;
                 },
                 checkItemForm() {
+                    if (!(Number(this.thickness) > 0)) { alert(this.L('กรุณากรอกความหนา (ต้องมากกว่า 0)', 'Please enter the thickness (must be above 0)')); return false; }
+                    if (!(Number(this.width) > 0)) { alert(this.L('กรุณากรอกความกว้าง (ต้องมากกว่า 0)\nความกว้างใช้พิมพ์บนใบ (Thickness x Width) และใช้คิดค่าบวกหน้ากว้าง 491–580 มม.', 'Please enter the width (must be above 0)\nIt is printed on the quotation (Thickness x Width) and used for the 491–580 mm width extra')); return false; }
                     if (!(round2(parseFloat(this.qty) || 0) > 0)) { alert(this.L('ปริมาณต้องมากกว่า 0', 'Quantity must be above 0')); return false; }
                     if (!qtyDecimalsOk(this.qty)) { alert(this.L('กรอกปริมาณได้ไม่เกินทศนิยม 2 ตำแหน่ง (เช่น 12.35 ตัน) — ตัวเลขบนใบเสนอราคาแสดง 2 ตำแหน่ง', 'Quantity can have at most 2 decimals (e.g. 12.35 t) — the quotation shows 2 decimals')); return false; }
                     if (this.customerSegment === 'Export' && !hasRate(this.exchangeRate) && Number(this.exportExtraUsd) > 0) {
@@ -2462,8 +2523,7 @@
                     this.items.push(it);
                     if (it.customerSegment === 'Export' && hasRate(this.exchangeRate)) this.rateCommitted = Number(this.exchangeRate);
                     this.additionalDetails = '';
-                    this.discountPerTon = 0; this.discountUsd = 0;
-                    this.exportExtraUsd = ''; // รีเซ็ตหลังกดเพิ่มสินค้า
+                    this.discountPerTon = 0; this.discountUsd = 0;   // ส่วนลดเป็นรายรายการ -> ล้าง · ค่าบวกเพิ่ม USD ค้างไว้ทั้งใบ (v1.9)
                     this.calculatePrice();
                 },
                 deleteItem(item) {
@@ -2658,6 +2718,8 @@
                     if (Date.now() - this.editClosedAt < 700) return;      // คลิกต่อเนื่องหลังปิดการแก้รายการ
                     if (this.editBusy) { alert(this.L('กำลังแก้ไขรายการอยู่ — กด "ใช้ค่านี้"/"อัปเดตรายการ" หรือยกเลิกการแก้ไขก่อนบันทึก', 'An item is being edited — apply or cancel it before saving')); return; }
                     if (!this.commitRate()) return;            // อัตราที่กรอกแต่ยังไม่ยืนยัน -> คิดรายการ Export ใหม่ก่อน
+                    if (this.extraGroups.mismatch && !confirm(this.L('ค่าบวกเพิ่ม USD/ตัน ของรายการ Export ไม่เท่ากัน:\n' + this.extraMismatchText + '\n\nถ้าเผลอลืมใส่ ให้กด "ยกเลิก" แล้วใช้ 🔧 แก้สเปก ที่รายการนั้น\nยืนยันบันทึกตามนี้?',
+                        'The USD/ton extra differs between Export items:\n' + this.extraMismatchText + '\n\nIf one was forgotten, press Cancel and use 🔧 Edit spec on that item.\nSave as is?'))) return;
                     this.items = stampUsd(this.items, this.exchangeRate);   // ประทับ USD ที่พิมพ์ลงในรายการ (เปิดดู/พิมพ์ซ้ำได้ตัวเลขเดิม)
                     const rv = this.reviseOf;
                     if (rv && normCustomer(this.customerInfo.name) !== normCustomer(rv.customer)
