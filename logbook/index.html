@@ -136,6 +136,15 @@
         </div>
     </div>
     <div x-show="!online" class="bg-amber-400 text-amber-900 text-xs text-center py-1" x-text="t('offline')"></div>
+    <!-- เมนูหลัก (v1.7 ย้ายจากขอบล่างมาไว้ใต้แถบบน ติดจอตลอดเพราะ header เป็น sticky) — ซ่อนในหน้ารายละเอียด -->
+    <nav x-show="tab !== 'detail'" class="bg-white text-gray-600 border-b">
+        <div class="max-w-3xl mx-auto grid" :class="user && user.role === 'manager' ? 'grid-cols-4' : 'grid-cols-3'">
+            <button @click="go('new')" class="py-2 text-sm flex items-center justify-center gap-1 border-b-2" :class="tab === 'new' ? 'text-blue-800 font-bold border-blue-800' : 'border-transparent'"><span>📝</span><span x-text="t('navNew')"></span></button>
+            <button @click="go('list')" class="py-2 text-sm flex items-center justify-center gap-1 border-b-2" :class="tab === 'list' ? 'text-blue-800 font-bold border-blue-800' : 'border-transparent'"><span>📋</span><span x-text="t('navList')"></span></button>
+            <button @click="go('summary')" class="py-2 text-sm flex items-center justify-center gap-1 border-b-2" :class="tab === 'summary' ? 'text-blue-800 font-bold border-blue-800' : 'border-transparent'"><span>📊</span><span x-text="t('navSummary')"></span></button>
+            <button x-show="user && user.role === 'manager'" @click="go('users')" class="py-2 text-sm flex items-center justify-center gap-1 border-b-2" :class="tab === 'users' ? 'text-blue-800 font-bold border-blue-800' : 'border-transparent'"><span>👥</span><span x-text="t('navUsers')"></span></button>
+        </div>
+    </nav>
 </header>
 
 <main x-show="user" class="max-w-3xl mx-auto px-3 pt-3 page">
@@ -264,7 +273,7 @@
             </div>
             <div x-show="saveError && !saved" class="text-sm text-red-600 mb-3 px-1" x-text="saveError"></div>
         </div>
-        <div x-show="!saved || sending.active" class="fixed left-0 right-0 z-20 px-3 pointer-events-none" style="bottom: calc(4rem + env(safe-area-inset-bottom));">
+        <div x-show="!saved || sending.active" class="fixed left-0 right-0 z-20 px-3 pointer-events-none" style="bottom: calc(0.75rem + env(safe-area-inset-bottom));">
             <div class="max-w-3xl mx-auto">
                 <button @click="submitEntry" :disabled="sending.active || !online" class="btn w-full bg-green-600 text-white shadow-lg pointer-events-auto text-lg">
                     <span x-show="sending.active" class="loader"></span>
@@ -660,23 +669,15 @@
     </div>
 </div>
 
-<!-- ============ bottom nav ============ -->
-<nav x-show="user && tab !== 'detail'" class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t safe-bottom">
-    <div class="max-w-3xl mx-auto grid" :class="user && user.role === 'manager' ? 'grid-cols-4' : 'grid-cols-3'">
-        <button @click="go('new')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'new' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">📝</span><span x-text="t('navNew')"></span></button>
-        <button @click="go('list')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'list' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">📋</span><span x-text="t('navList')"></span></button>
-        <button @click="go('summary')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'summary' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">📊</span><span x-text="t('navSummary')"></span></button>
-        <button x-show="user && user.role === 'manager'" @click="go('users')" class="py-2 text-xs flex flex-col items-center gap-0.5" :class="tab === 'users' ? 'text-blue-800 font-bold' : 'text-gray-500'"><span class="text-xl">👥</span><span x-text="t('navUsers')"></span></button>
-    </div>
-</nav>
+<!-- (เมนูหลักย้ายไปอยู่ใน <header> ตั้งแต่ v1.7) -->
 
-<!-- toast -->
-<div x-show="toastMsg" x-transition class="fixed left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center" style="top: calc(4.2rem + env(safe-area-inset-top));" x-text="toastMsg"></div>
+<!-- toast (อยู่ใต้แถบบน + เมนู) -->
+<div x-show="toastMsg" x-transition class="fixed left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center" style="top: calc(7rem + env(safe-area-inset-top));" x-text="toastMsg"></div>
 
 <script>
-    // ===== AMC Production Log Book v1.6 (2026-10-14) — ไทย / 中文 · สิทธิ์ตามตำแหน่ง · เวลาที่พบ = เวลาที่กดบันทึก =====
+    // ===== AMC Production Log Book v1.7 (2026-10-14) — ไทย / 中文 · สิทธิ์ตามตำแหน่ง · เวลาที่พบ = เวลาที่กดบันทึก · เมนูอยู่ด้านบน =====
     // ตั้งค่าลิงก์เซิร์ฟเวอร์: Apps Script Web App URL (ลงท้ายด้วย /exec) — ดู README-logbook-setup.md
-    const APP_VERSION = '1.6';
+    const APP_VERSION = '1.7';
     const API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbx4BMOl-eLSBblzyanl7c_5gHkLssBg6Ys5TopNvlx-HqObNhmapf8g7YA-QjWwDJ0qFA/exec";
     window.addEventListener('unhandledrejection', e => { try { console.error('Unhandled promise rejection:', e.reason && (e.reason.stack || e.reason.message || JSON.stringify(e.reason))); } catch (x) {} });
     const API_URL = (function () { try { return localStorage.getItem('amcLogApiUrl') || API_URL_DEFAULT; } catch (e) { return API_URL_DEFAULT; } })();
