@@ -107,7 +107,7 @@
     <div class="sub">อัตราแลกเปลี่ยน · ราคาสังกะสี · ราคาเหล็ก · ราคาอะลูมิเนียม · ราคาแมกนีเซียม · ราคาแร่เหล็ก · ถ่านหินโค้ก · ราคาน้ำมันดิบ · สรุปข่าวตลาดโลหะ — สำหรับ Asia Metal (AMC)</div>
   </div>
   <div class="meta">
-    ข้อมูล ณ <b id="snapDate">10 พ.ย. 2026</b><br>
+    ข้อมูล ณ <b id="snapDate">11 พ.ย. 2026</b><br>
     <span id="metaMode">อัปเดตค่าได้เอง · บันทึกอัตโนมัติ</span>
     <div class="toolbar" style="justify-content:flex-end">
       <button onclick="saveAll()">💾 บันทึกค่าที่แก้</button>
@@ -118,7 +118,7 @@
 
 <main>
   <div class="note">
-    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>10 พ.ย. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = data valid for 9 พ.ย. 2026</b>, <b style="color:var(--green)">SMM Zn / Slab / HRC / GZ = Nov 9, 2026</b>, <b style="color:var(--green)">FX BOT = as of 9 พ.ย. 2026</b>, <b style="color:var(--green)">TE Iron Ore / Coking Coal / Magnesium = Nov 9, 2026</b>, SMM A00/PB Fines/Billet/Scrap/CA/CR = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
+    <b>ข้อมูลชุดนี้ดึงสด</b> จาก BOT, LME, metal.com (SMM), Trading Economics และ investing.com (WTI) เมื่อ <b>11 พ.ย. 2026</b> (<b style="color:var(--green)">LME Zinc / Aluminium / Aluminium Alloy = data valid for 10 พ.ย. 2026</b>, <b style="color:var(--green)">SMM Zn / Slab / HRC = Nov 11, 2026 · GZ = Nov 10, 2026</b>, <b style="color:var(--green)">FX BOT = as of 10 พ.ย. 2026</b>, <b style="color:var(--green)">TE Iron Ore / Coking Coal = Nov 10, 2026 · Magnesium = Nov 11, 2026</b>, SMM A00/PB Fines/Billet/Scrap/CA/CR = 24–25 มิ.ย., WTI = 20 มิ.ย. (ไม่ได้อยู่ในรอบอัปเดตนี้))
     คอลัมน์ <b style="color:var(--thb)">THB</b>, USD, CNY คำนวณอัตโนมัติจากอัตรา BOT ด้านบน<span class="edit-hint"> —
     แก้ <b>ราคาฐาน</b> (ช่องที่ขีดเส้นใต้) หรือ <b>อัตรา FX</b> แล้วทุกคอลัมน์อัปเดตทันที จากนั้นกด “บันทึกค่าที่แก้”</span>
   </div>
@@ -132,30 +132,30 @@
   <div class="grid g3">
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_usd','USD / THB','บาท ต่อ 1 ดอลลาร์สหรัฐ')">USD / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_usd" contenteditable="true">33.7081</div>
+      <div class="val fxr" data-k="fx_usd" contenteditable="true">33.5676</div>
       <div class="unit">บาท ต่อ 1 ดอลลาร์สหรัฐ · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_eur','EUR / THB','บาท ต่อ 1 ยูโร')">EUR / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_eur" contenteditable="true">37.7159</div>
+      <div class="val fxr" data-k="fx_eur" contenteditable="true">37.7763</div>
       <div class="unit">บาท ต่อ 1 ยูโร · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_cny','CNY / THB','บาท ต่อ 1 หยวน')">CNY / THB <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_cny" contenteditable="true">5.0666</div>
+      <div class="val fxr" data-k="fx_cny" contenteditable="true">5.0612</div>
       <div class="unit">บาท ต่อ 1 หยวน · Average Selling Rate</div>
       <div class="src">ที่มา: <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
     <div class="card">
       <div class="lbl clk" onclick="openChart('fx_usdcny','USD / CNY','หยวน ต่อ 1 ดอลลาร์สหรัฐ (cross rate)')">USD / CNY <span class="cicon">📈</span></div>
-      <div class="val fxr" data-k="fx_usdcny" contenteditable="true">6.6530</div>
+      <div class="val fxr" data-k="fx_usdcny" contenteditable="true">6.6323</div>
       <div class="unit">หยวน ต่อ 1 ดอลลาร์ · cross rate คำนวณจากอัตราขาย BOT (USD/THB ÷ CNY/THB)</div>
       <div class="src">ที่มา: คำนวณจาก <a href="https://www.bot.or.th/th/statistics/exchange-rate.html" target="_blank">ธปท. (BOT)</a></div>
     </div>
   </div>
-  <div class="updt">✓ <b style="color:var(--green)">FX รอบ 10 พ.ย. 2026 (BOT as of 9 November 2026)</b> · ฐาน Average Selling Rate: USD 33.7081 (▲0.22%) · EUR 37.7159 (▼0.47%) · CNY 5.0666 (▲0.02%) · USD/CNY cross 6.6530 (▲0.20%) · อัตราซื้อ sight bill: USD 33.3403 · EUR 37.0280 · CNY 4.9841</div>
+  <div class="updt">✓ <b style="color:var(--green)">FX รอบ 11 พ.ย. 2026 (BOT as of 10 November 2026)</b> · ฐาน Average Selling Rate: USD 33.5676 (▼0.42%) · EUR 37.7763 (▲0.16%) · CNY 5.0612 (▼0.11%) · USD/CNY cross 6.6323 (▼0.31%) · อัตราซื้อ sight bill: USD 33.1644 · EUR 37.0330 · CNY 4.9337</div>
 
   <!-- ZINC -->
   <h2><span class="bar"></span>ราคาสังกะสี (Zinc)</h2>
@@ -170,29 +170,29 @@
     </thead>
     <tbody>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_zn_cash','LME Zinc (Cash · official offer)','USD/tonne')"><b>LME Zinc</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgneg" style="font-size:11px">▼0.13%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_zn_cash" contenteditable="true">3,754.00</span></td>
+        <td class="prod" onclick="openChart('lme_zn_cash','LME Zinc (Cash · official offer)','USD/tonne')"><b>LME Zinc</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgpos" style="font-size:11px">▲0.37%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_zn_cash" contenteditable="true">3,768.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_zn','LME Zinc (3-month, closing)','USD/tonne')"><b>LME Zinc</b> (3-month, closing) <span class="chgpos" style="font-size:11px">▲0.54%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_zn" contenteditable="true">3,731.00</span></td>
+        <td class="prod" onclick="openChart('lme_zn','LME Zinc (3-month, closing)','USD/tonne')"><b>LME Zinc</b> (3-month, closing) <span class="chgneg" style="font-size:11px">▼0.54%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_zn" contenteditable="true">3,711.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-zinc#Summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgneg" style="font-size:11px">▼0.03%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">3,806.44</span></td>
+        <td class="prod" onclick="openChart('smm_zn','SMM 0# Zinc Ingot (Shanghai)','USD/tonne')"><b>SMM 0# Zinc Ingot</b> (Shanghai · USD pricing) <span class="chgneg" style="font-size:11px">▼0.30%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="smm_zn" contenteditable="true">3,786.70</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/zinc/201102250173" target="_blank">metal.com ↗</a></td>
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">LME Zinc รอบ 10 พ.ย. 2026 (data valid for 9 Nov 2026)</b> — <b>Cash (offer) 3,754.00 (bid 3,753.00) ▼0.13%</b> จาก 3,759.00 · 3-month closing 3,731.00 ▲0.54% vs รอบก่อน · Cash − 3M (official offer 3,754.00 / 3,724.00 = +30.00; vs closing 3,731.00 = +23.00) → backwardation · SMM 0# Zinc 3,806.44 (Nov 9, 2026; −0.03% วันต่อวันตาม SMM)</div>
+  <div class="updt">✓ <b style="color:var(--green)">LME Zinc รอบ 11 พ.ย. 2026 (data valid for 10 Nov 2026)</b> — <b>Cash (offer) 3,768.00 (bid 3,767.00) ▲0.37%</b> จาก 3,754.00 · 3-month closing 3,711.00 ▼0.54% vs รอบก่อน · Cash − 3M (official offer 3,768.00 / 3,734.00 = +34.00; vs closing 3,711.00 = +57.00) → backwardation · SMM 0# Zinc 3,786.70 (Nov 11, 2026; −0.30% วันต่อวันตาม SMM)</div>
 
   <!-- STEEL -->
   <h2><span class="bar"></span>ราคาเหล็ก (Steel — Slab / HRC / Galvanized / Flat Products)</h2>
@@ -214,22 +214,22 @@
         <td><a href="https://www.metal.com/steel-billet/202601160001" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span class="chgneg" style="font-size:11px">▼0.21%</span> <span class="cicon">📈</span></td>
+        <td class="prod" onclick="openChart('st_hr1','HRC SMM-GS-HR-001 (FOB Tianjin)','USD/tonne')"><b>SMM-GS-HR-001</b> · HRC Q235B 3.0×1250×C — FOB Tianjin <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
         <td class="num"><span class="base" data-k="st_hr1" contenteditable="true">485</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202501030001" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_hr2','HRC SMM-GS-HR-002 (FOB Bayuquan)','USD/tonne')"><b>SMM-GS-HR-002</b> · HRC Q235B 3.0×1250×C — FOB Bayuquan <span class="chgneg" style="font-size:11px">▼0.21%</span> <span class="cicon">📈</span></td>
+        <td class="prod" onclick="openChart('st_hr2','HRC SMM-GS-HR-002 (FOB Bayuquan)','USD/tonne')"><b>SMM-GS-HR-002</b> · HRC Q235B 3.0×1250×C — FOB Bayuquan <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
         <td class="num"><span class="base" data-k="st_hr2" contenteditable="true">486</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202501030002" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/mt">
-        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgneg" style="font-size:11px">▼0.58%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">635.03</span></td>
+        <td class="prod" onclick="openChart('st_gz','Galvanised SMM-CG-GZ-056 DX51D+Z80 (Tianjin)','USD/tonne')"><b>SMM-CG-GZ-056</b> · Galvanised Coil DX51D+Z80 1.0×1250×C (Tianjin) <span class="chgpos" style="font-size:11px">▲0.05%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="st_gz" contenteditable="true">635.36</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.metal.com/flat-products/202509160004" target="_blank">metal.com ↗</a></td>
@@ -264,7 +264,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">รอบ 10 พ.ย. 2026: SMM ค่า Nov 9, 2026</b> · Slab SL-001 = 465 (0.00%) · HR-001 Tianjin = 485 (−0.21% วันต่อวันตาม SMM) · HR-002 Bayuquan = 486 (−0.21% วันต่อวันตาม SMM) · GZ-056 = 635.03 (−0.58% วันต่อวันตาม SMM) · CA-041 / CR-016 / SB-003 / HS-005 คงค่าเดิม (ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
+  <div class="updt">✓ <b style="color:var(--green)">รอบ 11 พ.ย. 2026: SMM ค่า Nov 11, 2026 (GZ-056 = Nov 10, 2026)</b> · Slab SL-001 = 465 (0.00%) · HR-001 Tianjin = 485 (0.00% วันต่อวันตาม SMM) · HR-002 Bayuquan = 486 (0.00% วันต่อวันตาม SMM) · GZ-056 = 635.36 (+0.05% วันต่อวันตาม SMM) · CA-041 / CR-016 / SB-003 / HS-005 คงค่าเดิม (ไม่ได้อยู่ในรอบอัปเดตนี้)</div>
 
   <!-- ALUMINIUM -->
   <h2><span class="bar"></span>ราคาอะลูมิเนียม (Aluminium)</h2>
@@ -279,21 +279,21 @@
     </thead>
     <tbody>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_al_cash','LME Aluminium (Cash · official offer)','USD/tonne')"><b>LME Aluminium</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgpos" style="font-size:11px">▲0.96%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_al_cash" contenteditable="true">3,147.00</span></td>
+        <td class="prod" onclick="openChart('lme_al_cash','LME Aluminium (Cash · official offer)','USD/tonne')"><b>LME Aluminium</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgneg" style="font-size:11px">▼0.32%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al_cash" contenteditable="true">3,137.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium#Trading+summary" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_al','LME Aluminium (3-month, closing)','USD/tonne')"><b>LME Aluminium</b> (3-month, closing) <span class="chgpos" style="font-size:11px">▲0.13%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="lme_al" contenteditable="true">3,066.50</span></td>
+        <td class="prod" onclick="openChart('lme_al','LME Aluminium (3-month, closing)','USD/tonne')"><b>LME Aluminium</b> (3-month, closing) <span class="chgneg" style="font-size:11px">▼1.83%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="lme_al" contenteditable="true">3,010.50</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://www.lme.com/metals/non-ferrous/lme-aluminium#Overview" target="_blank">LME ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/tonne">
-        <td class="prod" onclick="openChart('lme_al_alloy_cash','LME Aluminium Alloy (Cash · official offer)','USD/tonne')"><b>LME Aluminium Alloy</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span class="chgpos" style="font-size:11px">0.00%</span> <span class="cicon">📈</span></td>
+        <td class="prod" onclick="openChart('lme_al_alloy_cash','LME Aluminium Alloy (Cash · official offer)','USD/tonne')"><b>LME Aluminium Alloy</b> (Cash · official offer) <span class="cur-pill" style="color:#9bf0d0;border-color:#2a5c47">อ้างอิงหลัก</span> <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
         <td class="num"><span class="base" data-k="lme_al_alloy_cash" contenteditable="true">3,000.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
@@ -315,7 +315,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">LME Aluminium รอบ 10 พ.ย. 2026 (data valid for 9 Nov 2026)</b> — <b>Cash (offer) 3,147.00 (bid 3,145.00) ▲0.96%</b> จาก 3,117.00 · 3-month closing 3,066.50 ▲0.13% vs รอบก่อน · Cash − 3M (official offer 3,147.00 / 3,059.50 = +87.50; vs closing 3,066.50 = +80.50) → backwardation · LME Aluminium Alloy Cash 3,000.00 / 3M 3,000.00 (ไม่เปลี่ยน) · SMM A00 คงค่าเดิม (ชุด 25 มิ.ย.)</div>
+  <div class="updt">✓ <b style="color:var(--green)">LME Aluminium รอบ 11 พ.ย. 2026 (data valid for 10 Nov 2026)</b> — <b>Cash (offer) 3,137.00 (bid 3,135.00) ▼0.32%</b> จาก 3,147.00 · 3-month closing 3,010.50 ▼1.83% vs รอบก่อน · Cash − 3M (official offer 3,137.00 / 3,027.00 = +110.00; vs closing 3,010.50 = +126.50) → backwardation · LME Aluminium Alloy Cash 3,000.00 / 3M 3,000.00 (ไม่เปลี่ยน) · SMM A00 คงค่าเดิม (ชุด 25 มิ.ย.)</div>
 
   <!-- MAGNESIUM -->
   <h2><span class="bar"></span>ราคาแมกนีเซียม (Magnesium)</h2>
@@ -330,7 +330,7 @@
     </thead>
     <tbody>
       <tr data-cur="CNY" data-unit="/T">
-        <td class="prod" onclick="openChart('mg','Magnesium (China, CFD)','CNY/T')"><b>Magnesium</b> · แมกนีเซียม ตลาดจีน · CFD <span class="chgpos" style="font-size:11px">▲0.62%</span> <span class="cicon">📈</span></td>
+        <td class="prod" onclick="openChart('mg','Magnesium (China, CFD)','CNY/T')"><b>Magnesium</b> · แมกนีเซียม ตลาดจีน · CFD <span style="font-size:11px;color:var(--muted)">0.00%</span> <span class="cicon">📈</span></td>
         <td class="num"><span class="base" data-k="mg" contenteditable="true">16,150.00</span></td>
         <td><span class="cur-pill">CNY</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
@@ -338,7 +338,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">รอบ 10 พ.ย. 2026 — Trading Economics</b> · <b>Magnesium = 16,150 CNY/T ▲0.62%</b> (Nov 9 · เดือน −1.82% · ปี −6.92%)</div>
+  <div class="updt">✓ <b style="color:var(--green)">รอบ 11 พ.ย. 2026 — Trading Economics</b> · <b>Magnesium = 16,150 CNY/T 0.00% (ทรงตัว)</b> (Nov 11 · เดือน −1.82% · ปี −6.38%)</div>
 
   <!-- IRON ORE -->
   <h2><span class="bar"></span>ราคาแร่เหล็กและถ่านหินโค้ก (Iron Ore &amp; Coking Coal)</h2>
@@ -360,22 +360,22 @@
         <td><a href="https://www.metal.com/iron-ore-price" target="_blank">metal.com ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/MT">
-        <td class="prod" onclick="openChart('ore_fe','Iron Ore 62% Fe CFR Tianjin (CFD)','USD/MT')"><b>Iron Ore</b> 62% Fe CFR Tianjin · CFD <span class="chgpos" style="font-size:11px">▲0.01%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="ore_fe" contenteditable="true">92.71</span></td>
+        <td class="prod" onclick="openChart('ore_fe','Iron Ore 62% Fe CFR Tianjin (CFD)','USD/MT')"><b>Iron Ore</b> 62% Fe CFR Tianjin · CFD <span class="chgneg" style="font-size:11px">▼0.18%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="ore_fe" contenteditable="true">92.54</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://tradingeconomics.com/commodity/iron-ore" target="_blank">Trading Economics ↗</a></td>
       </tr>
       <tr data-cur="USD" data-unit="/T">
-        <td class="prod" onclick="openChart('coal_coking','Coking Coal (CFD)','USD/T')"><b>Coking Coal</b> · ถ่านหินโค้ก (ใช้ผลิตโค้กถลุงเหล็ก) · CFD <span class="chgneg" style="font-size:11px">▼0.78%</span> <span class="cicon">📈</span></td>
-        <td class="num"><span class="base" data-k="coal_coking" contenteditable="true">253.00</span></td>
+        <td class="prod" onclick="openChart('coal_coking','Coking Coal (CFD)','USD/T')"><b>Coking Coal</b> · ถ่านหินโค้ก (ใช้ผลิตโค้กถลุงเหล็ก) · CFD <span class="chgpos" style="font-size:11px">▲0.40%</span> <span class="cicon">📈</span></td>
+        <td class="num"><span class="base" data-k="coal_coking" contenteditable="true">254.00</span></td>
         <td><span class="cur-pill">USD</span></td>
         <td class="num o-usd"></td><td class="num o-cny"></td><td class="num o-thb"></td>
         <td><a href="https://tradingeconomics.com/commodity/coking-coal" target="_blank">Trading Economics ↗</a></td>
       </tr>
     </tbody>
   </table>
-  <div class="updt">✓ <b style="color:var(--green)">รอบ 10 พ.ย. 2026 — Trading Economics</b> · <b>Iron Ore 62% Fe = 92.71 USD/MT ▲0.01% (วันต่อวันตาม TE)</b> (Nov 9 · เดือน +2.07% · ปี −10.83%) · <b>Coking Coal = 253.00 USD/T ▼0.78% (วันต่อวันตาม TE −0.78%)</b> (Nov 9 · เดือน −5.24% · ปี +25.71%) · PB Fines คงค่าเดิม</div>
+  <div class="updt">✓ <b style="color:var(--green)">รอบ 11 พ.ย. 2026 — Trading Economics</b> · <b>Iron Ore 62% Fe = 92.54 USD/MT ▼0.18% (วันต่อวันตาม TE)</b> (Nov 10 · เดือน +1.88% · ปี −10.64%) · <b>Coking Coal = 254.00 USD/T ▲0.40% (วันต่อวันตาม TE)</b> (Nov 10 · เดือน −4.87% · ปี +27.00%) · PB Fines คงค่าเดิม</div>
 
   <!-- CRUDE OIL -->
   <h2><span class="bar"></span>ราคาน้ำมันดิบ (Crude Oil — WTI)</h2>
@@ -494,7 +494,7 @@
 </div>
 
 <footer>
-  Dashboard นี้ดึงข้อมูลสด ณ 7 พ.ย. 2026 (รอบล่าสุด — LME Zinc/Aluminium/Alloy = data valid 6 พ.ย. 2026, FX BOT = as of 6 พ.ย. 2026, Trading Economics Iron Ore / Coking Coal / Magnesium = Nov 6 และ SMM (metal.com) Zn/Slab/HRC/GZ = Nov 6, 2026) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
+  Dashboard นี้ดึงข้อมูลสด ณ 11 พ.ย. 2026 (รอบล่าสุด — LME Zinc/Aluminium/Alloy = data valid 10 พ.ย. 2026, FX BOT = as of 10 พ.ย. 2026, Trading Economics Iron Ore / Coking Coal = Nov 10 · Magnesium = Nov 11 และ SMM (metal.com) Zn/Slab/HRC = Nov 11, GZ = Nov 10, 2026) · ทุกตัวเลขแก้ไขได้เองและบันทึกในเครื่อง (localStorage) · คอลัมน์ USD/CNY/THB คำนวณจากอัตรา BOT ในหน้านี้ · กราฟเทรนด์สะสมจาก snapshot รายวัน
   <br>จัดทำสำหรับ Asia Metal Public Company Limited (AMC)
 </footer>
 
@@ -595,7 +595,8 @@
     "2026-11-03":{fx_usd:33.9422,fx_eur:38.0080,fx_cny:5.1372,fx_usdcny:6.6071,lme_zn:3892.50,lme_zn_cash:3935.00,smm_zn:3846.44,st_slab:465,st_hr1:485,st_hr2:485,st_gz:640.7,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3094.00,lme_al_cash:3095.00,lme_al_alloy:3000.00,lme_al_alloy_cash:3000.00,smm_al:3348.18,ore_pb:101.84,ore_fe:91.25,st_sq_bil:474,st_scrap:373.65,coal_coking:260.50,mg:16150.00},
     "2026-11-06":{fx_usd:33.6503,fx_eur:37.9944,fx_cny:5.0764,fx_usdcny:6.6288,lme_zn:3793.00,lme_zn_cash:3877.00,smm_zn:3807.55,st_slab:465,st_hr1:486,st_hr2:487,st_gz:638.71,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3064.00,lme_al_cash:3160.00,lme_al_alloy:3000.00,lme_al_alloy_cash:3000.00,smm_al:3348.18,ore_pb:101.84,ore_fe:93.12,st_sq_bil:474,st_scrap:373.65,coal_coking:257.75,mg:16050.00},
     "2026-11-07":{fx_usd:33.6346,fx_eur:37.8948,fx_cny:5.0657,fx_usdcny:6.6397,lme_zn:3711.00,lme_zn_cash:3759.00,smm_zn:3807.55,st_slab:465,st_hr1:486,st_hr2:487,st_gz:638.71,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3062.50,lme_al_cash:3117.00,lme_al_alloy:3000.00,lme_al_alloy_cash:3000.00,smm_al:3348.18,ore_pb:101.84,ore_fe:92.70,st_sq_bil:474,st_scrap:373.65,coal_coking:255.00,mg:16050.00},
-    "2026-11-10":{fx_usd:33.7081,fx_eur:37.7159,fx_cny:5.0666,fx_usdcny:6.6530,lme_zn:3731.00,lme_zn_cash:3754.00,smm_zn:3806.44,st_slab:465,st_hr1:485,st_hr2:486,st_gz:635.03,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3066.50,lme_al_cash:3147.00,lme_al_alloy:3000.00,lme_al_alloy_cash:3000.00,smm_al:3348.18,ore_pb:101.84,ore_fe:92.71,st_sq_bil:474,st_scrap:373.65,coal_coking:253.00,mg:16150.00}
+    "2026-11-10":{fx_usd:33.7081,fx_eur:37.7159,fx_cny:5.0666,fx_usdcny:6.6530,lme_zn:3731.00,lme_zn_cash:3754.00,smm_zn:3806.44,st_slab:465,st_hr1:485,st_hr2:486,st_gz:635.03,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3066.50,lme_al_cash:3147.00,lme_al_alloy:3000.00,lme_al_alloy_cash:3000.00,smm_al:3348.18,ore_pb:101.84,ore_fe:92.71,st_sq_bil:474,st_scrap:373.65,coal_coking:253.00,mg:16150.00},
+    "2026-11-11":{fx_usd:33.5676,fx_eur:37.7763,fx_cny:5.0612,fx_usdcny:6.6323,lme_zn:3711.00,lme_zn_cash:3768.00,smm_zn:3786.70,st_slab:465,st_hr1:485,st_hr2:486,st_gz:635.36,st_ca:578.68,st_cr:508.3,oil_wti:76.53,lme_al:3010.50,lme_al_cash:3137.00,lme_al_alloy:3000.00,lme_al_alloy_cash:3000.00,smm_al:3348.18,ore_pb:101.84,ore_fe:92.54,st_sq_bil:474,st_scrap:373.65,coal_coking:254.00,mg:16150.00}
   };
 
   function num(s){ return parseFloat(String(s).replace(/[^0-9.\-]/g,"")); }
